@@ -1,0 +1,376 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEURO AI Mining App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
+  <style>
+    /* Animated gradient border for NFTs and Referral Cards */
+    .nft-card, .referral-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .nft-card::before, .referral-card::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #a855f7, #3b82f6, #a855f7);
+      z-index: -1;
+      animation: rotateBorder 3s linear infinite;
+    }
+    @keyframes rotateBorder {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Fade-in transition for sections */
+    .section {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Neon glow and active state for nav buttons */
+    .nav-button:hover {
+      filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
+      transform: scale(1.05);
+    }
+    .nav-button.active {
+      border-bottom: 2px solid #a855f7;
+      filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white font-sans m-0 overflow-x-hidden">
+
+  <!-- Wallet / Header Card -->
+  <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-b-3xl shadow-lg text-center">
+    <div class="flex items-center justify-center space-x-3">
+      <img src="https://via.placeholder.com/40" alt="NAI Logo" class="w-10 h-10 rounded-full" />
+      <h1 class="text-2xl font-bold tracking-wide">NEURO AI</h1>
+    </div>
+    <p class="mt-2 text-sm text-gray-200">Balance:</p>
+    <h2 class="text-3xl font-bold">12,345.67 <span class="text-yellow-300">NAI</span></h2>
+    <p id="wallet-address" class="mt-2 text-sm text-gray-300 hidden">Wallet: <span id="address-text">Not Connected</span></p>
+    <button id="connect-wallet" class="mt-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Wallet</button>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 w-full bg-white flex justify-around py-4 border-t border-gray-300 z-50 text-xs rounded-t-xl">
+    <button onclick="showSection('home')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-home">
+      <img src="https://cdn-icons-png.flaticon.com/512/1946/1946436.png" class="w-8 h-8 mb-1" />
+      <span class="font-semibold uppercase">Home</span>
+    </button>
+    <button onclick="showSection('mining')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-mining">
+      <img src="https://cdn-icons-png.flaticon.com/512/2910/2910761.png" class="w-8 h-8 mb-1" />
+      <span class="font-semibold uppercase">Mining</span>
+    </button>
+    <button onclick="showSection('referral')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-referral">
+      <img src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" class="w-8 h-8 mb-1" />
+      <span class="font-semibold uppercase">Referral</span>
+    </button>
+    <button onclick="showSection('tasks')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-tasks">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828911.png" class="w-8 h-8 mb-1" />
+      <span class="font-semibold uppercase">Tasks</span>
+    </button>
+    <button onclick="showSection('leaderboard')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-leaderboard">
+      <img src="https://iili.io/FHHLkLQ.png" class="w-8 h-8 mb-1" />
+      <span class="font-semibold uppercase">Top</span>
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div id="content" class="p-4 pb-24 space-y-8 rounded-t-2xl bg-gray-950">
+
+    <!-- HOME SECTION -->
+    <div id="home" class="section space-y-6">
+      <h2 class="text-xl font-semibold">🏠 Dashboard</h2>
+
+      <!-- Mining Card Preview -->
+      <div class="bg-gray-800 p-4 rounded-xl text-center shadow relative overflow-hidden"
+           style="background-image: url('https://iili.io/FIhQez7.gif'); background-size: cover; background-position: center;">
+        <div class="bg-black bg-opacity-60 p-6 rounded-xl">
+          <button onclick="showSection('mining')" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-full font-bold text-white transition">Start Mining</button>
+        </div>
+      </div>
+
+      <!-- NFT Preview -->
+      <div class="bg-gray-800 p-4 rounded-xl">
+        <h3 class="font-semibold mb-2">🎁 NFTs</h3>
+        <ul class="space-y-1 text-sm">
+          <li class="flex justify-between">🎖️ NFT #1 - <span class="text-green-400">Free</span></li>
+          <li class="flex justify-between">🥇 NFT #2 - <span>5 TON</span></li>
+        </ul>
+        <button onclick="showSection('mining')" class="mt-2 text-sm text-blue-400 underline">View All</button>
+      </div>
+
+      <!-- Referral Summary -->
+      <div class="bg-gray-800 p-4 rounded-xl">
+        <h3 class="font-semibold mb-2">👥 Referral Bonus</h3>
+        <p class="text-sm text-gray-400">Earn up to 3 levels bonus</p>
+        <button onclick="showSection('referral')" class="mt-2 text-sm text-blue-400 underline">Referral Details</button>
+      </div>
+
+      <!-- Tasks -->
+      <div class="bg-gray-800 p-4 rounded-xl">
+        <h3 class="font-semibold mb-2">📋 Tasks</h3>
+        <ul class="text-sm text-gray-300">
+          <li>✅ Join Telegram - +10 NAI</li>
+        </ul>
+        <button onclick="showSection('tasks')" class="mt-2 text-sm text-blue-400 underline">View All</button>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="bg-gray-800 p-4 rounded-xl">
+        <h3 class="font-semibold mb-2">🏆 Top Miners</h3>
+        <p>🥇 @user1 - 12,300 NAI</p>
+        <button onclick="showSection('leaderboard')" class="mt-2 text-sm text-blue-400 underline">View Full</button>
+      </div>
+    </div>
+
+    <!-- MINING SECTION -->
+    <div id="mining" class="section hidden space-y-6">
+      <h2 class="text-xl font-semibold">⚒️ Start Mining</h2>
+      <div class="relative rounded-xl overflow-hidden text-center shadow-inner"
+           style="background-image: url('https://iili.io/FIhQez7.gif'); background-size: cover; background-position: center;">
+        <div class="bg-black bg-opacity-60 p-6">
+          <button class="bg-green-500 hover:bg-green-600 transition px-4 py-2 rounded-full text-white font-bold">
+            Start Mining
+          </button>
+          <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong>15 Hash/s</strong></p>
+          <p class="text-sm text-gray-100">Total Mined: <strong>234.12 NAI</strong></p>
+        </div>
+      </div>
+
+      <!-- NFTs Full -->
+      <div>
+        <h2 class="text-lg font-semibold mt-6 mb-2">🎁 Your NFTs</h2>
+        <div class="space-y-4">
+          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+            <img src="https://iili.io/FIkdc3x.gif" alt="NFT #1" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">🎖️ NFT #1 - Free</span>
+            </div>
+            <button class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Claim</button>
+          </div>
+          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+            <img src="https://iili.io/FIkdhGa.gif" alt="NFT #2" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">🥇 NFT #2 - 5 TON</span>
+            </div>
+            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+          </div>
+          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+            <img src="https://iili.io/FIkdj6J.gif" alt="NFT #3" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">🥈 NFT #3 - 12 TON</span>
+            </div>
+            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+          </div>
+          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+            <img src="https://iili.io/FIkdSjt.gif" alt="NFT #4" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">🥉 NFT #4 - 25 TON</span>
+            </div>
+            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+          </div>
+          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+            <img src="https://iili.io/FIkdXCg.gif" alt="NFT #5" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">🏆 NFT #5 - 50 TON</span>
+            </div>
+            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERRAL SECTION -->
+    <div id="referral" class="section hidden space-y-6">
+      <h2 class="text-xl font-semibold">👥 Referral Program</h2>
+      <p class="text-sm text-gray-300">Earn rewards for each level:</p>
+      <ul class="mt-2 text-sm text-gray-400 space-y-1">
+        <li>🔹 Level 1: 10%</li>
+        <li>🔹 Level 2: 5%</li>
+        <li>🔹 Level 3: 2%</li>
+      </ul>
+      <input class="mt-3 w-full p-2 bg-gray-700 rounded" readonly value="https://t.me/yourapp?ref=you" />
+      <h3 class="text-lg font-semibold mt-6 mb-2">📊 Referral History</h3>
+      <div class="space-y-2">
+        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+          <span class="font-semibold">Level 1</span>
+          <span>100 Hash/s</span>
+          <span>5 Referrals</span>
+        </div>
+        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+          <span class="font-semibold">Level 2</span>
+          <span>50 Hash/s</span>
+          <span>3 Referrals</span>
+        </div>
+        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+          <span class="font-semibold">Level 3</span>
+          <span>20 Hash/s</span>
+          <span>1 Referral</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS SECTION -->
+    <div id="tasks" class="section hidden">
+      <h2 class="text-xl font-semibold">📋 Daily Tasks</h2>
+      <ul class="mt-2 space-y-3">
+        <li class="bg-gray-800 p-3 rounded-lg">✅ Join Telegram - <span class="text-green-400">+10 NAI</span></li>
+        <li class="bg-gray-800 p-3 rounded-lg">✅ Follow Twitter - <span class="text-green-400">+5 NAI</span></li>
+        <li class="bg-gray-800 p-3 rounded-lg">✅ Share link - <span class="text-green-400">+3 NAI</span></li>
+      </ul>
+    </div>
+
+    <!-- LEADERBOARD SECTION -->
+    <div id="leaderboard" class="section hidden space-y-6">
+      <h2 class="text-xl font-semibold">🏆 Top 50 Users</h2>
+      <ol class="mt-2 space-y-2 text-sm">
+        <li class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
+          🥇 @user1 - 12,300 NAI
+        </li>
+        <li class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
+          🥈 @user2 - 10,750 NAI
+        </li>
+        <li class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
+          🥉 @user3 - 9,420 NAI
+        </li>
+        <li class="bg-gray-800 p-3 rounded">4. @user4 - 8,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">5. @user5 - 8,500 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">6. @user6 - 8,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">7. @user7 - 7,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">8. @user8 - 7,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">9. @user9 - 7,300 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">10. @user10 - 7,000 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">11. @user11 - 6,800 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">12. @user12 - 6,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">13. @user13 - 6,400 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">14. @user14 - 6,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">15. @user15 - 6,000 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">16. @user16 - 5,800 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">17. @user17 - 5,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">18. @user18 - 5,400 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">19. @user19 - 5,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">20. @user20 - 5,000 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">21. @user21 - 4,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">22. @user22 - 4,800 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">23. @user23 - 4,700 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">24. @user24 - 4,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">25. @user25 - 4,500 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">26. @user26 - 4,400 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">27. @user27 - 4,300 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">28. @user28 - 4,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">29. @user29 - 4,100 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">30. @user30 - 4,000 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">31. @user31 - 3,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">32. @user32 - 3,800 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">33. @user33 - 3,700 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">34. @user34 - 3,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">35. @user35 - 3,500 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">36. @user36 - 3,400 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">37. @user37 - 3,300 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">38. @user38 - 3,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">39. @user39 - 3,100 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">40. @user40 - 3,000 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">41. @user41 - 2,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">42. @user42 - 2,800 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">43. @user43 - 2,700 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">44. @user44 - 2,600 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">45. @user45 - 2,500 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">46. @user46 - 2,400 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">47. @user47 - 2,300 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">48. @user48 - 2,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">49. @user49 - 2,100 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">50. @user50 - 2,000 NAI</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Section Switch and Wallet Connect Script -->
+  <script>
+    // Section Switch
+    function showSection(id) {
+      ['home', 'mining', 'referral', 'tasks', 'leaderboard'].forEach(section => {
+        document.getElementById(section).classList.add('hidden');
+        document.getElementById(`nav-${section}`).classList.remove('active');
+      });
+      document.getElementById(id).classList.remove('hidden');
+      document.getElementById(`nav-${id}`).classList.add('active');
+    }
+    showSection('home');
+
+    // TON Wallet Connect
+    const tonConnect = new TonConnect({
+      manifestUrl: 'https://your-manifest-url/tonconnect-manifest.json' // Replace with your TON Connect manifest URL
+    });
+
+    document.getElementById('connect-wallet').addEventListener('click', async () => {
+      try {
+        await tonConnect.connect({
+          jsons: [
+            { name: 'tonkeeper', url: 'https://app.tonkeeper.com/ton-connect' },
+            { name: 'mytonwallet', url: 'https://mytonwallet.io/ton-connect' }
+          ]
+        });
+        const walletInfo = await tonConnect.getWallet();
+        if (walletInfo) {
+          const address = walletInfo.account.address;
+          const shortAddress = `${address.slice(0, 4)}...${address.slice(-4)}`;
+          document.getElementById('wallet-address').classList.remove('hidden');
+          document.getElementById('address-text').textContent = shortAddress;
+          document.getElementById('connect-wallet').textContent = 'Connected';
+          document.getElementById('connect-wallet').classList.add('bg-green-500', 'hover:bg-green-600');
+          document.getElementById('connect-wallet').classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-500', 'hover:from-blue-600', 'hover:to-purple-600');
+        }
+      } catch (error) {
+        console.error('Wallet connection failed:', error);
+        alert('Failed to connect wallet. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
