@@ -1,9 +1,9 @@
 const userNFTs = [
-  { url: 'https://iili.io/FIkdc3x.gif', name: 'NFT #1 - Free', icon: '🎖️', hashRate: 15 },
-  { url: 'https://iili.io/FIkdhGa.gif', name: 'NFT #2 - 5 TON', icon: '🥇', hashRate: 20 },
-  { url: 'https://iili.io/FIkdj6J.gif', name: 'NFT #3 - 12 TON', icon: '🥈', hashRate: 25 },
-  { url: 'https://iili.io/FIkdSjt.gif', name: 'NFT #4 - 25 TON', icon: '🥉', hashRate: 30 },
-  { url: 'https://iili.io/FIkdXCg.gif', name: 'NFT #5 - 50 TON', icon: '🏆', hashRate: 50 },
+  { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter', icon: '🎖️', hashRate: 22, price: 0 },
+  { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark', icon: '🥇', hashRate: 44, price: 25 },
+  { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core', icon: '🥈', hashRate: 54, price: 39 },
+  { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge', icon: '🥉', hashRate: 74, price: 49 },
+  { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime', icon: '🏆', hashRate: 99, price: 109 },
 ];
 
 const tasks = [
@@ -21,10 +21,11 @@ const mockLeaderboard = [
 let userData = {
   walletAddress: null,
   balance: 0,
-  nfts: [userNFTs[0].url],
+  nfts: [userNFTs[0].url], // Free NFT by default
   tasksCompleted: [],
   referralCode: 'abc123',
-  mining: { nft: userNFTs[0].url, hashRate: 15, tokensMined: 0, lastUpdated: new Date().toISOString() },
+  mining: { nft: null, hashRate: 0, tokensMined: 0, lastUpdated: null, isMining: false },
+  referrals: { level1: [], level2: [], level3: [] },
 };
 
 let selectedNFT = userNFTs[0].url;
@@ -92,13 +93,63 @@ function copyReferralLink() {
   alert('Link copied!');
 }
 
+// Show Mining Popup
+function showMiningPopup(url) {
+  const nft = userNFTs.find(n => n.url === url) || userNFTs[0];
+  document.getElementById('popup-nft-image').setAttribute('data-src', nft.url);
+  document.getElementById('popup-nft-name').textContent = nft.name;
+  document.getElementById('popup-nft-hash').textContent = `Hash Rate: ${nft.hashRate} Hash/s`;
+  document.getElementById('start-mining').onclick = () => startMining(nft.url);
+  document.getElementById('mining-popup').classList.remove('hidden');
+  lazyLoadImages();
+}
+
+// Close Popup
+function closePopup() {
+  document.getElementById('mining-popup').classList.add('hidden');
+}
+
+// Start Mining
+function startMining(url) {
+  if (!userAddress) return alert('Please connect wallet');
+  const nft = userNFTs.find(n => n.url === url) || userNFTs[0];
+  selectedNFT = url;
+  userData.mining = {
+    nft: url,
+    hashRate: nft.hashRate,
+    tokensMined: 0,
+    lastUpdated: new Date().toISOString(),
+    isMining: true,
+  };
+  document.getElementById('mining-button').textContent = 'Mining...';
+  document.getElementById('mining-button').classList.add('mining-active');
+  closePopup();
+  showSection('mining');
+  loadMiningStats();
+}
+
+// Claim Mining Rewards
+function claimMining() {
+  if (!userData.mining.isMining) return alert('Mining not started');
+  const elapsed = (Date.now() - new Date(userData.mining.lastUpdated)) / 1000;
+  if (elapsed < 12 * 60 * 60) return alert('You can claim every 12 hours');
+  const tokensMined = userData.mining.hashRate * elapsed * 0.0001;
+  userData.mining.tokensMined += tokensMined;
+  userData.balance += tokensMined;
+  userData.mining.isMining = false;
+  userData.mining.lastUpdated = null;
+  document.getElementById('mining-button').textContent = 'Start Mining';
+  document.getElementById('mining-button').classList.remove('mining-active');
+  loadMiningStats();
+  loadHomeData();
+  loadLeaderboards();
+}
+
 // Select NFT
 function selectNFT(url) {
-  if (!userAddress) return;
-  selectedNFT = url;
-  const nft = userNFTs.find(n => n.url === url) || userNFTs[0];
-  userData.mining = { nft: url, hashRate: nft.hashRate, tokensMined: userData.mining.tokensMined, lastUpdated: new Date().toISOString() };
-  showSection('mining');
+  if (!userAddress) return alert('Please connect wallet');
+  if (!userData.nfts.includes(url)) return alert('You don\'t own this NFT');
+  showMiningPopup(url);
 }
 
 // Buy/Claim NFT
@@ -106,13 +157,14 @@ function buyNFT(url) {
   if (!userAddress) return alert('Please connect wallet');
   const nft = userNFTs.find(n => n.url === url);
   if (userData.nfts.includes(url)) return alert('NFT already owned');
-  if (nft.name.includes('Free')) {
+  if (nft.price === 0) {
     userData.nfts.push(url);
     alert('NFT claimed!');
   } else {
-    alert('Buy functionality coming soon!');
+    alert(`Buy ${nft.name} for ${nft.price} TON coming soon!`);
   }
   loadNFTList();
+  loadHomeData();
 }
 
 // Complete Task
@@ -125,6 +177,15 @@ function completeTask(taskId) {
   userData.balance += task.reward;
   loadTasks();
   loadHomeData();
+}
+
+// Add Referral
+function addReferral() {
+  if (!userAddress) return alert('Please connect wallet');
+  const level = Math.floor(Math.random() * 3) + 1;
+  const hashRate = level === 1 ? userData.mining.hashRate * 0.10 : level === 2 ? userData.mining.hashRate * 0.05 : userData.mining.hashRate * 0.02;
+  userData.referrals[`level${level}`].push({ wallet: `0x${Math.random().toString(16).slice(2, 6)}...${Math.random().toString(16).slice(2, 6)}`, hashRate });
+  loadReferralData();
 }
 
 // Load Home Data
@@ -140,7 +201,7 @@ function loadHomeData() {
   document.getElementById('user-balance').innerHTML = `${userData.balance.toFixed(2)} <span class="text-yellow-300">NAI</span>`;
   document.getElementById('nft-preview').innerHTML = userData.nfts.slice(0, 2).map(url => {
     const nft = userNFTs.find(n => n.url === url);
-    return `<li class="flex justify-between">${nft.icon} ${nft.name} - <span>${nft.name.includes('Free') ? 'Free' : nft.name.split('-')[1]}</span></li>`;
+    return `<li class="flex justify-between">${nft.icon} ${nft.name} - <span>${nft.price === 0 ? 'Free' : `${nft.price} TON`}</span></li>`;
   }).join('');
   document.getElementById('task-preview').innerHTML = tasks.map(task => `
     <li>${task.icon} ${task.name} - <span class="text-green-400">+${task.reward} NAI</span></li>
@@ -169,10 +230,21 @@ function loadReferralData() {
   document.getElementById('referral-link').value = referralLink;
   const referralStats = `
     <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-      <span class="font-semibold">Total Referrals</span>
-      <span>5</span>
-      <span>50.00 NAI</span>
+      <span class="font-semibold">Level 1 (10%)</span>
+      <span>${userData.referrals.level1.length}</span>
+      <span>${userData.referrals.level1.reduce((sum, r) => sum + r.hashRate, 0).toFixed(2)} Hash/s</span>
     </div>
+    <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+      <span class="font-semibold">Level 2 (5%)</span>
+      <span>${userData.referrals.level2.length}</span>
+      <span>${userData.referrals.level2.reduce((sum, r) => sum + r.hashRate, 0).toFixed(2)} Hash/s</span>
+    </div>
+    <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
+      <span class="font-semibold">Level 3 (2%)</span>
+      <span>${userData.referrals.level3.length}</span>
+      <span>${userData.referrals.level3.reduce((sum, r) => sum + r.hashRate, 0).toFixed(2)} Hash/s</span>
+    </div>
+    <button onclick="addReferral()" class="mt-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Add Mock Referral</button>
   `;
   document.getElementById('referral-stats').innerHTML = referralStats;
   cacheData('referralData', { link: referralLink, stats: referralStats });
@@ -193,6 +265,7 @@ function loadNFTList() {
         <img data-src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
         <div class="flex-1">
           <span class="text-sm font-semibold">${nft.icon} ${nft.name}</span>
+          <p class="text-sm text-gray-300">Hash Rate: ${nft.hashRate} Hash/s</p>
         </div>
       </div>
     `;
@@ -202,8 +275,9 @@ function loadNFTList() {
       <img data-src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
       <div class="flex-1">
         <span class="text-sm font-semibold">${nft.icon} ${nft.name}</span>
+        <p class="text-sm text-gray-300">Hash Rate: ${nft.hashRate} Hash/s</p>
       </div>
-      <button onclick="buyNFT('${nft.url}')" class="bg-${nft.name.includes('Free') ? 'blue-500' : 'yellow-500'} text-${nft.name.includes('Free') ? 'white' : 'black'} px-3 py-1 rounded hover:bg-${nft.name.includes('Free') ? 'blue-600' : 'yellow-600'} transition">${nft.name.includes('Free') ? 'Claim' : 'Buy'}</button>
+      <button onclick="buyNFT('${nft.url}')" class="bg-${nft.price === 0 ? 'blue-500' : 'yellow-500'} text-${nft.price === 0 ? 'white' : 'black'} px-3 py-1 rounded hover:bg-${nft.price === 0 ? 'blue-600' : 'yellow-600'} transition">${nft.price === 0 ? 'Claim' : 'Buy'}</button>
     </div>
   `).join('');
   document.getElementById('nft-list').innerHTML = nftList;
@@ -219,15 +293,22 @@ function loadMiningStats() {
     document.getElementById('user-balance').innerHTML = cachedMining.balance;
     return;
   }
-  const elapsed = (Date.now() - new Date(userData.mining.lastUpdated)) / 1000;
-  const tokensMined = userData.mining.hashRate * elapsed * 0.0001;
-  userData.mining.tokensMined += tokensMined;
-  userData.mining.lastUpdated = new Date().toISOString();
-  userData.balance += tokensMined;
-  const miningInfo = `
-    <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong>${userData.mining.hashRate} Hash/s</strong></p>
-    <p class="text-sm text-gray-100">Total Mined: <strong>${userData.mining.tokensMined.toFixed(2)} NAI</strong></p>
-  `;
+  let miningInfo;
+  if (userData.mining.isMining) {
+    const elapsed = (Date.now() - new Date(userData.mining.lastUpdated)) / 1000;
+    const tokensMined = userData.mining.hashRate * elapsed * 0.0001;
+    userData.mining.tokensMined = tokensMined;
+    miningInfo = `
+      <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong>${userData.mining.hashRate} Hash/s</strong></p>
+      <p class="text-sm text-gray-100">Total Mined: <strong>${userData.mining.tokensMined.toFixed(2)} NAI</strong></p>
+      <button onclick="claimMining()" class="mt-2 bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-full font-bold text-black transition">Claim Rewards</button>
+    `;
+  } else {
+    miningInfo = `
+      <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong>0 Hash/s</strong></p>
+      <p class="text-sm text-gray-100">Total Mined: <strong>0 NAI</strong></p>
+    `;
+  }
   document.getElementById('mining-info').innerHTML = miningInfo;
   document.getElementById('user-balance').innerHTML = `${userData.balance.toFixed(2)} <span class="text-yellow-300">NAI</span>`;
   cacheData('miningData', { info: miningInfo, balance: document.getElementById('user-balance').innerHTML });
@@ -301,7 +382,7 @@ document.getElementById('connect-wallet').addEventListener('click', async () => 
       loadTasks();
       loadLeaderboards();
       loadMiningStats();
-      setInterval(loadLeaderboards, 10 * 60 * 1000);
+      setInterval(loadLeaderboards, 7 * 24 * 60 * 60 * 1000); // Weekly leaderboard update
     }
   } catch (error) {
     console.error('Wallet connection failed:', error);
@@ -316,6 +397,10 @@ if (userAddress) {
   document.getElementById('connect-wallet').textContent = 'Connected';
   document.getElementById('connect-wallet').classList.add('bg-green-500', 'hover:bg-green-600');
   document.getElementById('connect-wallet').classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-500', 'hover:from-blue-600', 'hover:to-purple-600');
+  if (userData.mining.isMining) {
+    document.getElementById('mining-button').textContent = 'Mining...';
+    document.getElementById('mining-button').classList.add('mining-active');
+  }
   loadHomeData();
   loadReferralData();
   loadNFTList();
