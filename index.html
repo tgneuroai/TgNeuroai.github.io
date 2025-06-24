@@ -125,7 +125,7 @@
 
     <!-- HOME SECTION -->
     <div id="home" class="section space-y-6">
-      <h2 class="text-xl font-semibold">🏠 Dashboard</h2>
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcb1e.png" alt="Dashboard" class="inline w-5 h-5 mr-1" />Dashboard</h2>
 
       <!-- Mining Card Preview -->
       <div class="bg-gray-800 p-4 rounded-xl text-center shadow relative overflow-hidden"
@@ -137,7 +137,7 @@
 
       <!-- NFT Preview -->
       <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2">🎁 NFTs</h3>
+        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTXcZL7.png" alt="NFTs" class="inline w-5 h-5 mr-1" />NFTs</h3>
         <ul class="space-y-1 text-sm">
           <li class="flex justify-between">
             <span>Neon Starter #1 - Free <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
@@ -153,23 +153,31 @@
 
       <!-- Referral Summary -->
       <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2">👥 Referral Bonus</h3>
+        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTXcLI2.png" alt="Referral Bonus" class="inline w-5 h-5 mr-1" />Referral Bonus</h3>
         <p class="text-sm text-gray-400">Earn up to 3 levels bonus</p>
         <button onclick="showSection('referral')" class="mt-2 text-sm text-blue-400 underline">Referral Details</button>
       </div>
 
       <!-- Tasks -->
       <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2">📋 Tasks</h3>
+        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTXcPe4.png" alt="Tasks" class="inline w-5 h-5 mr-1" />Tasks</h3>
         <ul class="text-sm text-gray-300">
-          <li>✅ Join Telegram - +10 NAI</li>
+          <li class="flex justify-between items-center">Join Telegram - <span class="text-green-400">+10 NAI</span>
+            <button id="task-telegram" onclick="completeTask('telegram', 'https://t.me/neuroai')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          </li>
+          <li class="flex justify-between items-center">Follow Twitter - <span class="text-green-400">+5 NAI</span>
+            <button id="task-twitter" onclick="completeTask('twitter', 'https://twitter.com/neuroai')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          </li>
+          <li class="flex justify-between items-center">Share link - <span class="text-green-400">+3 NAI</span>
+            <button id="task-share" onclick="completeTask('share', 'https://t.me/yourapp?ref=you')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          </li>
         </ul>
         <button onclick="showSection('tasks')" class="mt-2 text-sm text-blue-400 underline">View All</button>
       </div>
 
       <!-- Leaderboard -->
       <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2">🏆 Top Miners</h3>
+        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTGpsmg.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top Miners</h3>
         <p>🥇 @user1 - 12,300 NAI</p>
         <button onclick="showSection('leaderboard')" class="mt-2 text-sm text-blue-400 underline">View Full</button>
       </div>
@@ -191,7 +199,7 @@
 
       <!-- NFT Selection Page -->
       <div id="nft-selection" class="section hidden space-y-6">
-        <h2 class="text-xl font-semibold">🎁 Select NFT for Mining</h2>
+        <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcZL7.png" alt="NFTs" class="inline w-5 h-5 mr-1" />Select NFT for Mining</h2>
         <div class="space-y-4">
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdc3x.gif')">
             <img src="https://iili.io/FIkdc3x.gif" alt="Neon Starter #1" class="w-16 h-16 rounded-md border border-purple-500" />
@@ -234,7 +242,7 @@
 
       <!-- NFTs Full -->
       <div>
-        <h2 class="text-lg font-semibold mt-6 mb-2">🎁 Your NFTs</h2>
+        <h2 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTXcZL7.png" alt="NFTs" class="inline w-5 h-5 mr-1" />Your NFTs</h2>
         <div class="space-y-4">
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
             <img src="https://iili.io/FIkdc3x.gif" alt="Neon Starter #1" class="w-16 h-16 rounded-md border border-purple-500" />
@@ -282,7 +290,7 @@
 
     <!-- REFERRAL SECTION -->
     <div id="referral" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold">👥 Referral Program</h2>
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcLI2.png" alt="Referral Program" class="inline w-5 h-5 mr-1" />Referral Program</h2>
       <p class="text-sm text-gray-300">Earn rewards for each level:</p>
       <ul class="mt-2 text-sm text-gray-400 space-y-1">
         <li>🔹 Level 1: 10%</li>
@@ -290,7 +298,7 @@
         <li>🔹 Level 3: 2%</li>
       </ul>
       <input class="mt-3 w-full p-2 bg-gray-700 rounded" readonly value="https://t.me/yourapp?ref=you" />
-      <h3 class="text-lg font-semibold mt-6 mb-2">📊 Referral History</h3>
+      <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTXtEH7.png" alt="Referral History" class="inline w-5 h-5 mr-1" />Referral History</h3>
       <div class="space-y-2">
         <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
           <span class="font-semibold">Level 1</span>
@@ -311,18 +319,27 @@
     </div>
 
     <!-- TASKS SECTION -->
-    <div id="tasks" class="section hidden">
-      <h2 class="text-xl font-semibold">📋 Daily Tasks</h2>
+    <div id="tasks" class="section hidden space-y-6">
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcPe4.png" alt="Tasks" class="inline w-5 h-5 mr-1" />Daily Tasks</h2>
       <ul class="mt-2 space-y-3">
-        <li class="bg-gray-800 p-3 rounded-lg">✅ Join Telegram - <span class="text-green-400">+10 NAI</span></li>
-        <li class="bg-gray-800 p-3 rounded-lg">✅ Follow Twitter - <span class="text-green-400">+5 NAI</span></li>
-        <li class="bg-gray-800 p-3 rounded-lg">✅ Share link - <span class="text-green-400">+3 NAI</span></li>
+        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+          <span>Join Telegram - <span class="text-green-400">+10 NAI</span></span>
+          <button id="task-telegram" onclick="completeTask('telegram', 'https://t.me/neuroai')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+        </li>
+        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+          <span>Follow Twitter - <span class="text-green-400">+5 NAI</span></span>
+          <button id="task-twitter" onclick="completeTask('twitter', 'https://twitter.com/neuroai')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+        </li>
+        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
+          <span>Share link - <span class="text-green-400">+3 NAI</span></span>
+          <button id="task-share" onclick="completeTask('share', 'https://t.me/yourapp?ref=you')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+        </li>
       </ul>
     </div>
 
     <!-- LEADERBOARD SECTION -->
     <div id="leaderboard" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold">🏆 Top 50 Users</h2>
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTGpsmg.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top 50 Users</h2>
       <ol class="mt-2 space-y-2 text-sm">
         <li class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
           🥇 @user1 - 12,300 NAI
@@ -395,6 +412,36 @@
       { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime #5 - 109 TON', hashRate: 99 }
     ];
     let selectedNFT = userNFTs[0].url; // Default to first NFT
+
+    // Task status tracking
+    let taskStatus = {
+      telegram: 'Go',
+      twitter: 'Go',
+      share: 'Go'
+    };
+
+    // Complete Task
+    function completeTask(taskId, link) {
+      const button = document.getElementById(`task-${taskId}`);
+      if (taskStatus[taskId] === 'Done') return; // Task already completed
+      if (taskStatus[taskId] === 'Go') {
+        window.open(link, '_blank');
+        taskStatus[taskId] = 'Check';
+        button.textContent = 'Check';
+        button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+      } else if (taskStatus[taskId] === 'Check') {
+        button.textContent = 'Loading...';
+        button.disabled = true;
+        setTimeout(() => {
+          taskStatus[taskId] = 'Done';
+          button.textContent = 'Done';
+          button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+          button.classList.add('bg-gray-500', 'cursor-not-allowed');
+          button.disabled = true;
+        }, 1000);
+      }
+    }
 
     // Section Switch
     function showSection(id) {
