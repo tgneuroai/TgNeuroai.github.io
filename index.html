@@ -43,10 +43,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEURO AI Mining App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css" />
   <link rel="preload" href="https://iili.io/FIkdc3x.gif" as="image" />
   <script defer src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
-  <script defer type="module" src="firebase.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body class="bg-gray-950 text-white font-sans m-0 overflow-x-hidden">
 
@@ -173,138 +174,5 @@
     </div>
   </div>
 
-  <!-- JavaScript -->
-  <script>
-    let userNFTs = [
-      { url: 'https://iili.io/FIkdc3x.gif', name: 'NFT #1 - Free', icon: '🎖️', hashRate: 15 },
-      { url: 'https://iili.io/FIkdhGa.gif', name: 'NFT #2 - 5 TON', icon: '🥇', hashRate: 20 },
-      { url: 'https://iili.io/FIkdj6J.gif', name: 'NFT #3 - 12 TON', icon: '🥈', hashRate: 25 },
-      { url: 'https://iili.io/FIkdSjt.gif', name: 'NFT #4 - 25 TON', icon: '🥉', hashRate: 30 },
-      { url: 'https://iili.io/FIkdXCg.gif', name: 'NFT #5 - 50 TON', icon: '🏆', hashRate: 50 },
-    ];
-    let selectedNFT = userNFTs[0].url;
-    let userAddress = localStorage.getItem('userAddress') || null;
-
-    // Lazy Load Images
-    function lazyLoadImages() {
-      const images = document.querySelectorAll('img[data-src]');
-      const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.classList.add('loaded');
-            observer.unobserve(img);
-          }
-        });
-      });
-      images.forEach(img => observer.observe(img));
-    }
-
-    // Section Switch
-    async function showSection(id) {
-      ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection'].forEach(section => {
-        document.getElementById(section).classList.add('hidden');
-        const navButton = document.getElementById(`nav-${section}`);
-        if (navButton) navButton.classList.remove('active');
-      });
-      document.getElementById(id).classList.remove('hidden');
-      const navButton = document.getElementById(`nav-${id}`);
-      if (navButton) navButton.classList.add('active');
-      if (id === 'mining') {
-        document.getElementById('mining-card').style.backgroundImage = `url('${selectedNFT}')`;
-        window.loadMiningStats();
-      }
-      if (id === 'referral') window.loadReferralData();
-      if (id === 'nft-selection') window.loadNFTList();
-      if (id === 'tasks') window.loadTasks();
-      if (id === 'leaderboard') window.loadLeaderboards();
-      if (id === 'home') window.loadHomeData();
-      lazyLoadImages();
-    }
-
-    // Copy Referral Link
-    function copyReferralLink() {
-      const link = document.getElementById('referral-link');
-      link.select();
-      document.execCommand('copy');
-      alert('Link copied!');
-    }
-
-    // Select NFT
-    function selectNFT(url) {
-      if (!userAddress) return;
-      selectedNFT = url;
-      window.selectNFT(url);
-      showSection('mining');
-    }
-
-    // Buy/Claim NFT
-    function buyNFT(url) {
-      if (!userAddress) return alert('Please connect wallet');
-      window.buyNFT(url);
-    }
-
-    // Complete Task
-    function completeTask(taskId) {
-      if (!userAddress) return alert('Please connect wallet');
-      window.completeTask(taskId);
-    }
-
-    // TON Connect
-    const tonConnect = new TonConnect({
-      manifestUrl: 'https://tgneuroai.netlify.app/tonconnect-manifest.json',
-    });
-    document.getElementById('connect-wallet').addEventListener('click', async () => {
-      try {
-        await tonConnect.connect({
-          jsons: [
-            { name: 'tonkeeper', url: 'https://app.tonkeeper.com/ton-connect' },
-            { name: 'mytonwallet', url: 'https://mytonwallet.io/ton-connect' },
-          ],
-        });
-        const walletInfo = await tonConnect.getWallet();
-        if (walletInfo) {
-          userAddress = walletInfo.account.address;
-          localStorage.setItem('userAddress', userAddress);
-          document.getElementById('wallet-address').classList.remove('hidden');
-          document.getElementById('address-text').textContent = `${userAddress.slice(0, 4)}...${userAddress.slice(-4)}`;
-          document.getElementById('connect-wallet').textContent = 'Connected';
-          document.getElementById('connect-wallet').classList.add('bg-green-500', 'hover:bg-green-600');
-          document.getElementById('connect-wallet').classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-500', 'hover:from-blue-600', 'hover:to-purple-600');
-          await Promise.all([
-            window.loadHomeData(),
-            window.loadReferralData(),
-            window.loadNFTList(),
-            window.loadTasks(),
-            window.loadLeaderboards(),
-            window.loadMiningStats(),
-          ]);
-          setInterval(window.loadLeaderboards, 10 * 60 * 1000);
-        }
-      } catch (error) {
-        console.error('Wallet connection failed:', error);
-        alert('Failed to connect wallet. Please try again.');
-      }
-    });
-
-    // Initial Load
-    if (userAddress) {
-      document.getElementById('wallet-address').classList.remove('hidden');
-      document.getElementById('address-text').textContent = `${userAddress.slice(0, 4)}...${userAddress.slice(-4)}`;
-      document.getElementById('connect-wallet').textContent = 'Connected';
-      document.getElementById('connect-wallet').classList.add('bg-green-500', 'hover:bg-green-600');
-      document.getElementById('connect-wallet').classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-500', 'hover:from-blue-600', 'hover:to-purple-600');
-      Promise.all([
-        window.loadHomeData(),
-        window.loadReferralData(),
-        window.loadNFTList(),
-        window.loadTasks(),
-        window.loadLeaderboards(),
-        window.loadMiningStats(),
-      ]);
-    }
-    showSection('home');
-  </script>
 </body>
 </html>
