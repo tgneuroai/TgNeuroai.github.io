@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEURO AI </title>
+  <title>NEURO AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     /* Animated gradient border for NFTs and Referral Cards */
     .nft-card, .referral-card {
@@ -45,16 +45,16 @@
 </head>
 <body class="bg-gray-950 text-white font-sans m-0 overflow-x-hidden">
 
-  <!-- Wallet / Header Card -->
+  <!-- Header Card -->
   <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-b-3xl shadow-lg text-center">
     <div class="flex items-center justify-center space-x-3">
-      <img src="https://iili.io/FIv1vKF.png" alt="NAI Logo" class="w-10 h-10 rounded-full" />
+      <img src="https://iili.io/FuJkzpR.png" alt="NAI Logo" class="w-10 h-10 rounded-full" />
       <h1 class="text-2xl font-bold tracking-wide">NEURO AI</h1>
     </div>
     <p class="mt-2 text-sm text-gray-200">Balance:</p>
     <h2 class="text-3xl font-bold">12,345.67 <span class="text-yellow-300">NAI</span></h2>
-    <p id="wallet-address" class="mt-2 text-sm text-gray-300 hidden">Wallet: <span id="address-text">Not Connected</span></p>
-    <button id="connect-wallet" class="mt-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Wallet</button>
+    <p id="telegram-id" class="mt-2 text-sm text-gray-300 hidden">Telegram: <span id="telegram-username">Not Connected</span></p>
+    <button id="connect-telegram" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Telegram</button>
   </div>
 
   <!-- Bottom Navigation -->
@@ -105,7 +105,7 @@
             <span class="text-gray-400 text-xs">22 Hash/s</span>
           </li>
           <li class="flex justify-between">
-            <span>Quantum Spark #2 - 25 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+            <span>Quantum Spark #2 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
             <span class="text-gray-400 text-xs">34 Hash/s</span>
           </li>
         </ul>
@@ -146,58 +146,22 @@
 
     <!-- MINING SECTION -->
     <div id="mining" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjgdBI.png" alt="Referral Bonus" class="inline w-5 h-5 mr-1" />Start Bord</h2>
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjgdBI.png" alt="Start Bord" class="inline w-5 h-5 mr-1" />Start Bord</h2>
       <div id="mining-card" class="relative rounded-xl overflow-hidden text-center shadow-inner"
            style="background-image: url('https://iili.io/FIkdc3x.gif'); background-size: cover; background-position: center;">
         <div class="bg-black bg-opacity-60 p-6">
           <button onclick="showSection('nft-selection')" class="bg-green-500 hover:bg-green-600 transition px-4 py-2 rounded-full text-white font-bold">
             Start Mining
           </button>
-          <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong>22 Hash/s</strong></p>
-          <p class="text-sm text-gray-100">Total Mined: <strong>234.12 NAI</strong></p>
+          <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong id="mining-power">22 Hash/s</strong></p>
+          <p class="text-sm text-gray-100">Total Mined: <strong id="total-mined">234.12 NAI</strong></p>
         </div>
       </div>
 
       <!-- NFT Selection Page -->
       <div id="nft-selection" class="section hidden space-y-6">
         <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcZL7.png" alt="NFTs" class="inline w-5 h-5 mr-1" />Select NFT for Mining</h2>
-        <div class="space-y-4">
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdc3x.gif')">
-            <img src="https://iili.io/FIkdc3x.gif" alt="Neon Starter #1" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Neon Starter #1 - Free <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">22 Hash/s</p>
-            </div>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdhGa.gif')">
-            <img src="https://iili.io/FIkdhGa.gif" alt="Quantum Spark #2" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Quantum Spark #2 - 25 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">34 Hash/s</p>
-            </div>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdj6J.gif')">
-            <img src="https://iili.io/FIkdj6J.gif" alt="Astro Core #3" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Astro Core #3 - 39 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">54 Hash/s</p>
-            </div>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdSjt.gif')">
-            <img src="https://iili.io/FIkdSjt.gif" alt="Cosmic Surge #4" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Cosmic Surge #4 - 49 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">74 Hash/s</p>
-            </div>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow" onclick="selectNFT('https://iili.io/FIkdXCg.gif')">
-            <img src="https://iili.io/FIkdXCg.gif" alt="Galactic Prime #5" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Galactic Prime #5 - 109 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">99 Hash/s</p>
-            </div>
-          </div>
-        </div>
+        <div class="space-y-4" id="nft-selection-list"></div>
         <button onclick="showSection('mining')" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Back to Mining</button>
       </div>
 
@@ -211,39 +175,39 @@
               <span class="text-sm font-semibold">Neon Starter #1 - Free <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">22 Hash/s</p>
             </div>
-            <button class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Claim</button>
+            <button id="claim-nft-0" onclick="claimFreeNFT()" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Claim</button>
           </div>
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
             <img src="https://iili.io/FIkdhGa.gif" alt="Quantum Spark #2" class="w-16 h-16 rounded-md border border-purple-500" />
             <div class="flex-1">
-              <span class="text-sm font-semibold">Quantum Spark #2 - 25 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <span class="text-sm font-semibold">Quantum Spark #2 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">34 Hash/s</p>
             </div>
-            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+            <button id="buy-nft-1" onclick="buyNFT(1, 2500)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">2500 ⭐</button>
           </div>
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
             <img src="https://iili.io/FIkdj6J.gif" alt="Astro Core #3" class="w-16 h-16 rounded-md border border-purple-500" />
             <div class="flex-1">
-              <span class="text-sm font-semibold">Astro Core #3 - 39 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <span class="text-sm font-semibold">Astro Core #3 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">54 Hash/s</p>
             </div>
-            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+            <button id="buy-nft-2" onclick="buyNFT(2, 5000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">5000 ⭐</button>
           </div>
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
             <img src="https://iili.io/FIkdSjt.gif" alt="Cosmic Surge #4" class="w-16 h-16 rounded-md border border-purple-500" />
             <div class="flex-1">
-              <span class="text-sm font-semibold">Cosmic Surge #4 - 49 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <span class="text-sm font-semibold">Cosmic Surge #4 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">74 Hash/s</p>
             </div>
-            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+            <button id="buy-nft-3" onclick="buyNFT(3, 9000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">9000 ⭐</button>
           </div>
           <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
             <img src="https://iili.io/FIkdXCg.gif" alt="Galactic Prime #5" class="w-16 h-16 rounded-md border border-purple-500" />
             <div class="flex-1">
-              <span class="text-sm font-semibold">Galactic Prime #5 - 109 TON <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">99 Hash/s</p>
+              <span class="text-sm font-semibold">Galactic Prime #5 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <p class="text-gray-400 text-xs">148 Hash/s</p>
             </div>
-            <button class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">Buy</button>
+            <button id="buy-nft-4" onclick="buyNFT(4, 25000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">25000 ⭐</button>
           </div>
         </div>
       </div>
@@ -313,8 +277,8 @@
         </li>
         <li class="bg-gray-800 p-3 rounded">4. @user4 - 8,900 NAI</li>
         <li class="bg-gray-800 p-3 rounded">5. @user5 - 8,500 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">6. @user6 - 8,200 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">7. @user7 - 7,900 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">6. user6 - 8,200 NAI</li>
+        <li class="bg-gray-800 p-3 rounded">7. @user8 - 7,900 NAI</li>
         <li class="bg-gray-800 p-3 rounded">8. @user8 - 7,600 NAI</li>
         <li class="bg-gray-800 p-3 rounded">9. @user9 - 7,300 NAI</li>
         <li class="bg-gray-800 p-3 rounded">10. @user10 - 7,000 NAI</li>
@@ -323,56 +287,23 @@
         <li class="bg-gray-800 p-3 rounded">13. @user13 - 6,400 NAI</li>
         <li class="bg-gray-800 p-3 rounded">14. @user14 - 6,200 NAI</li>
         <li class="bg-gray-800 p-3 rounded">15. @user15 - 6,000 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">16. @user16 - 5,800 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">17. @user17 - 5,600 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">18. @user18 - 5,400 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">19. @user19 - 5,200 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">20. @user20 - 5,000 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">21. @user21 - 4,900 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">22. @user22 - 4,800 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">23. @user23 - 4,700 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">24. @user24 - 4,600 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">25. @user25 - 4,500 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">26. @user26 - 4,400 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">27. @user27 - 4,300 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">28. @user28 - 4,200 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">29. @user29 - 4,100 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">30. @user30 - 4,000 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">31. @user31 - 3,900 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">32. @user32 - 3,800 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">33. @user33 - 3,700 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">34. @user34 - 3,600 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">35. @user35 - 3,500 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">36. @user36 - 3,400 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">37. @user37 - 3,300 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">38. @user38 - 3,200 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">39. @user39 - 3,100 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">40. @user40 - 3,000 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">41. @user41 - 2,900 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">42. @user42 - 2,800 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">43. @user43 - 2,700 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">44. @user44 - 2,600 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">45. @user45 - 2,500 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">46. @user46 - 2,400 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">47. @user47 - 2,300 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">48. @user48 - 2,200 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">49. @user49 - 2,100 NAI</li>
-        <li class="bg-gray-800 p-3 rounded">50. @user50 - 2,000 NAI</li>
       </ol>
     </div>
   </div>
 
-  <!-- Section Switch and Wallet Connect Script -->
+  <!-- Script -->
   <script>
-    // User NFT data (replace with backend data in production)
+    // User data
+    let telegramId = localStorage.getItem('telegramId') || '';
     let userNFTs = [
-      { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter #1 - Free', hashRate: 22 },
-      { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark #2 - 25 TON', hashRate: 34 },
-      { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core #3 - 39 TON', hashRate: 54 },
-      { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge #4 - 49 TON', hashRate: 74 },
-      { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime #5 - 109 TON', hashRate: 99 }
+      { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter #1 - Free', hashRate: 22, owned: false },
+      { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark #2', hashRate: 34, owned: false, stars: 2500 },
+      { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core #3', hashRate: 54, owned: false, stars: 5000 },
+      { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge #4', hashRate: 74, owned: false, stars: 9000 },
+      { url: 'https://iili.io/FIkdc3x.png', name: 'Galactic Prime #5', hashRate: 148, owned: false, stars: 25000 }
     ];
-    let selectedNFT = userNFTs[0].url; // Default to first NFT
+    let selectedNFTIndex = 0;
+    let miningData = { power: 22, totalMined: 234.12 };
 
     // Task status tracking
     let taskStatus = {
@@ -384,7 +315,7 @@
     // Complete Task
     function completeTask(taskId, link) {
       const button = document.getElementById(`task-${taskId}`);
-      if (taskStatus[taskId] === 'Done') return; // Task already completed
+      if (taskStatus[taskId] === 'Done') return;
       if (taskStatus[taskId] === 'Go') {
         window.open(link, '_blank');
         taskStatus[taskId] = 'Check';
@@ -414,47 +345,219 @@
       document.getElementById(id).classList.remove('hidden');
       const navButton = document.getElementById(`nav-${id}`);
       if (navButton) navButton.classList.add('active');
-      // Update mining card background
       if (id === 'mining') {
-        document.getElementById('mining-card').style.backgroundImage = `url('${selectedNFT}')`;
+        updateMiningCard();
+        renderNFTSelection();
       }
     }
-    showSection('home');
+
+    // Update Mining Card
+    function updateMiningCard() {
+      document.getElementById('mining-card').style.backgroundImage = `url('${userNFTs[selectedNFTIndex].url}')`;
+      document.getElementById('mining-power').textContent = `${miningData.power} Hash/s`;
+      document.getElementById('total-mined').textContent = `${miningData.totalMined.toFixed(2)} NAI`;
+    }
+
+    // Render NFT Selection
+    function renderNFTSelection() {
+      const nftList = document.getElementById('nft-selection-list');
+      nftList.innerHTML = '';
+      userNFTs.forEach((nft, index) => {
+        if (nft.owned) {
+          const card = document.createElement('div');
+          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
+          card.onclick = () => selectNFT(index);
+          card.innerHTML = `
+            <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
+            </div>
+          `;
+          nftList.appendChild(card);
+        }
+      });
+    }
+
+    // Telegram Connect
+    document.getElementById('connect-telegram').addEventListener('click', async () => {
+      if (telegramId) return; // Already connected
+      try {
+        if (window.TelegramWebAppComponent) {
+          Telegram.WebApp.ready();
+          const user = Telegram.WebApp.initDataUnsafe.user;
+          if (user) {
+            telegramId = `@${user.username || user.id}`;
+            localStorage.setItem('telegramId', telegramId);
+            document.getElementById('telegram-id').classList.remove('hidden');
+            document.getElementById('telegram-username').textContent = telegramId;
+            document.getElementById('connect-telegram').textContent = 'Connected';
+            document.getElementById('connect-telegram').classList.add('bg-green-500', 'hover:bg-green-600');
+            document.getElementById('connect-telegram').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            // Auto-claim first NFT
+            if (!userNFTs[0].owned) {
+              claimFreeNFT(0);
+            }
+            // Fetch mining data
+            await fetchMiningData();
+          } else {
+            alert('Please open this app in the Telegram WebApp.');
+          }
+        } else {
+          alert('Telegram WebApp not available. Open in Telegram.');
+        }
+      } catch (error) {
+        console.error('Telegram connection failed:', error);
+        alert('Failed to connect Telegram. Please try again.');
+      }
+    });
+
+    // Claim Free NFT
+    async function claimFreeNFT() {
+      if (!telegramId) {
+        alert('Please connect your Telegram account first.');
+        return;
+      }
+      if (userNFTs[0].owned) {
+        alert('Free NFT already claimed!');
+        return;
+      }
+      try {
+        const response = await fetch('https://your-backend.com/api/claim-nft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId, nftIndex: 0 })
+        });
+        const data = await response.json();
+        if (data.success) {
+          userNFTs[0].owned = true;
+          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          document.getElementById('claim-nft-0').textContent = 'Claimed';
+          document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+          document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById('claim-nft-0').disabled = true;
+          alert('Free NFT Claimed!');
+          renderNFTSelection();
+        } else {
+          alert('Failed to claim NFT: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Claim NFT failed:', error);
+        alert('Failed to claim NFT. Please try again.');
+      }
+    }
+
+    // Buy NFT with Stars
+    async function buyNFT(index, stars) {
+      if (!telegramId) {
+        alert('Please connect your Telegram account first.');
+        return;
+      }
+      if (userNFTs[index].owned) {
+        alert('NFT already owned!');
+        return;
+      }
+      try {
+        const response = await fetch('https://your-backend.com/api/buy-nft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId, nftIndex: index, stars, receiver: '@NeuroAIAdmin' })
+        });
+        const data = await response.json();
+        if (data.success) {
+          userNFTs[index].owned = true;
+          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
+          document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+          document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById(`buy-nft-${index}`).disabled = true;
+          alert(`NFT Purchased for ${stars} ⭐!`);
+          renderNFTSelection();
+        } else {
+          alert('Failed to purchase NFT: ' + data.error);
+        }
+      } catch (error) {
+        console.error('Buy NFT failed:', error);
+        alert('Failed to purchase NFT. Please try again.');
+      }
+    }
 
     // Select NFT for Mining
-    function selectNFT(url) {
-      selectedNFT = url;
+    function selectNFT(index) {
+      if (!userNFTs[index].owned) {
+        alert('You do not own this NFT.');
+        return;
+      }
+      selectedNFTIndex = index;
+      miningData.power = userNFTs[index].hashRate;
+      updateMiningData();
       showSection('mining');
     }
 
-    // TON Wallet Connect
-    const tonConnect = new TonConnect({
-      manifestUrl: 'https://your-manifest-url/tonconnect-manifest.json' // Replace with your TON Connect manifest URL
-    });
-
-    document.getElementById('connect-wallet').addEventListener('click', async () => {
+    // Fetch Mining Data
+    async function fetchMiningData() {
+      if (!telegramId) return;
       try {
-        await tonConnect.connect({
-          jsons: [
-            { name: 'tonkeeper', url: 'https://app.tonkeeper.com/ton-connect' },
-            { name: 'mytonwallet', url: 'https://mytonwallet.io/ton-connect' }
-          ]
-        });
-        const walletInfo = await tonConnect.getWallet();
-        if (walletInfo) {
-          const address = walletInfo.account.address;
-          const shortAddress = `${address.slice(0, 4)}...${address.slice(-4)}`;
-          document.getElementById('wallet-address').classList.remove('hidden');
-          document.getElementById('address-text').textContent = shortAddress;
-          document.getElementById('connect-wallet').textContent = 'Connected';
-          document.getElementById('connect-wallet').classList.add('bg-green-500', 'hover:bg-green-600');
-          document.getElementById('connect-wallet').classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-purple-500', 'hover:from-blue-600', 'hover:to-purple-600');
+        const response = await fetch(`https://your-backend.com/api/mining-data?telegramId=${telegramId}`);
+        const data = await response.json();
+        if (data.success) {
+          miningData = data.miningData || { power: 22, totalMined: 234.12 };
+          localStorage.setItem('miningData', JSON.stringify(miningData));
+          updateMiningCard();
         }
       } catch (error) {
-        console.error('Wallet connection failed:', error);
-        alert('Failed to connect wallet. Please try again.');
+        console.error('Fetch mining data failed:', error);
       }
-    });
+    }
+
+    // Update Mining Data
+    async function updateMiningData() {
+      if (!telegramId) return;
+      try {
+        await fetch('https://your-backend.com/api/update-mining', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramId, miningData })
+        });
+        localStorage.setItem('miningData', JSON.stringify(miningData));
+        updateMiningCard();
+      } catch (error) {
+        console.error('Update mining data failed:', error);
+      }
+    }
+
+    // Initialize
+    window.onload = () => {
+      const savedNFTs = localStorage.getItem('userNFTs');
+      if (savedNFTs) userNFTs = JSON.parse(savedNFTs);
+      const savedMiningData = localStorage.getItem('miningData');
+      if (savedMiningData) miningData = JSON.parse(savedMiningData);
+      if (telegramId) {
+        document.getElementById('telegram-id').classList.remove('hidden');
+        document.getElementById('telegram-username').textContent = telegramId;
+        document.getElementById('connect-telegram').textContent = 'Connected';
+        document.getElementById('connect-telegram').classList.add('bg-green-500', 'hover:bg-green-600');
+        document.getElementById('connect-telegram').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        fetchMiningData();
+      }
+      userNFTs.forEach((nft, index) => {
+        if (nft.owned) {
+          if (index === 0) {
+            document.getElementById('claim-nft-0').textContent = 'Claimed';
+            document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
+            document.getElementById('claim-nft-0').disabled = true;
+          } else {
+            document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
+            document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+            document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
+            document.getElementById(`buy-nft-${index}`).disabled = true;
+          }
+        }
+      });
+      renderNFTSelection();
+      showSection('home');
+    };
   </script>
 </body>
 </html>
