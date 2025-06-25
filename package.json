@@ -1,0 +1,18 @@
+{
+       "name": "neuroai-backend",
+       "version": "1.0.0",
+       "description": "Backend for NeuroAI project",
+       "main": "index.js",
+       "scripts": {
+         "start": "node index.js",
+         "test": "echo \"Error: no test specified\" && exit 1"
+       },
+       "keywords": ["neuroai", "telegram", "backend"],
+       "author": "Ariful360",
+       "license": "ISC",
+       "dependencies": {
+         "dotenv": "^16.4.5",
+         "express": "^4.17.1",
+         "node-telegram-bot-api": "^0.66.0"
+       }
+     }
