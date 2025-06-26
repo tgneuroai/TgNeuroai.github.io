@@ -1,16 +1,4 @@
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCJbHkhvgfbM1Hymh23jIePb9c-BbZz4_Y",
-  authDomain: "neuroai-114fa.firebaseapp.com",
-  projectId: "neuroai-114fa",
-  storageBucket: "neuroai-114fa.firebasestorage.app",
-  messagingSenderId: "483447356004",
-  appId: "1:483447356004:web:3f48e762738adaad47bd71"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
 
 // User data
 let telegramId = localStorage.getItem('telegramId') || '';
@@ -34,59 +22,64 @@ let taskStatus = {
   share: 'Go'
 };
 
-// Hide loading animation after 3 seconds
+// Hide loading animation after 1 second
 window.onload = async () => {
   setTimeout(() => {
     document.getElementById('loading-container').style.display = 'none';
     document.getElementById('content').style.display = 'block';
-  }, 3000);
+  }, 1000); // Reduced from 3s to 1s for faster loading
 
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  const savedTaskStatus = localStorage.getItem('taskStatus');
-  if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
-  if (telegramId) {
-    await fetchUserData();
-    document.getElementById('profile-username').textContent = telegramId;
-    document.getElementById('connect-telegram').classList.add('hidden');
-    document.getElementById('logout-button').classList.remove('hidden');
-    document.getElementById('referral-link').value = `https://t.me/NeuroAIBot?start=${telegramId.replace('@', '')}`;
-    updateTokenBalance();
-    renderNFTWallet();
-    renderReferralHistory();
-    await updateLeaderboard();
-  }
-  userData.nfts.forEach((nft, index) => {
-    if (nft.owned) {
-      if (index === 0) {
-        document.getElementById('claim-nft-0').textContent = 'Claimed';
-        document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
-        document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
-        document.getElementById('claim-nft-0').disabled = true;
-      } else {
-        document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
-        document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-        document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
-        document.getElementById(`buy-nft-${index}`).disabled = true;
+  try {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    const savedTaskStatus = localStorage.getItem('taskStatus');
+    if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
+    if (telegramId) {
+      await fetchUserData();
+      document.getElementById('profile-username').textContent = telegramId;
+      document.getElementById('connect-telegram').classList.add('hidden');
+      document.getElementById('logout-button').classList.remove('hidden');
+      document.getElementById('referral-link').value = `https://t.me/NeuroAIBot?start=${telegramId.replace('@', '')}`;
+      updateTokenBalance();
+      renderNFTWallet();
+      renderReferralHistory();
+      await updateLeaderboard();
+    }
+    userData.nfts.forEach((nft, index) => {
+      if (nft.owned) {
+        if (index === 0) {
+          document.getElementById('claim-nft-0').textContent = 'Claimed';
+          document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+          document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById('claim-nft-0').disabled = true;
+        } else {
+          document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
+          document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+          document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById(`buy-nft-${index}`).disabled = true;
+        }
       }
-    }
-  });
-  Object.keys(taskStatus).forEach(taskId => {
-    if (taskStatus[taskId] === 'Done') {
-      const button = document.getElementById(`task-${taskId}`);
-      button.textContent = 'Done';
-      button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-      button.classList.add('bg-gray-500', 'cursor-not-allowed');
-      button.disabled = true;
-    } else if (taskStatus[taskId] === 'Check') {
-      const button = document.getElementById(`task-${taskId}`);
-      button.textContent = 'Check';
-      button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-      button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-    }
-  });
-  renderNFTSelection();
-  showSection('home');
+    });
+    Object.keys(taskStatus).forEach(taskId => {
+      if (taskStatus[taskId] === 'Done') {
+        const button = document.getElementById(`task-${taskId}`);
+        button.textContent = 'Done';
+        button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+        button.classList.add('bg-gray-500', 'cursor-not-allowed');
+        button.disabled = true;
+      } else if (taskStatus[taskId] === 'Check') {
+        const button = document.getElementById(`task-${taskId}`);
+        button.textContent = 'Check';
+        button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+      }
+    });
+    renderNFTSelection();
+    showSection('home');
+  } catch (error) {
+    console.error("Initialization failed:", error);
+    alert("Failed to initialize app. Please check console for details.");
+  }
 };
 
 // Toggle Profile Modal
@@ -105,7 +98,7 @@ function logout() {
     telegramId = '';
     localStorage.removeItem('telegramId');
     document.getElementById('profile-username').textContent = 'Not Connected';
-    document.getElementById('connect-telegram').classList.remove('hidden');
+    document.getElementById('connect-telegram').classList.add('hidden');
     document.getElementById('logout-button').classList.add('hidden');
     document.getElementById('profile-container').classList.add('hidden');
     document.getElementById('referral-link').value = 'https://t.me/NeuroAIBot?start=you';
@@ -137,7 +130,7 @@ function renderNFTWallet() {
       const card = document.createElement('div');
       card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4';
       card.innerHTML = `
-        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
+        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy" />
         <div class="flex-1">
           <span class="text-sm font-semibold">${nft.name}</span>
           <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
@@ -173,44 +166,55 @@ function renderReferralHistory() {
 
 // Update Leaderboard
 async function updateLeaderboard() {
+  if (!window.firebaseDB) return;
   try {
-    const leaderboardList = document.getElementById('leaderboard-list');
-    leaderboardList.innerHTML = '';
-    const usersSnapshot = await db.collection('users').orderBy('tokenBalance', 'desc').limit(50).get();
-    let rank = 1;
-    let userRank = 'N/A';
-    usersSnapshot.forEach(doc => {
-      const user = doc.data();
-      const li = document.createElement('li');
-      li.className = rank <= 3 ? 'bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50' : 'bg-gray-800 p-3 rounded';
-      li.innerHTML = `${rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank + '.'} ${user.telegramId} - ${user.tokenBalance.toFixed(2)} NAI`;
-      leaderboardList.appendChild(li);
-      if (user.telegramId === telegramId) {
-        userRank = rank;
-        document.getElementById('user-rank').textContent = rank;
-        document.getElementById('leaderboard-user-rank').textContent = rank;
-        document.getElementById('leaderboard-user-balance').textContent = user.tokenBalance.toFixed(2);
-        document.getElementById('user-rank-section').classList.remove('hidden');
+    const dbRef = ref(window.firebaseDB, 'users');
+    onValue(dbRef, (snapshot) => {
+      const users = [];
+      snapshot.forEach((childSnapshot) => {
+        users.push({ id: childSnapshot.key, ...childSnapshot.val() });
+      });
+      users.sort((a, b) => b.tokenBalance - a.tokenBalance);
+      const leaderboardList = document.getElementById('leaderboard-list');
+      leaderboardList.innerHTML = '';
+      let rank = 1;
+      let userRank = 'N/A';
+      users.slice(0, 50).forEach(user => {
+        const li = document.createElement('li');
+        li.className = rank <= 3 ? 'bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50' : 'bg-gray-800 p-3 rounded';
+        li.innerHTML = `${rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank + '.'} ${user.telegramId} - ${user.tokenBalance.toFixed(2)} NAI`;
+        leaderboardList.appendChild(li);
+        if (user.telegramId === telegramId) {
+          userRank = rank;
+          document.getElementById('user-rank').textContent = rank;
+          document.getElementById('leaderboard-user-rank').textContent = rank;
+          document.getElementById('leaderboard-user-balance').textContent = user.tokenBalance.toFixed(2);
+          document.getElementById('user-rank-section').classList.remove('hidden');
+        }
+        rank++;
+      });
+      if (userRank === 'N/A') {
+        document.getElementById('user-rank').textContent = 'N/A';
+        document.getElementById('leaderboard-user-rank').textContent = 'N/A';
+        document.getElementById('leaderboard-user-balance').textContent = '0';
       }
-      rank++;
+    }, {
+      onlyOnce: false // Realtime updates
     });
-    if (userRank === 'N/A') {
-      document.getElementById('user-rank').textContent = 'N/A';
-      document.getElementById('leaderboard-user-rank').textContent = 'N/A';
-      document.getElementById('leaderboard-user-balance').textContent = '0';
-    }
   } catch (error) {
     console.error('Leaderboard update failed:', error);
+    alert('Failed to load leaderboard. Please try again.');
   }
 }
 
-// Fetch User Data from Firebase
+// Fetch User Data from Realtime Database
 async function fetchUserData() {
-  if (!telegramId) return;
+  if (!telegramId || !window.firebaseDB) return;
   try {
-    const userDoc = await db.collection('users').doc(telegramId).get();
-    if (userDoc.exists) {
-      userData = userDoc.data();
+    const userRef = ref(window.firebaseDB, 'users/' + telegramId);
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      userData = snapshot.val();
       userData.miningData = userData.miningData || { power: 22, totalMined: 234.12 };
       userData.referrals = userData.referrals || { level1: [], level2: [], level3: [] };
       updateTokenBalance();
@@ -229,20 +233,23 @@ async function fetchUserData() {
         miningData: { power: 22, totalMined: 234.12 },
         referrals: { level1: [], level2: [], level3: [] }
       };
-      await db.collection('users').doc(telegramId).set(userData);
+      await set(userRef, userData);
     }
   } catch (error) {
     console.error('Fetch user data failed:', error);
+    alert('Failed to fetch user data. Please try again.');
   }
 }
 
-// Save User Data to Firebase
+// Save User Data to Realtime Database
 async function saveUserData() {
-  if (!telegramId) return;
+  if (!telegramId || !window.firebaseDB) return;
   try {
-    await db.collection('users').doc(telegramId).set(userData);
+    const userRef = ref(window.firebaseDB, 'users/' + telegramId);
+    await set(userRef, userData);
   } catch (error) {
     console.error('Save user data failed:', error);
+    alert('Failed to save user data. Please try again.');
   }
 }
 
@@ -350,9 +357,9 @@ function renderNFTSelection() {
       card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
       card.onclick = () => selectNFT(index);
       card.innerHTML = `
-        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
+        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy" />
         <div class="flex-1">
-          <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+          <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" loading="lazy" /></span>
           <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
         </div>
       `;
@@ -436,37 +443,37 @@ async function selectNFT(index) {
 
 // Add Referral
 async function addReferral(referrerId, referredId) {
+  if (!window.firebaseDB) return;
   try {
-    const referrerDoc = await db.collection('users').doc(referrerId).get();
-    if (referrerDoc.exists) {
-      const referrerData = referrerDoc.data();
+    const referrerRef = ref(window.firebaseDB, 'users/' + referrerId);
+    const referrerSnapshot = await get(referrerRef);
+    if (referrerSnapshot.exists()) {
+      const referrerData = referrerSnapshot.val();
       referrerData.referrals = referrerData.referrals || { level1: [], level2: [], level3: [] };
       if (!referrerData.referrals.level1.includes(referredId)) {
         referrerData.referrals.level1.push({ telegramId: referredId, hashRate: 100 });
         referrerData.tokenBalance += 100 * 0.1; // 10% commission for Level 1
-        await db.collection('users').doc(referrerId).set(referrerData);
+        await set(referrerRef, referrerData);
         // Update Level 2 and Level 3
-        const parentReferrerDoc = await db.collection('users').doc(referrerId).get();
-        if (parentReferrerDoc.exists) {
-          const parentData = parentReferrerDoc.data();
-          if (parentData.referrer) {
-            const parentReferrer = parentData.referrer;
-            const parentDoc = await db.collection('users').doc(parentReferrer).get();
-            if (parentDoc.exists) {
-              const parent = parentDoc.data();
-              parent.referrals.level2 = parent.referrals.level2 || [];
-              parent.referrals.level2.push({ telegramId: referredId, hashRate: 50 });
-              parent.tokenBalance += 50 * 0.05; // 5% commission for Level 2
-              await db.collection('users').doc(parentReferrer).set(parent);
-              // Level 3
-              const grandParentDoc = await db.collection('users').doc(parentReferrer).get();
-              if (grandParentDoc.exists && grandParentDoc.data().referrer) {
-                const grandParentReferrer = grandParentDoc.data().referrer;
-                const grandParent = (await db.collection('users').doc(grandParentReferrer).get()).data();
+        if (referrerData.referrer) {
+          const parentRef = ref(window.firebaseDB, 'users/' + referrerData.referrer);
+          const parentSnapshot = await get(parentRef);
+          if (parentSnapshot.exists()) {
+            const parent = parentSnapshot.val();
+            parent.referrals.level2 = parent.referrals.level2 || [];
+            parent.referrals.level2.push({ telegramId: referredId, hashRate: 50 });
+            parent.tokenBalance += 50 * 0.05; // 5% commission for Level 2
+            await set(parentRef, parent);
+            // Level 3
+            if (parent.referrer) {
+              const grandParentRef = ref(window.firebaseDB, 'users/' + parent.referrer);
+              const grandParentSnapshot = await get(grandParentRef);
+              if (grandParentSnapshot.exists()) {
+                const grandParent = grandParentSnapshot.val();
                 grandParent.referrals.level3 = grandParent.referrals.level3 || [];
                 grandParent.referrals.level3.push({ telegramId: referredId, hashRate: 20 });
                 grandParent.tokenBalance += 20 * 0.02; // 2% commission for Level 3
-                await db.collection('users').doc(grandParentReferrer).set(grandParent);
+                await set(grandParentRef, grandParent);
               }
             }
           }
@@ -475,6 +482,7 @@ async function addReferral(referrerId, referredId) {
     }
   } catch (error) {
     console.error('Add referral failed:', error);
+    alert('Failed to add referral. Please try again.');
   }
 }
 
