@@ -134,18 +134,26 @@
   <!-- Header Card -->
   <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-b-3xl shadow-lg text-center">
     <div class="flex items-center justify-center space-x-3">
-      <img src="https://iili.io/FuJkzpR.png" alt="NAI Logo" class="w-10 h-10 rounded-full" />
+      <img id="profile-logo" src="https://iili.io/FuJkzpR.png" alt="NAI Logo" class="w-10 h-10 rounded-full cursor-pointer" />
       <h1 class="text-2xl font-bold tracking-wide">NEURO AI</h1>
     </div>
     <p class="mt-2 text-sm text-gray-200">Balance:</p>
     <h2 class="text-3xl font-bold">12,345.67 <span class="text-yellow-300">NAI</span></h2>
-    <p id="telegram-id" class="mt-2 text-sm text-gray-300 hidden">Telegram: <span id="telegram-username">Not Connected</span></p>
     <button id="connect-telegram" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Telegram</button>
+  </div>
+
+  <!-- Profile Section -->
+  <div id="profile" class="section hidden space-y-6 p-4">
+    <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK8lt.png" alt="Profile" class="inline w-5 h-5 mr-1" />Profile</h2>
+    <div id="telegram-id" class="text-sm text-gray-300 hidden">Telegram: <span id="telegram-username">Not Connected</span></div>
+    <button id="logout-button" onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full font-bold text-white transition hidden">Logout</button>
+    <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjK8lt.png" alt="NFT Wallet" class="inline w-5 h-5 mr-1" />NFT Wallet</h3>
+    <div id="nft-wallet" class="space-y-4"></div>
   </div>
 
   <!-- Bottom Navigation -->
   <div class="fixed bottom-0 w-full bg-white flex justify-around py-4 border-t border-gray-300 z-50 text-xs rounded-t-xl">
-    <button onclick="showSection('home')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-home">
+    <button onclick="showSection('home')" class="nav-button flex flex-col items-center transition text-gray-900 active" id="nav-home">
       <img src="https://iili.io/FTGpikF.png" class="w-8 h-8 mb-1" />
       <span class="font-semibold uppercase">Home</span>
     </button>
@@ -393,7 +401,7 @@
       share: 'Go'
     };
 
-    // Hide loading animation after 3 seconds
+    // Hide loading animation and initialize
     window.onload = () => {
       setTimeout(() => {
         document.getElementById('loading-container').style.display = 'none';
@@ -409,11 +417,8 @@
       const savedTaskStatus = localStorage.getItem('taskStatus');
       if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
       if (telegramId) {
-        document.getElementById('telegram-id').classList.remove('hidden');
-        document.getElementById('telegram-username').textContent = telegramId;
-        document.getElementById('connect-telegram').textContent = 'Connected';
-        document.getElementById('connect-telegram').classList.add('bg-green-500', 'hover:bg-green-600');
-        document.getElementById('connect-telegram').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+        document.getElementById('connect-telegram').classList.add('hidden');
+        document.getElementById('logout-button').classList.remove('hidden');
         fetchMiningData();
         const userId = telegramId.replace('@', '');
         document.querySelector('#referral input').value = `https://t.me/NeuroAIBot?start=${userId}`;
@@ -448,8 +453,80 @@
         }
       });
       renderNFTSelection();
+      renderNFTWallet();
       showSection('home');
+
+      // Profile logo click to show profile
+      document.getElementById('profile-logo').addEventListener('click', () => {
+        document.getElementById('telegram-id').classList.remove('hidden');
+        document.getElementById('telegram-username').textContent = telegramId || '@ASHIKUR160';
+        showSection('profile');
+      });
     };
+
+    // Logout function
+    function logout() {
+      telegramId = '';
+      localStorage.removeItem('telegramId');
+      localStorage.removeItem('userNFTs');
+      localStorage.removeItem('miningData');
+      localStorage.removeItem('taskStatus');
+      userNFTs = userNFTs.map(nft => ({ ...nft, owned: false }));
+      taskStatus = { telegram: 'Go', twitter: 'Go', share: 'Go' };
+      document.getElementById('telegram-id').classList.add('hidden');
+      document.getElementById('telegram-username').textContent = 'Not Connected';
+      document.getElementById('connect-telegram').classList.remove('hidden');
+      document.getElementById('logout-button').classList.add('hidden');
+      document.getElementById('connect-telegram').textContent = 'Connect Telegram';
+      document.getElementById('connect-telegram').classList.add('bg-blue-500', 'hover:bg-blue-600');
+      document.getElementById('connect-telegram').classList.remove('bg-green-500', 'hover:bg-green-600');
+      userNFTs.forEach((nft, index) => {
+        if (index === 0) {
+          document.getElementById('claim-nft-0').textContent = 'Claim';
+          document.getElementById('claim-nft-0').classList.remove('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById('claim-nft-0').classList.add('bg-blue-500', 'hover:bg-blue-600');
+          document.getElementById('claim-nft-0').disabled = false;
+        } else {
+          document.getElementById(`buy-nft-${index}`).textContent = `${nft.stars} ⭐`;
+          document.getElementById(`buy-nft-${index}`).classList.remove('bg-gray-500', 'cursor-not-allowed');
+          document.getElementById(`buy-nft-${index}`).classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+          document.getElementById(`buy-nft-${index}`).disabled = false;
+        }
+      });
+      Object.keys(taskStatus).forEach(taskId => {
+        const button = document.getElementById(`task-${taskId}`);
+        button.textContent = 'Go';
+        button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+        button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+        button.disabled = false;
+      });
+      renderNFTSelection();
+      renderNFTWallet();
+      showSection('home');
+    }
+
+    // Render NFT Wallet
+    function renderNFTWallet() {
+      const walletList = document.getElementById('nft-wallet');
+      walletList.innerHTML = '';
+      const ownedNFTs = userNFTs.filter(nft => nft.owned);
+      if (ownedNFTs.length === 0) {
+        walletList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs owned yet.</p>';
+      } else {
+        ownedNFTs.forEach(nft => {
+          const card = document.createElement('div');
+          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
+          card.innerHTML = `
+            <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
+            <div class="flex-1">
+              <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+              <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
+            </div>
+          `;
+          walletList.appendChild(card);
+        });
+      }
+    }
 
     // Complete Task
     async function completeTask(taskId, link) {
@@ -493,7 +570,7 @@
 
     // Section Switch
     function showSection(id) {
-      ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection'].forEach(section => {
+      ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection', 'profile'].forEach(section => {
         document.getElementById(section).classList.add('hidden');
         const navButton = document.getElementById(`nav-${section}`);
         if (navButton) navButton.classList.remove('active');
@@ -504,6 +581,9 @@
       if (id === 'mining') {
         updateMiningCard();
         renderNFTSelection();
+      }
+      if (id === 'profile') {
+        renderNFTWallet();
       }
     }
 
@@ -545,11 +625,8 @@
         if (user) {
           telegramId = `@${user.username || user.id}`;
           localStorage.setItem('telegramId', telegramId);
-          document.getElementById('telegram-id').classList.remove('hidden');
-          document.getElementById('telegram-username').textContent = telegramId;
-          document.getElementById('connect-telegram').textContent = 'Connected';
-          document.getElementById('connect-telegram').classList.add('bg-green-500', 'hover:bg-green-600');
-          document.getElementById('connect-telegram').classList.remove('bg-blue-500', 'hover:bg-blue-600');
+          document.getElementById('connect-telegram').classList.add('hidden');
+          document.getElementById('logout-button').classList.remove('hidden');
           if (!userNFTs[0].owned) {
             await claimFreeNFT();
           }
@@ -590,6 +667,7 @@
           document.getElementById('claim-nft-0').disabled = true;
           alert('Free NFT Claimed!');
           renderNFTSelection();
+          renderNFTWallet();
         } else {
           alert('Failed to claim NFT: ' + (data.error || 'Unknown error'));
         }
@@ -625,6 +703,7 @@
           document.getElementById(`buy-nft-${index}`).disabled = true;
           alert(`NFT Purchased for ${stars} ⭐!`);
           renderNFTSelection();
+          renderNFTWallet();
         } else {
           alert('Failed to purchase NFT: ' + (data.error || 'Unknown error'));
         }
