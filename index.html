@@ -295,7 +295,7 @@
   <script>
     // Base URL for backend API (update to your hosted backend URL after deployment)
     const BASE_URL = 'http://localhost:3000';
-    const TELEGRAM_BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'; // Replace with your bot token
+    const TELEGRAM_BOT_TOKEN = '7922375418:AAER8yhpcHNs8NkAed3_bQrEvCedch7QBMA'; // Replace with your bot token
 
     // User data
     let telegramId = '';
@@ -389,7 +389,7 @@
 
       // Telegram Connect Button
       document.getElementById('connect-telegram').addEventListener('click', () => {
-        window.location.href = `https://telegram.me/NeuroAIBot?start=connect_${window.location.href}`;
+        window.location.href = `https://telegram.me/TgNeuroAi_bot?start=connect_${window.location.href}`;
       });
     };
 
@@ -404,7 +404,7 @@
           document.getElementById('logout-button').classList.remove('hidden');
           document.getElementById('telegram-id').classList.remove('hidden');
           document.getElementById('telegram-username').textContent = telegramId;
-          document.getElementById('referral-link').value = `https://t.me/NeuroAIBot?start=${user.id}`;
+          document.getElementById('referral-link').value = `https://t.me/TgNeuroAi_bot?start=${user.id}`;
           if (!userNFTs[0].owned) {
             await claimFreeNFT();
           }
