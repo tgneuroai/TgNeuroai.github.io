@@ -1,4 +1,20 @@
-import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBzic7x8NQTV_V0V5ARgSy5cfqVGdzpOZk",
+  authDomain: "neuroaix-9d6dc.firebaseapp.com",
+  projectId: "neuroaix-9d6dc",
+  storageBucket: "neuroaix-9d6dc.firebasestorage.app",
+  messagingSenderId: "693010915244",
+  appId: "1:693010915244:web:51e9b19d31f6c9506fa409",
+  databaseURL: "https://neuroaix-9d6dc-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 // User data
 let telegramId = localStorage.getItem('telegramId') || '';
@@ -22,18 +38,27 @@ let taskStatus = {
   share: 'Go'
 };
 
-// Hide loading animation after 1 second
+// Initialize App
 window.onload = async () => {
-  setTimeout(() => {
-    document.getElementById('loading-container').style.display = 'none';
-    document.getElementById('content').style.display = 'block';
-  }, 1000); // Reduced from 3s to 1s for faster loading
-
   try {
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+    } else {
+      console.warn("Telegram WebApp not available. Running in browser mode.");
+    }
+
+    // Load saved task status
     const savedTaskStatus = localStorage.getItem('taskStatus');
     if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
+
+    // Initialize UI
+    document.getElementById('content').style.display = 'none';
+    setTimeout(() => {
+      document.getElementById('loading-container').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+    }, 800); // Reduced to 800ms for faster loading
+
     if (telegramId) {
       await fetchUserData();
       document.getElementById('profile-username').textContent = telegramId;
@@ -45,37 +70,38 @@ window.onload = async () => {
       renderReferralHistory();
       await updateLeaderboard();
     }
+
+    // Update NFT buttons
     userData.nfts.forEach((nft, index) => {
       if (nft.owned) {
-        if (index === 0) {
-          document.getElementById('claim-nft-0').textContent = 'Claimed';
-          document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
-          document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById('claim-nft-0').disabled = true;
-        } else {
-          document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
-          document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-          document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById(`buy-nft-${index}`).disabled = true;
+        const button = document.getElementById(`claim-nft-${index}`) || document.getElementById(`buy-nft-${index}`);
+        if (button) {
+          button.textContent = index === 0 ? 'Claimed' : 'Owned';
+          button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600');
+          button.classList.add('bg-gray-500', 'cursor-not-allowed');
+          button.disabled = true;
         }
       }
     });
+
+    // Update task buttons
     Object.keys(taskStatus).forEach(taskId => {
+      const button = document.getElementById(`task-${taskId}`);
       if (taskStatus[taskId] === 'Done') {
-        const button = document.getElementById(`task-${taskId}`);
         button.textContent = 'Done';
         button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
         button.classList.add('bg-gray-500', 'cursor-not-allowed');
         button.disabled = true;
       } else if (taskStatus[taskId] === 'Check') {
-        const button = document.getElementById(`task-${taskId}`);
         button.textContent = 'Check';
         button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
         button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
       }
     });
+
     renderNFTSelection();
     showSection('home');
+    checkReferral();
   } catch (error) {
     console.error("Initialization failed:", error);
     alert("Failed to initialize app. Please check console for details.");
@@ -98,7 +124,7 @@ function logout() {
     telegramId = '';
     localStorage.removeItem('telegramId');
     document.getElementById('profile-username').textContent = 'Not Connected';
-    document.getElementById('connect-telegram').classList.add('hidden');
+    document.getElementById('connect-telegram').classList.remove('hidden');
     document.getElementById('logout-button').classList.add('hidden');
     document.getElementById('profile-container').classList.add('hidden');
     document.getElementById('referral-link').value = 'https://t.me/NeuroAIBot?start=you';
@@ -130,7 +156,7 @@ function renderNFTWallet() {
       const card = document.createElement('div');
       card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4';
       card.innerHTML = `
-        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy" />
+        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy">
         <div class="flex-1">
           <span class="text-sm font-semibold">${nft.name}</span>
           <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
@@ -166,9 +192,8 @@ function renderReferralHistory() {
 
 // Update Leaderboard
 async function updateLeaderboard() {
-  if (!window.firebaseDB) return;
   try {
-    const dbRef = ref(window.firebaseDB, 'users');
+    const dbRef = ref(db, 'users');
     onValue(dbRef, (snapshot) => {
       const users = [];
       snapshot.forEach((childSnapshot) => {
@@ -199,7 +224,7 @@ async function updateLeaderboard() {
         document.getElementById('leaderboard-user-balance').textContent = '0';
       }
     }, {
-      onlyOnce: false // Realtime updates
+      onlyOnce: false
     });
   } catch (error) {
     console.error('Leaderboard update failed:', error);
@@ -207,11 +232,11 @@ async function updateLeaderboard() {
   }
 }
 
-// Fetch User Data from Realtime Database
+// Fetch User Data
 async function fetchUserData() {
-  if (!telegramId || !window.firebaseDB) return;
+  if (!telegramId) return;
   try {
-    const userRef = ref(window.firebaseDB, 'users/' + telegramId);
+    const userRef = ref(db, 'users/' + telegramId);
     const snapshot = await get(userRef);
     if (snapshot.exists()) {
       userData = snapshot.val();
@@ -241,11 +266,11 @@ async function fetchUserData() {
   }
 }
 
-// Save User Data to Realtime Database
+// Save User Data
 async function saveUserData() {
-  if (!telegramId || !window.firebaseDB) return;
+  if (!telegramId) return;
   try {
-    const userRef = ref(window.firebaseDB, 'users/' + telegramId);
+    const userRef = ref(db, 'users/' + telegramId);
     await set(userRef, userData);
   } catch (error) {
     console.error('Save user data failed:', error);
@@ -259,6 +284,10 @@ document.getElementById('connect-telegram').addEventListener('click', async () =
   if (confirm('Do you want to connect your Telegram account?')) {
     try {
       const tg = window.Telegram.WebApp;
+      if (!tg) {
+        alert('Please open this app in the Telegram WebApp.');
+        return;
+      }
       tg.ready();
       const user = tg.initDataUnsafe.user;
       if (user) {
@@ -277,7 +306,7 @@ document.getElementById('connect-telegram').addEventListener('click', async () =
         renderReferralHistory();
         await updateLeaderboard();
       } else {
-        alert('Please open this app in the Telegram WebApp.');
+        alert('Telegram user data not available.');
       }
     } catch (error) {
       console.error('Telegram connection failed:', error);
@@ -323,11 +352,13 @@ async function completeTask(taskId, link) {
 // Section Switch
 function showSection(id) {
   ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection'].forEach(section => {
-    document.getElementById(section).classList.add('hidden');
+    const sectionEl = document.getElementById(section);
+    if (sectionEl) sectionEl.classList.add('hidden');
     const navButton = document.getElementById(`nav-${section}`);
     if (navButton) navButton.classList.remove('active');
   });
-  document.getElementById(id).classList.remove('hidden');
+  const sectionEl = document.getElementById(id);
+  if (sectionEl) sectionEl.classList.remove('hidden');
   const navButton = document.getElementById(`nav-${id}`);
   if (navButton) navButton.classList.add('active');
   if (id === 'mining') {
@@ -342,14 +373,18 @@ function showSection(id) {
 
 // Update Mining Card
 function updateMiningCard() {
-  document.getElementById('mining-card').style.backgroundImage = `url('${userData.nfts[selectedNFTIndex].url}')`;
-  document.getElementById('mining-power').textContent = `${userData.miningData.power} Hash/s`;
-  document.getElementById('total-mined').textContent = `${userData.miningData.totalMined.toFixed(2)} NAI`;
+  const miningCard = document.getElementById('mining-card');
+  if (miningCard) {
+    miningCard.style.backgroundImage = `url('${userData.nfts[selectedNFTIndex].url}')`;
+    document.getElementById('mining-power').textContent = `${userData.miningData.power} Hash/s`;
+    document.getElementById('total-mined').textContent = `${userData.miningData.totalMined.toFixed(2)} NAI`;
+  }
 }
 
 // Render NFT Selection
 function renderNFTSelection() {
   const nftList = document.getElementById('nft-selection-list');
+  if (!nftList) return;
   nftList.innerHTML = '';
   userData.nfts.forEach((nft, index) => {
     if (nft.owned) {
@@ -357,9 +392,9 @@ function renderNFTSelection() {
       card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
       card.onclick = () => selectNFT(index);
       card.innerHTML = `
-        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy" />
+        <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" loading="lazy">
         <div class="flex-1">
-          <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" loading="lazy" /></span>
+          <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" loading="lazy"></span>
           <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
         </div>
       `;
@@ -380,12 +415,15 @@ async function claimFreeNFT() {
   }
   try {
     userData.nfts[0].owned = true;
-    userData.tokenBalance += 100; // Reward for claiming free NFT
+    userData.tokenBalance += 100;
     await saveUserData();
-    document.getElementById('claim-nft-0').textContent = 'Claimed';
-    document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
-    document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
-    document.getElementById('claim-nft-0').disabled = true;
+    const button = document.getElementById('claim-nft-0');
+    if (button) {
+      button.textContent = 'Claimed';
+      button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+      button.classList.add('bg-gray-500', 'cursor-not-allowed');
+      button.disabled = true;
+    }
     updateTokenBalance();
     renderNFTSelection();
     renderNFTWallet();
@@ -414,10 +452,13 @@ async function buyNFT(index, stars) {
     userData.nfts[index].owned = true;
     userData.tokenBalance -= stars;
     await saveUserData();
-    document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
-    document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-    document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
-    document.getElementById(`buy-nft-${index}`).disabled = true;
+    const button = document.getElementById(`buy-nft-${index}`);
+    if (button) {
+      button.textContent = 'Owned';
+      button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+      button.classList.add('bg-gray-500', 'cursor-not-allowed');
+      button.disabled = true;
+    }
     updateTokenBalance();
     renderNFTSelection();
     renderNFTWallet();
@@ -443,36 +484,33 @@ async function selectNFT(index) {
 
 // Add Referral
 async function addReferral(referrerId, referredId) {
-  if (!window.firebaseDB) return;
   try {
-    const referrerRef = ref(window.firebaseDB, 'users/' + referrerId);
+    const referrerRef = ref(db, 'users/' + referrerId);
     const referrerSnapshot = await get(referrerRef);
     if (referrerSnapshot.exists()) {
       const referrerData = referrerSnapshot.val();
       referrerData.referrals = referrerData.referrals || { level1: [], level2: [], level3: [] };
       if (!referrerData.referrals.level1.includes(referredId)) {
         referrerData.referrals.level1.push({ telegramId: referredId, hashRate: 100 });
-        referrerData.tokenBalance += 100 * 0.1; // 10% commission for Level 1
+        referrerData.tokenBalance += 100 * 0.1;
         await set(referrerRef, referrerData);
-        // Update Level 2 and Level 3
         if (referrerData.referrer) {
-          const parentRef = ref(window.firebaseDB, 'users/' + referrerData.referrer);
+          const parentRef = ref(db, 'users/' + referrerData.referrer);
           const parentSnapshot = await get(parentRef);
           if (parentSnapshot.exists()) {
             const parent = parentSnapshot.val();
             parent.referrals.level2 = parent.referrals.level2 || [];
             parent.referrals.level2.push({ telegramId: referredId, hashRate: 50 });
-            parent.tokenBalance += 50 * 0.05; // 5% commission for Level 2
+            parent.tokenBalance += 50 * 0.05;
             await set(parentRef, parent);
-            // Level 3
             if (parent.referrer) {
-              const grandParentRef = ref(window.firebaseDB, 'users/' + parent.referrer);
+              const grandParentRef = ref(db, 'users/' + parent.referrer);
               const grandParentSnapshot = await get(grandParentRef);
               if (grandParentSnapshot.exists()) {
                 const grandParent = grandParentSnapshot.val();
                 grandParent.referrals.level3 = grandParent.referrals.level3 || [];
                 grandParent.referrals.level3.push({ telegramId: referredId, hashRate: 20 });
-                grandParent.tokenBalance += 20 * 0.02; // 2% commission for Level 3
+                grandParent.tokenBalance += 20 * 0.02;
                 await set(grandParentRef, grandParent);
               }
             }
