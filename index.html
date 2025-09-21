@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NEURO AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
   <style>
     /* Animated gradient border for NFTs, Referral Cards, and Rank Card */
     .nft-card, .referral-card, .rank-card {
@@ -52,13 +52,13 @@
     </div>
     <p class="mt-2 text-sm text-gray-200">Balance:</p>
     <h2 class="text-3xl font-bold"><span id="user-balance">0</span> <span class="text-yellow-300">NAI</span></h2>
-    <button id="connect-telegram" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Telegram</button>
+    <button id="connect-farcaster" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Farcaster Wallet</button>
   </div>
 
   <!-- Profile Section -->
   <div id="profile" class="section hidden space-y-6 p-4">
     <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK8lt.png" alt="Profile" class="inline w-5 h-5 mr-1" />Profile</h2>
-    <div id="telegram-id" class="text-sm text-gray-300 hidden">Telegram: <span id="telegram-username">Not Connected</span></div>
+    <div id="wallet-id" class="text-sm text-gray-300 hidden">Wallet: <span id="wallet-address">Not Connected</span></div>
     <button id="logout-button" onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full font-bold text-white transition hidden">Logout</button>
     <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjK8lt.png" alt="NFT Wallet" class="inline w-5 h-5 mr-1" />NFT Wallet</h3>
     <div id="nft-wallet" class="space-y-4"></div>
@@ -227,7 +227,7 @@
         <li>🔹 Level 2: 5%</li>
         <li>🔹 Level 3: 2%</li>
       </ul>
-      <input id="referral-link" class="mt-3 w-full p-2 bg-gray-700 rounded" readonly value="https://t.me/TgNeuroAi_bot?start=your_ref" />
+      <input id="referral-link" class="mt-3 w-full p-2 bg-gray-700 rounded" readonly value="https://yourapp.com?ref=your_wallet" />
       <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjKLs2.png" alt="Referral History" class="inline w-5 h-5 mr-1" />Referral History</h3>
       <div class="space-y-2">
         <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
@@ -293,10 +293,9 @@
   <script>
     // Base URL for backend API (update to your hosted backend URL after deployment)
     const BASE_URL = 'http://localhost:3000';
-    const TELEGRAM_BOT_TOKEN = '7922375418:AAER8yhpcHNs8NkAed3_bQrEvCedch7QBMA';
 
     // User data
-    let telegramId = '';
+    let walletAddress = '';
     let userBalance = 0;
     let userNFTs = [
       { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter #1 - Free', hashRate: 12, owned: false },
@@ -320,9 +319,6 @@
       share: 'Go'
     };
 
-    // Initialize Telegram Web App
-    const tg = window.Telegram.WebApp;
-
     // Initialize
     window.onload = async () => {
       const savedNFTs = localStorage.getItem('userNFTs');
@@ -333,31 +329,15 @@
       if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
       const savedBalance = localStorage.getItem('userBalance');
       if (savedBalance) userBalance = parseFloat(savedBalance);
-      const savedTelegramId = localStorage.getItem('telegramId');
-      if (savedTelegramId) {
-        telegramId = savedTelegramId;
-        document.getElementById('connect-telegram').classList.add('hidden');
+      const savedWalletAddress = localStorage.getItem('walletAddress');
+      if (savedWalletAddress) {
+        walletAddress = savedWalletAddress;
+        document.getElementById('connect-farcaster').classList.add('hidden');
         document.getElementById('logout-button').classList.remove('hidden');
-        document.getElementById('telegram-id').classList.remove('hidden');
-        document.getElementById('telegram-username').textContent = telegramId;
+        document.getElementById('wallet-id').classList.remove('hidden');
+        document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
         await fetchUserData();
-        document.getElementById('referral-link').value = `https://t.me/TgNeuroAi_bot?start=${telegramId.replace('@', '')}`;
-      } else if (tg.initDataUnsafe.user) {
-        // Auto-connect if Telegram Web App provides user data
-        const user = tg.initDataUnsafe.user;
-        telegramId = `@${user.username || user.id}`;
-        localStorage.setItem('telegramId', telegramId);
-        document.getElementById('connect-telegram').classList.add('hidden');
-        document.getElementById('logout-button').classList.remove('hidden');
-        document.getElementById('telegram-id').classList.remove('hidden');
-        document.getElementById('telegram-username').textContent = telegramId;
-        document.getElementById('referral-link').value = `https://t.me/TgNeuroAi_bot?start=${user.id}`;
-        if (!userNFTs[0].owned) {
-          await claimFreeNFT();
-        }
-        await fetchUserData();
-        updateBalance();
-        updateLeaderboard();
+        document.getElementById('referral-link').value = `https://yourapp.com?ref=${walletAddress}`;
       }
       userNFTs.forEach((nft, index) => {
         if (nft.owned) {
@@ -396,62 +376,62 @@
 
       // Profile logo click to show profile and NFTs
       document.getElementById('profile-logo').addEventListener('click', () => {
-        if (telegramId) {
-          document.getElementById('telegram-id').classList.remove('hidden');
-          document.getElementById('telegram-username').textContent = telegramId;
+        if (walletAddress) {
+          document.getElementById('wallet-id').classList.remove('hidden');
+          document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
         }
         renderNFTWallet();
         showSection('profile');
       });
 
-      // Telegram Connect Button
-      document.getElementById('connect-telegram').addEventListener('click', () => {
-        if (tg.ready) {
-          tg.expand();
-          if (tg.initDataUnsafe.user) {
-            const user = tg.initDataUnsafe.user;
-            telegramId = `@${user.username || user.id}`;
-            localStorage.setItem('telegramId', telegramId);
-            document.getElementById('connect-telegram').classList.add('hidden');
+      // Farcaster Wallet Connect Button
+      document.getElementById('connect-farcaster').addEventListener('click', async () => {
+        if (window.ethereum) {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            walletAddress = accounts[0];
+            localStorage.setItem('walletAddress', walletAddress);
+            document.getElementById('connect-farcaster').classList.add('hidden');
             document.getElementById('logout-button').classList.remove('hidden');
-            document.getElementById('telegram-id').classList.remove('hidden');
-            document.getElementById('telegram-username').textContent = telegramId;
-            document.getElementById('referral-link').value = `https://t.me/TgNeuroAi_bot?start=${user.id}`;
+            document.getElementById('wallet-id').classList.remove('hidden');
+            document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
+            document.getElementById('referral-link').value = `https://yourapp.com?ref=${walletAddress}`;
             if (!userNFTs[0].owned) {
-              claimFreeNFT();
+              await claimFreeNFT();
             }
-            fetchUserData();
+            await fetchUserData();
             updateBalance();
             updateLeaderboard();
-          } else {
-            window.location.href = `https://telegram.me/TgNeuroAi_bot?start=connect_${window.location.href}`;
+          } catch (error) {
+            console.error('Wallet connection failed:', error);
+            alert('Failed to connect wallet. Please try again.');
           }
         } else {
-          window.location.href = `https://telegram.me/TgNeuroAi_bot?start=connect_${window.location.href}`;
+          alert('Please install a wallet like MetaMask!');
         }
       });
     };
 
     // Logout function
     function logout() {
-      telegramId = '';
+      walletAddress = '';
       userBalance = 0;
       userRank = 'Not Ranked';
       userNFTs = userNFTs.map(nft => ({ ...nft, owned: false }));
       miningData = { power: 12, totalMined: 0, isMining: false };
       taskStatus = { telegram: 'Go', 'telegram-group': 'Go', x: 'Go', discord: 'Go', share: 'Go' };
-      localStorage.removeItem('telegramId');
+      localStorage.removeItem('walletAddress');
       localStorage.removeItem('userNFTs');
       localStorage.removeItem('miningData');
       localStorage.removeItem('userBalance');
       localStorage.removeItem('taskStatus');
-      document.getElementById('telegram-id').classList.add('hidden');
-      document.getElementById('telegram-username').textContent = 'Not Connected';
-      document.getElementById('connect-telegram').classList.remove('hidden');
+      document.getElementById('wallet-id').classList.add('hidden');
+      document.getElementById('wallet-address').textContent = 'Not Connected';
+      document.getElementById('connect-farcaster').classList.remove('hidden');
       document.getElementById('logout-button').classList.add('hidden');
-      document.getElementById('connect-telegram').textContent = 'Connect Telegram';
-      document.getElementById('connect-telegram').classList.add('bg-blue-500', 'hover:bg-blue-600');
-      document.getElementById('connect-telegram').classList.remove('bg-green-500', 'hover:bg-green-600');
+      document.getElementById('connect-farcaster').textContent = 'Connect Farcaster Wallet';
+      document.getElementById('connect-farcaster').classList.add('bg-blue-500', 'hover:bg-blue-600');
+      document.getElementById('connect-farcaster').classList.remove('bg-green-500', 'hover:bg-green-600');
       userNFTs.forEach((nft, index) => {
         if (index === 0) {
           document.getElementById('claim-nft-0').textContent = 'Claim';
@@ -513,7 +493,7 @@
       const button = document.getElementById(`task-${taskId}`);
       if (taskStatus[taskId] === 'Done') return;
       if (taskStatus[taskId] === 'Go') {
-        window.open(link.replace('your_ref', telegramId.replace('@', '')), '_blank');
+        window.open(link.replace('your_ref', walletAddress), '_blank');
         taskStatus[taskId] = 'Check';
         button.textContent = 'Check';
         button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
@@ -526,7 +506,7 @@
           const response = await fetch(`${BASE_URL}/api/complete-task`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId, taskId })
+            body: JSON.stringify({ walletAddress, taskId })
           });
           const data = await response.json();
           if (data.success) {
@@ -613,7 +593,7 @@
 
     // Update Leaderboard
     async function updateLeaderboard() {
-      if (!telegramId) {
+      if (!walletAddress) {
         document.getElementById('leaderboard-list').classList.add('hidden');
         document.getElementById('leaderboard-empty').classList.remove('hidden');
         document.getElementById('leaderboard-preview').classList.add('hidden');
@@ -625,7 +605,7 @@
         if (data.success && data.leaderboard.length > 0) {
           leaderboard = data.leaderboard.slice(0, 15).map(user => ({
             id: user.id,
-            username: user.username ? `@${user.username}` : `@${user.id}`,
+            username: user.username ? user.username : user.id,
             balance: user.balance || 0
           }));
           const leaderboardEntries = document.getElementById('leaderboard-entries');
@@ -655,13 +635,13 @@
 
     // Update User Rank
     async function updateUserRank() {
-      if (!telegramId) {
+      if (!walletAddress) {
         document.getElementById('user-rank').textContent = 'Not Ranked';
         document.getElementById('user-balance-leaderboard').textContent = '0 NAI';
         return;
       }
       try {
-        const response = await fetch(`${BASE_URL}/api/user-rank?telegramId=${encodeURIComponent(telegramId)}`);
+        const response = await fetch(`${BASE_URL}/api/user-rank?walletAddress=${encodeURIComponent(walletAddress)}`);
         const data = await response.json();
         if (data.success) {
           userRank = data.rank || 'Not Ranked';
@@ -680,8 +660,8 @@
 
     // Claim Free NFT
     async function claimFreeNFT() {
-      if (!telegramId) {
-        alert('Please connect your Telegram account first.');
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
         return;
       }
       if (userNFTs[0].owned) {
@@ -692,7 +672,7 @@
         const response = await fetch(`${BASE_URL}/api/claim-nft`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramId, nftIndex: 0 })
+          body: JSON.stringify({ walletAddress, nftIndex: 0 })
         });
         const data = await response.json();
         if (data.success) {
@@ -720,8 +700,8 @@
 
     // Buy NFT with Stars
     async function buyNFT(index, stars) {
-      if (!telegramId) {
-        alert('Please connect your Telegram account first.');
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
         return;
       }
       if (userNFTs[index].owned) {
@@ -732,7 +712,7 @@
         const response = await fetch(`${BASE_URL}/api/buy-nft`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramId, nftIndex: index, stars, receiver: '@NeuroAIAdmin' })
+          body: JSON.stringify({ walletAddress, nftIndex: index, stars, receiver: '0xNeuroAIAdminWallet' })
         });
         const data = await response.json();
         if (data.success) {
@@ -771,11 +751,11 @@
 
     // Start/Stop Mining
     async function startMining() {
-      if (!telegramId) {
-        alert('Please connect your Telegram account first.');
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
         return;
       }
-      if (!userNFTs  [selectedNFTIndex].owned) {
+      if (!userNFTs[selectedNFTIndex].owned) {
         alert('Please select an owned NFT to mine.');
         return;
       }
@@ -801,9 +781,9 @@
 
     // Fetch User Data
     async function fetchUserData() {
-      if (!telegramId) return;
+      if (!walletAddress) return;
       try {
-        const response = await fetch(`${BASE_URL}/api/user-data?telegramId=${encodeURIComponent(telegramId)}`);
+        const response = await fetch(`${BASE_URL}/api/user-data?walletAddress=${encodeURIComponent(walletAddress)}`);
         const data = await response.json();
         if (data.success) {
           userBalance = data.userData.balance || 0;
@@ -827,12 +807,12 @@
 
     // Update User Data
     async function updateUserData() {
-      if (!telegramId) return;
+      if (!walletAddress) return;
       try {
         const response = await fetch(`${BASE_URL}/api/update-user`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramId, balance: userBalance, miningData, nfts: userNFTs, referralData })
+          body: JSON.stringify({ walletAddress, balance: userBalance, miningData, nfts: userNFTs, referralData })
         });
         const data = await response.json();
         if (data.success) {
