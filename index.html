@@ -3,9 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEURO AI</title>
+  <title>NEURO AI Mining</title>
+  
+  <!-- PWA & Base.dev Meta Tags -->
+  <meta name="description" content="Earn NAI tokens through mining and referrals in the NEURO AI ecosystem">
+  <meta name="theme-color" content="#a855f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NEURO AI">
+  
+  <!-- Farcaster & Base.dev -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="farcaster:frame" content="true">
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
   <style>
     /* Animated gradient border for NFTs, Referral Cards, and Rank Card */
     .nft-card, .referral-card, .rank-card {
@@ -41,6 +53,19 @@
       border-bottom: 2px solid #a855f7;
       filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
     }
+    /* Farcaster loading */
+    .loading-spinner {
+      border: 2px solid #f3f4f6;
+      border-top: 2px solid #a855f7;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="bg-gray-950 text-white font-sans m-0 overflow-x-hidden">
@@ -52,7 +77,13 @@
     </div>
     <p class="mt-2 text-sm text-gray-200">Balance:</p>
     <h2 class="text-3xl font-bold"><span id="user-balance">0</span> <span class="text-yellow-300">NAI</span></h2>
-    <button id="connect-farcaster" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Connect Farcaster Wallet</button>
+    <button id="connect-farcaster" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">
+      <span id="connect-text">Connect Farcaster Wallet</span>
+      <div id="connect-loading" class="hidden flex items-center space-x-2">
+        <div class="loading-spinner"></div>
+        <span>Connecting...</span>
+      </div>
+    </button>
   </div>
 
   <!-- Profile Section -->
@@ -138,7 +169,7 @@
             <button id="task-discord" onclick="completeTask('discord', 'https://discord.gg/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
           </li>
           <li class="flex justify-between items-center">Share Referral Link - <span class="text-green-400">+3 NAI</span>
-            <button id="task-share" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot?start=your_ref')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+            <button id="task-share" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
           </li>
         </ul>
         <button onclick="showSection('tasks')" class="mt-2 text-sm text-blue-400 underline">View All</button>
@@ -223,27 +254,28 @@
       <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjKrRs.png" alt="Referral Program" class="inline w-5 h-5 mr-1" />Referral Program</h2>
       <p class="text-sm text-gray-300">Earn rewards for each level:</p>
       <ul class="mt-2 text-sm text-gray-400 space-y-1">
-        <li>🔹 Level 1: 10%</li>
-        <li>🔹 Level 2: 5%</li>
-        <li>🔹 Level 3: 2%</li>
+        <li>🔹 Level 1: 10% of referrals earnings</li>
+        <li>🔹 Level 2: 5% of referrals earnings</li>
+        <li>🔹 Level 3: 2% of referrals earnings</li>
       </ul>
-      <input id="referral-link" class="mt-3 w-full p-2 bg-gray-700 rounded" readonly value="https://yourapp.com?ref=your_wallet" />
+      <input id="referral-link" class="mt-3 w-full p-2 bg-gray-700 rounded text-sm" readonly value="https://tgneuroai.github.io?ref=your_wallet" />
+      <button onclick="copyReferralLink()" class="mt-2 w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded-full font-bold text-white transition">Copy Referral Link</button>
       <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjKLs2.png" alt="Referral History" class="inline w-5 h-5 mr-1" />Referral History</h3>
       <div class="space-y-2">
         <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-          <span class="font-semibold">Level 1</span>
-          <span>0 Hash/s</span>
-          <span>0 Referrals</span>
+          <span class="font-semibold">Level 1 Direct</span>
+          <span id="ref-level1-hash">0 Hash/s</span>
+          <span id="ref-level1-count">0 Referrals</span>
         </div>
         <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
           <span class="font-semibold">Level 2</span>
-          <span>0 Hash/s</span>
-          <span>0 Referrals</span>
+          <span id="ref-level2-hash">0 Hash/s</span>
+          <span id="ref-level2-count">0 Referrals</span>
         </div>
         <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
           <span class="font-semibold">Level 3</span>
-          <span>0 Hash/s</span>
-          <span>0 Referrals</span>
+          <span id="ref-level3-hash">0 Hash/s</span>
+          <span id="ref-level3-count">0 Referrals</span>
         </div>
       </div>
     </div>
@@ -254,30 +286,30 @@
       <ul class="mt-2 space-y-3">
         <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
           <span>Join Telegram Channel - <span class="text-green-400">+10 NAI</span></span>
-          <button id="task-telegram" onclick="completeTask('telegram', 'https://t.me/NeuroAi44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          <button id="task-telegram-full" onclick="completeTask('telegram', 'https://t.me/NeuroAi44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
         </li>
         <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
           <span>Join Telegram Group - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-telegram-group" onclick="completeTask('telegram-group', 'https://t.me/Neuroai4')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          <button id="task-telegram-group-full" onclick="completeTask('telegram-group', 'https://t.me/Neuroai4')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
         </li>
         <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Follow X - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-x" onclick="completeTask('x', 'https://x.com/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          <span>Follow X Account - <span class="text-green-400">+5 NAI</span></span>
+          <button id="task-x-full" onclick="completeTask('x', 'https://x.com/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
         </li>
         <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Join Discord - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-discord" onclick="completeTask('discord', 'https://discord.gg/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          <span>Join Discord Server - <span class="text-green-400">+5 NAI</span></span>
+          <button id="task-discord-full" onclick="completeTask('discord', 'https://discord.gg/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
         </li>
         <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
           <span>Share Referral Link - <span class="text-green-400">+3 NAI</span></span>
-          <button id="task-share" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot?start=your_ref')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
+          <button id="task-share-full" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
         </li>
       </ul>
     </div>
 
     <!-- LEADERBOARD SECTION -->
     <div id="leaderboard" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK6bf.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top 15 Users</h2>
+      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK6bf.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top 15 Miners</h2>
       <div class="rank-card bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
         <span>Your Rank: <strong id="user-rank">Not Ranked</strong></span>
         <span class="block mt-1">Balance: <strong id="user-balance-leaderboard">0 NAI</strong></span>
@@ -285,7 +317,7 @@
       <div id="leaderboard-list" class="mt-2 space-y-2 text-sm hidden">
         <ol id="leaderboard-entries"></ol>
       </div>
-      <p id="leaderboard-empty" class="text-gray-400">No users available yet.</p>
+      <p id="leaderboard-empty" class="text-gray-400">No users available yet. Connect your wallet to start mining!</p>
     </div>
   </div>
 
@@ -293,6 +325,7 @@
   <script>
     // Base URL for backend API (update to your hosted backend URL after deployment)
     const BASE_URL = 'http://localhost:3000';
+    const APP_URL = 'https://tgneuroai.github.io';
 
     // User data
     let walletAddress = '';
@@ -306,6 +339,7 @@
     ];
     let selectedNFTIndex = 0;
     let miningData = { power: 12, totalMined: 0, isMining: false };
+    let miningInterval = null;
     let userRank = 'Not Ranked';
     let referralData = { level1: 0, level2: 0, level3: 0 };
     let leaderboard = [];
@@ -319,139 +353,173 @@
       share: 'Go'
     };
 
-    // Initialize
+    // Initialize App
     window.onload = async () => {
+      // Load saved data
+      loadUserData();
+      
+      // Initialize UI
+      initializeUI();
+      
+      // Setup event listeners
+      setupEventListeners();
+      
+      // Show home section
+      showSection('home');
+    };
+
+    // Load user data from localStorage
+    function loadUserData() {
       const savedNFTs = localStorage.getItem('userNFTs');
       if (savedNFTs) userNFTs = JSON.parse(savedNFTs);
+      
       const savedMiningData = localStorage.getItem('miningData');
       if (savedMiningData) miningData = JSON.parse(savedMiningData);
+      
       const savedTaskStatus = localStorage.getItem('taskStatus');
       if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
+      
       const savedBalance = localStorage.getItem('userBalance');
       if (savedBalance) userBalance = parseFloat(savedBalance);
+      
       const savedWalletAddress = localStorage.getItem('walletAddress');
       if (savedWalletAddress) {
         walletAddress = savedWalletAddress;
-        document.getElementById('connect-farcaster').classList.add('hidden');
-        document.getElementById('logout-button').classList.remove('hidden');
-        document.getElementById('wallet-id').classList.remove('hidden');
-        document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
-        await fetchUserData();
-        document.getElementById('referral-link').value = `https://yourapp.com?ref=${walletAddress}`;
+        setupConnectedWallet();
       }
-      userNFTs.forEach((nft, index) => {
-        if (nft.owned) {
-          if (index === 0) {
-            document.getElementById('claim-nft-0').textContent = 'Claimed';
-            document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
-            document.getElementById('claim-nft-0').disabled = true;
-          } else {
-            document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
-            document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-            document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
-            document.getElementById(`buy-nft-${index}`).disabled = true;
-          }
-        }
-      });
-      Object.keys(taskStatus).forEach(taskId => {
-        if (taskStatus[taskId] === 'Done') {
-          const button = document.getElementById(`task-${taskId}`);
-          button.textContent = 'Done';
-          button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-          button.classList.add('bg-gray-500', 'cursor-not-allowed');
-          button.disabled = true;
-        } else if (taskStatus[taskId] === 'Check') {
-          const button = document.getElementById(`task-${taskId}`);
-          button.textContent = 'Check';
-          button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-          button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-        }
-      });
+    }
+
+    // Initialize UI elements
+    function initializeUI() {
+      // Update NFT buttons
+      updateNFTButtons();
+      
+      // Update task buttons
+      updateTaskButtons();
+      
+      // Update balance display
+      updateBalance();
+      
+      // Render sections
       renderNFTSelection();
       renderNFTWallet();
-      updateBalance();
-      updateLeaderboard();
-      showSection('home');
+    }
 
-      // Profile logo click to show profile and NFTs
+    // Setup event listeners
+    function setupEventListeners() {
+      // Profile logo click
       document.getElementById('profile-logo').addEventListener('click', () => {
         if (walletAddress) {
           document.getElementById('wallet-id').classList.remove('hidden');
-          document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
+          document.getElementById('wallet-address').textContent = formatAddress(walletAddress);
         }
         renderNFTWallet();
         showSection('profile');
       });
 
-      // Farcaster Wallet Connect Button
-      document.getElementById('connect-farcaster').addEventListener('click', async () => {
-        if (window.ethereum) {
-          try {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            walletAddress = accounts[0];
-            localStorage.setItem('walletAddress', walletAddress);
-            document.getElementById('connect-farcaster').classList.add('hidden');
-            document.getElementById('logout-button').classList.remove('hidden');
-            document.getElementById('wallet-id').classList.remove('hidden');
-            document.getElementById('wallet-address').textContent = walletAddress.substring(0,6) + '...' + walletAddress.substring(walletAddress.length-4);
-            document.getElementById('referral-link').value = `https://yourapp.com?ref=${walletAddress}`;
-            if (!userNFTs[0].owned) {
-              await claimFreeNFT();
-            }
-            await fetchUserData();
-            updateBalance();
-            updateLeaderboard();
-          } catch (error) {
-            console.error('Wallet connection failed:', error);
-            alert('Failed to connect wallet. Please try again.');
-          }
+      // Farcaster/MetaMask Connect Button
+      document.getElementById('connect-farcaster').addEventListener('click', connectWallet);
+    }
+
+    // Setup connected wallet UI
+    function setupConnectedWallet() {
+      document.getElementById('connect-farcaster').classList.add('hidden');
+      document.getElementById('logout-button').classList.remove('hidden');
+      document.getElementById('wallet-id').classList.remove('hidden');
+      document.getElementById('wallet-address').textContent = formatAddress(walletAddress);
+      document.getElementById('referral-link').value = `${APP_URL}?ref=${walletAddress}`;
+      
+      // Auto-claim free NFT if not claimed
+      if (!userNFTs[0].owned) {
+        claimFreeNFT();
+      }
+      
+      // Fetch user data
+      fetchUserData();
+      updateLeaderboard();
+    }
+
+    // Format wallet address for display
+    function formatAddress(address) {
+      return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    }
+
+    // Connect Wallet (Farcaster/MetaMask)
+    async function connectWallet() {
+      const connectBtn = document.getElementById('connect-farcaster');
+      const connectText = document.getElementById('connect-text');
+      const connectLoading = document.getElementById('connect-loading');
+      
+      // Show loading
+      connectText.classList.add('hidden');
+      connectLoading.classList.remove('hidden');
+      connectBtn.disabled = true;
+      
+      try {
+        // Try Farcaster first, then fallback to MetaMask
+        if (window.farcaster && window.farcaster.connect) {
+          const user = await window.farcaster.connect();
+          walletAddress = user.address;
+        } else if (window.ethereum) {
+          // MetaMask fallback
+          const accounts = await window.ethereum.request({ 
+            method: 'eth_requestAccounts' 
+          });
+          walletAddress = accounts[0];
         } else {
-          alert('Please install a wallet like MetaMask!');
+          throw new Error('No wallet found. Please install MetaMask or use Farcaster.');
         }
-      });
-    };
+        
+        // Save and setup
+        localStorage.setItem('walletAddress', walletAddress);
+        setupConnectedWallet();
+        
+      } catch (error) {
+        console.error('Wallet connection failed:', error);
+        alert('Failed to connect wallet: ' + error.message);
+      } finally {
+        // Hide loading
+        connectText.classList.remove('hidden');
+        connectLoading.classList.add('hidden');
+        connectBtn.disabled = false;
+      }
+    }
 
     // Logout function
     function logout() {
+      // Stop mining
+      if (miningData.isMining) {
+        clearInterval(miningInterval);
+        miningData.isMining = false;
+      }
+      
+      // Reset data
       walletAddress = '';
       userBalance = 0;
       userRank = 'Not Ranked';
       userNFTs = userNFTs.map(nft => ({ ...nft, owned: false }));
       miningData = { power: 12, totalMined: 0, isMining: false };
       taskStatus = { telegram: 'Go', 'telegram-group': 'Go', x: 'Go', discord: 'Go', share: 'Go' };
+      
+      // Clear localStorage
       localStorage.removeItem('walletAddress');
       localStorage.removeItem('userNFTs');
       localStorage.removeItem('miningData');
       localStorage.removeItem('userBalance');
       localStorage.removeItem('taskStatus');
+      
+      // Reset UI
       document.getElementById('wallet-id').classList.add('hidden');
       document.getElementById('wallet-address').textContent = 'Not Connected';
       document.getElementById('connect-farcaster').classList.remove('hidden');
       document.getElementById('logout-button').classList.add('hidden');
-      document.getElementById('connect-farcaster').textContent = 'Connect Farcaster Wallet';
-      document.getElementById('connect-farcaster').classList.add('bg-blue-500', 'hover:bg-blue-600');
-      document.getElementById('connect-farcaster').classList.remove('bg-green-500', 'hover:bg-green-600');
-      userNFTs.forEach((nft, index) => {
-        if (index === 0) {
-          document.getElementById('claim-nft-0').textContent = 'Claim';
-          document.getElementById('claim-nft-0').classList.remove('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById('claim-nft-0').classList.add('bg-blue-500', 'hover:bg-blue-600');
-          document.getElementById('claim-nft-0').disabled = false;
-        } else {
-          document.getElementById(`buy-nft-${index}`).textContent = `${nft.stars} ⭐`;
-          document.getElementById(`buy-nft-${index}`).classList.remove('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById(`buy-nft-${index}`).classList.add('bg-yellow-500', 'hover:bg-yellow-600');
-          document.getElementById(`buy-nft-${index}`).disabled = false;
-        }
-      });
-      Object.keys(taskStatus).forEach(taskId => {
-        const button = document.getElementById(`task-${taskId}`);
-        button.textContent = 'Go';
-        button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-        button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-        button.disabled = false;
-      });
+      document.getElementById('referral-link').value = `${APP_URL}?ref=your_wallet`;
+      
+      // Reset buttons
+      resetNFTButtons();
+      resetTaskButtons();
+      
+      // Re-render
       renderNFTSelection();
       renderNFTWallet();
       updateBalance();
@@ -459,17 +527,116 @@
       showSection('home');
     }
 
+    // Update NFT buttons based on ownership
+    function updateNFTButtons() {
+      userNFTs.forEach((nft, index) => {
+        const buttonId = index === 0 ? 'claim-nft-0' : `buy-nft-${index}`;
+        const button = document.getElementById(buttonId);
+        
+        if (nft.owned) {
+          if (index === 0) {
+            button.textContent = 'Claimed ✓';
+            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            button.classList.add('bg-gray-500', 'cursor-not-allowed');
+            button.disabled = true;
+          } else {
+            button.textContent = 'Owned ✓';
+            button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            button.classList.add('bg-gray-500', 'cursor-not-allowed');
+            button.disabled = true;
+          }
+        } else {
+          if (index === 0) {
+            button.textContent = 'Claim Free';
+            button.classList.remove('bg-gray-500', 'cursor-not-allowed');
+            button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            button.disabled = false;
+          } else {
+            button.textContent = `${nft.stars} ⭐`;
+            button.classList.remove('bg-gray-500', 'cursor-not-allowed');
+            button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            button.disabled = false;
+          }
+        }
+      });
+    }
+
+    // Reset NFT buttons
+    function resetNFTButtons() {
+      userNFTs.forEach((nft, index) => {
+        const buttonId = index === 0 ? 'claim-nft-0' : `buy-nft-${index}`;
+        const button = document.getElementById(buttonId);
+        
+        if (index === 0) {
+          button.textContent = 'Claim Free';
+          button.classList.remove('bg-gray-500', 'cursor-not-allowed');
+          button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+          button.disabled = false;
+        } else {
+          button.textContent = `${nft.stars} ⭐`;
+          button.classList.remove('bg-gray-500', 'cursor-not-allowed');
+          button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+          button.disabled = false;
+        }
+      });
+    }
+
+    // Update task buttons
+    function updateTaskButtons() {
+      Object.keys(taskStatus).forEach(taskId => {
+        const buttonId = `task-${taskId}`;
+        const fullButtonId = `task-${taskId}-full`;
+        const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
+        
+        if (button) {
+          if (taskStatus[taskId] === 'Done') {
+            button.textContent = 'Done ✓';
+            button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            button.classList.add('bg-gray-500', 'cursor-not-allowed');
+            button.disabled = true;
+          } else if (taskStatus[taskId] === 'Check') {
+            button.textContent = 'Check';
+            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+            button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            button.disabled = false;
+          } else {
+            button.textContent = 'Go';
+            button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+            button.disabled = false;
+          }
+        }
+      });
+    }
+
+    // Reset task buttons
+    function resetTaskButtons() {
+      Object.keys(taskStatus).forEach(taskId => {
+        const buttonId = `task-${taskId}`;
+        const fullButtonId = `task-${taskId}-full`;
+        const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
+        
+        if (button) {
+          button.textContent = 'Go';
+          button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+          button.classList.add('bg-blue-500', 'hover:bg-blue-600');
+          button.disabled = false;
+        }
+      });
+    }
+
     // Render NFT Wallet
     function renderNFTWallet() {
       const walletList = document.getElementById('nft-wallet');
       walletList.innerHTML = '';
       const ownedNFTs = userNFTs.filter(nft => nft.owned);
+      
       if (ownedNFTs.length === 0) {
-        walletList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs owned yet.</p>';
+        walletList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs owned yet. Claim your free NFT!</p>';
       } else {
         ownedNFTs.forEach(nft => {
           const card = document.createElement('div');
-          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
+          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow';
           card.innerHTML = `
             <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
             <div class="flex-1">
@@ -482,113 +649,306 @@
       }
     }
 
-    // Update Balance
+    // Update Balance Display
     function updateBalance() {
       document.getElementById('user-balance').textContent = userBalance.toFixed(2);
       document.getElementById('user-balance-leaderboard').textContent = `${userBalance.toFixed(2)} NAI`;
     }
 
+    // Copy Referral Link
+    function copyReferralLink() {
+      const referralLink = document.getElementById('referral-link');
+      referralLink.select();
+      document.execCommand('copy');
+      alert('Referral link copied! Share it with friends to earn bonuses.');
+    }
+
     // Complete Task
     async function completeTask(taskId, link) {
-      const button = document.getElementById(`task-${taskId}`);
+      if (!walletAddress) {
+        alert('Please connect your wallet first.');
+        return;
+      }
+      
+      const buttonId = `task-${taskId}`;
+      const fullButtonId = `task-${taskId}-full`;
+      const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
+      
       if (taskStatus[taskId] === 'Done') return;
+      
       if (taskStatus[taskId] === 'Go') {
-        window.open(link.replace('your_ref', walletAddress), '_blank');
+        // Open link
+        const refLink = link.includes('your_ref') ? link.replace('your_ref', walletAddress) : link;
+        window.open(refLink, '_blank');
+        
+        // Update to check state
         taskStatus[taskId] = 'Check';
         button.textContent = 'Check';
         button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
         button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+        
         localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
       } else if (taskStatus[taskId] === 'Check') {
-        button.textContent = 'Loading...';
+        // Verify completion
+        button.textContent = 'Verifying...';
         button.disabled = true;
+        
         try {
           const response = await fetch(`${BASE_URL}/api/complete-task`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress, taskId })
           });
+          
           const data = await response.json();
           if (data.success) {
             taskStatus[taskId] = 'Done';
-            button.textContent = 'Done';
+            button.textContent = 'Done ✓';
             button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
             button.classList.add('bg-gray-500', 'cursor-not-allowed');
             button.disabled = true;
+            
             localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
+            
+            // Add reward
             let reward = 0;
-            if (taskId === 'telegram') reward = 10;
-            else if (taskId === 'telegram-group') reward = 5;
-            else if (taskId === 'x') reward = 5;
-            else if (taskId === 'discord') reward = 5;
-            else if (taskId === 'share') reward = 3;
+            switch(taskId) {
+              case 'telegram': reward = 10; break;
+              case 'telegram-group': reward = 5; break;
+              case 'x': reward = 5; break;
+              case 'discord': reward = 5; break;
+              case 'share': reward = 3; break;
+            }
+            
             userBalance += reward;
             localStorage.setItem('userBalance', userBalance);
             updateBalance();
             await updateUserData();
-            alert(`Task ${taskId} completed! +${reward} NAI`);
+            
+            alert(`Task completed! +${reward} NAI earned!`);
           } else {
-            throw new Error(data.error);
+            throw new Error(data.error || 'Task verification failed');
           }
         } catch (error) {
           console.error('Task completion failed:', error);
           button.textContent = 'Check';
           button.disabled = false;
-          alert('Failed to complete task. Please try again.');
+          alert('Verification failed. Please try again.');
         }
       }
     }
 
-    // Section Switch
+    // Section Navigation
     function showSection(id) {
+      // Hide all sections
       ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection', 'profile'].forEach(section => {
         document.getElementById(section).classList.add('hidden');
         const navButton = document.getElementById(`nav-${section}`);
         if (navButton) navButton.classList.remove('active');
       });
+      
+      // Show selected section
       document.getElementById(id).classList.remove('hidden');
       const navButton = document.getElementById(`nav-${id}`);
       if (navButton) navButton.classList.add('active');
-      if (id === 'mining') {
-        updateMiningCard();
-        renderNFTSelection();
-      }
-      if (id === 'profile') {
-        renderNFTWallet();
-      }
-      if (id === 'leaderboard') {
-        updateLeaderboard();
-        updateUserRank();
+      
+      // Section-specific actions
+      switch(id) {
+        case 'mining':
+          updateMiningCard();
+          renderNFTSelection();
+          break;
+        case 'profile':
+          renderNFTWallet();
+          break;
+        case 'leaderboard':
+          updateLeaderboard();
+          updateUserRank();
+          break;
       }
     }
 
-    // Update Mining Card
+    // Update Mining Card Display
     function updateMiningCard() {
-      document.getElementById('mining-card').style.backgroundImage = `url('${userNFTs[selectedNFTIndex].url}')`;
+      if (userNFTs[selectedNFTIndex]) {
+        document.getElementById('mining-card').style.backgroundImage = `url('${userNFTs[selectedNFTIndex].url}')`;
+      }
       document.getElementById('mining-power').textContent = `${miningData.power} Hash/s`;
       document.getElementById('total-mined').textContent = `${miningData.totalMined.toFixed(2)} NAI`;
-      document.querySelector('#mining-card button').textContent = miningData.isMining ? 'Stop Mining' : 'Start Mining';
+      const miningBtn = document.querySelector('#mining-card button');
+      miningBtn.textContent = miningData.isMining ? 'Stop Mining' : 'Start FREE Mining';
+      miningBtn.className = miningData.isMining ? 'bg-red-500 hover:bg-red-600 transition' : 'bg-green-500 hover:bg-green-600 transition';
     }
 
-    // Render NFT Selection
+    // Render NFT Selection for Mining
     function renderNFTSelection() {
       const nftList = document.getElementById('nft-selection-list');
       nftList.innerHTML = '';
-      userNFTs.forEach((nft, index) => {
-        if (nft.owned) {
-          const card = document.createElement('div');
-          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50';
-          card.onclick = () => selectNFT(index);
-          card.innerHTML = `
-            <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
-            </div>
-          `;
-          nftList.appendChild(card);
-        }
+      const ownedNFTs = userNFTs.filter(nft => nft.owned);
+      
+      if (ownedNFTs.length === 0) {
+        nftList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs available. Claim your free NFT first!</p>';
+        return;
+      }
+      
+      ownedNFTs.forEach((nft, index) => {
+        const card = document.createElement('div');
+        card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer transition-shadow';
+        card.onclick = () => selectNFT(index);
+        card.innerHTML = `
+          <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
+          <div class="flex-1">
+            <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
+            <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
+          </div>
+          ${index === selectedNFTIndex ? '<span class="text-green-400 text-xs">Selected</span>' : ''}
+        `;
+        nftList.appendChild(card);
       });
+    }
+
+    // Select NFT for Mining
+    function selectNFT(index) {
+      if (!userNFTs[index].owned) {
+        alert('You do not own this NFT.');
+        return;
+      }
+      selectedNFTIndex = index;
+      miningData.power = userNFTs[index].hashRate;
+      localStorage.setItem('miningData', JSON.stringify(miningData));
+      updateMiningCard();
+      updateUserData();
+      showSection('mining');
+    }
+
+    // Claim Free NFT
+    async function claimFreeNFT() {
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
+        return;
+      }
+      if (userNFTs[0].owned) {
+        alert('Free NFT already claimed!');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${BASE_URL}/api/claim-nft`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress, nftIndex: 0 })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          userNFTs[0].owned = true;
+          miningData.power = userNFTs[0].hashRate;
+          selectedNFTIndex = 0;
+          
+          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          localStorage.setItem('miningData', JSON.stringify(miningData));
+          
+          updateNFTButtons();
+          renderNFTSelection();
+          renderNFTWallet();
+          updateMiningCard();
+          
+          await updateUserData();
+          alert('🎉 Free NFT claimed successfully! Start mining now!');
+        } else {
+          alert('Failed to claim NFT: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Claim NFT failed:', error);
+        alert('Failed to claim NFT. Please try again.');
+      }
+    }
+
+    // Buy NFT with Stars
+    async function buyNFT(index, stars) {
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
+        return;
+      }
+      if (userNFTs[index].owned) {
+        alert('NFT already owned!');
+        return;
+      }
+      
+      if (!confirm(`Confirm purchase of ${userNFTs[index].name} for ${stars} ⭐?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${BASE_URL}/api/buy-nft`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            walletAddress, 
+            nftIndex: index, 
+            stars, 
+            receiver: '0xNeuroAIAdminWallet' 
+          })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          userNFTs[index].owned = true;
+          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          
+          updateNFTButtons();
+          renderNFTSelection();
+          renderNFTWallet();
+          
+          await updateUserData();
+          alert(`🎉 ${userNFTs[index].name} purchased successfully!`);
+        } else {
+          alert('Failed to purchase NFT: ' + (data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Buy NFT failed:', error);
+        alert('Failed to purchase NFT. Please try again.');
+      }
+    }
+
+    // Start/Stop Mining
+    async function startMining() {
+      if (!walletAddress) {
+        alert('Please connect your Farcaster wallet first.');
+        return;
+      }
+      if (!userNFTs[selectedNFTIndex]?.owned) {
+        alert('Please select an owned NFT to mine.');
+        return;
+      }
+      
+      miningData.isMining = !miningData.isMining;
+      
+      if (miningData.isMining) {
+        // Start mining interval
+        miningInterval = setInterval(() => {
+          const minedAmount = miningData.power / 3600; // 1 hour = 3600 seconds
+          miningData.totalMined += minedAmount;
+          userBalance += minedAmount;
+          
+          localStorage.setItem('miningData', JSON.stringify(miningData));
+          localStorage.setItem('userBalance', userBalance);
+          
+          updateMiningCard();
+          updateBalance();
+          updateUserData();
+        }, 1000);
+      } else {
+        // Stop mining
+        if (miningInterval) {
+          clearInterval(miningInterval);
+          miningInterval = null;
+        }
+      }
+      
+      localStorage.setItem('miningData', JSON.stringify(miningData));
+      updateMiningCard();
+      await updateUserData();
     }
 
     // Update Leaderboard
@@ -599,23 +959,33 @@
         document.getElementById('leaderboard-preview').classList.add('hidden');
         return;
       }
+      
       try {
         const response = await fetch(`${BASE_URL}/api/leaderboard`);
         const data = await response.json();
-        if (data.success && data.leaderboard.length > 0) {
+        
+        if (data.success && data.leaderboard?.length > 0) {
           leaderboard = data.leaderboard.slice(0, 15).map(user => ({
             id: user.id,
-            username: user.username ? user.username : user.id,
+            username: user.username || formatAddress(user.walletAddress),
             balance: user.balance || 0
           }));
+          
           const leaderboardEntries = document.getElementById('leaderboard-entries');
           leaderboardEntries.innerHTML = '';
+          
           leaderboard.forEach((user, index) => {
             const li = document.createElement('li');
-            li.className = index < 3 ? 'bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50' : 'bg-gray-800 p-3 rounded';
-            li.innerHTML = `${index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`} ${user.username} - ${user.balance.toFixed(2)} NAI`;
+            li.className = index < 3 
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50'
+              : 'bg-gray-800 p-3 rounded';
+            li.innerHTML = `
+              ${index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`} 
+              ${user.username} - ${user.balance.toFixed(2)} NAI
+            `;
             leaderboardEntries.appendChild(li);
           });
+          
           document.getElementById('leaderboard-list').classList.remove('hidden');
           document.getElementById('leaderboard-empty').classList.add('hidden');
           document.getElementById('leaderboard-preview').classList.remove('hidden');
@@ -637,222 +1007,98 @@
     async function updateUserRank() {
       if (!walletAddress) {
         document.getElementById('user-rank').textContent = 'Not Ranked';
-        document.getElementById('user-balance-leaderboard').textContent = '0 NAI';
         return;
       }
+      
       try {
         const response = await fetch(`${BASE_URL}/api/user-rank?walletAddress=${encodeURIComponent(walletAddress)}`);
         const data = await response.json();
+        
         if (data.success) {
           userRank = data.rank || 'Not Ranked';
           document.getElementById('user-rank').textContent = userRank;
-          document.getElementById('user-balance-leaderboard').textContent = `${userBalance.toFixed(2)} NAI`;
         } else {
           document.getElementById('user-rank').textContent = 'Not Ranked';
-          document.getElementById('user-balance-leaderboard').textContent = `${userBalance.toFixed(2)} NAI`;
         }
       } catch (error) {
         console.error('Fetch user rank failed:', error);
         document.getElementById('user-rank').textContent = 'Not Ranked';
-        document.getElementById('user-balance-leaderboard').textContent = `${userBalance.toFixed(2)} NAI`;
       }
     }
 
-    // Claim Free NFT
-    async function claimFreeNFT() {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (userNFTs[0].owned) {
-        alert('Free NFT already claimed!');
-        return;
-      }
-      try {
-        const response = await fetch(`${BASE_URL}/api/claim-nft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress, nftIndex: 0 })
-        });
-        const data = await response.json();
-        if (data.success) {
-          userNFTs[0].owned = true;
-          miningData.power = userNFTs[0].hashRate;
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          document.getElementById('claim-nft-0').textContent = 'Claimed';
-          document.getElementById('claim-nft-0').classList.remove('bg-blue-500', 'hover:bg-blue-600');
-          document.getElementById('claim-nft-0').classList.add('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById('claim-nft-0').disabled = true;
-          await updateUserData();
-          renderNFTSelection();
-          renderNFTWallet();
-          updateMiningCard();
-          alert('Free NFT Claimed!');
-        } else {
-          alert('Failed to claim NFT: ' + (data.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Claim NFT failed:', error);
-        alert('Failed to claim NFT. Please try again.');
-      }
-    }
-
-    // Buy NFT with Stars
-    async function buyNFT(index, stars) {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (userNFTs[index].owned) {
-        alert('NFT already owned!');
-        return;
-      }
-      try {
-        const response = await fetch(`${BASE_URL}/api/buy-nft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress, nftIndex: index, stars, receiver: '0xNeuroAIAdminWallet' })
-        });
-        const data = await response.json();
-        if (data.success) {
-          userNFTs[index].owned = true;
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          document.getElementById(`buy-nft-${index}`).textContent = 'Owned';
-          document.getElementById(`buy-nft-${index}`).classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-          document.getElementById(`buy-nft-${index}`).classList.add('bg-gray-500', 'cursor-not-allowed');
-          document.getElementById(`buy-nft-${index}`).disabled = true;
-          await updateUserData();
-          renderNFTSelection();
-          renderNFTWallet();
-          alert(`NFT Purchased for ${stars} ⭐!`);
-        } else {
-          alert('Failed to purchase NFT: ' + (data.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Buy NFT failed:', error);
-        alert('Failed to purchase NFT. Please try again.');
-      }
-    }
-
-    // Select NFT for Mining
-    function selectNFT(index) {
-      if (!userNFTs[index].owned) {
-        alert('You do not own this NFT.');
-        return;
-      }
-      selectedNFTIndex = index;
-      miningData.power = userNFTs[index].hashRate;
-      localStorage.setItem('miningData', JSON.stringify(miningData));
-      updateMiningCard();
-      updateUserData();
-      showSection('mining');
-    }
-
-    // Start/Stop Mining
-    async function startMining() {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (!userNFTs[selectedNFTIndex].owned) {
-        alert('Please select an owned NFT to mine.');
-        return;
-      }
-      miningData.isMining = !miningData.isMining;
-      if (miningData.isMining) {
-        miningInterval = setInterval(() => {
-          const minedAmount = miningData.power / 3600; // Mining rate per second
-          miningData.totalMined += minedAmount;
-          userBalance += minedAmount;
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          localStorage.setItem('userBalance', userBalance);
-          updateMiningCard();
-          updateBalance();
-          updateUserData();
-        }, 1000);
-      } else {
-        clearInterval(miningInterval);
-      }
-      localStorage.setItem('miningData', JSON.stringify(miningData));
-      updateMiningCard();
-      await updateUserData();
-    }
-
-    // Fetch User Data
+    // Fetch User Data from Backend
     async function fetchUserData() {
       if (!walletAddress) return;
+      
       try {
         const response = await fetch(`${BASE_URL}/api/user-data?walletAddress=${encodeURIComponent(walletAddress)}`);
         const data = await response.json();
+        
         if (data.success) {
           userBalance = data.userData.balance || 0;
           miningData = data.userData.miningData || { power: 12, totalMined: 0, isMining: false };
           userNFTs = data.userData.nfts || userNFTs;
           referralData = data.userData.referralData || { level1: 0, level2: 0, level3: 0 };
+          
+          // Update localStorage
           localStorage.setItem('userBalance', userBalance);
           localStorage.setItem('miningData', JSON.stringify(miningData));
           localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          
+          // Update UI
           updateBalance();
           updateMiningCard();
+          updateNFTButtons();
           renderNFTSelection();
           renderNFTWallet();
-        } else {
-          console.error('Fetch user data failed:', data.error);
+          updateTaskButtons();
         }
       } catch (error) {
         console.error('Fetch user data failed:', error);
       }
     }
 
-    // Update User Data
+    // Update User Data to Backend
     async function updateUserData() {
       if (!walletAddress) return;
+      
       try {
         const response = await fetch(`${BASE_URL}/api/update-user`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress, balance: userBalance, miningData, nfts: userNFTs, referralData })
+          body: JSON.stringify({ 
+            walletAddress, 
+            balance: userBalance, 
+            miningData, 
+            nfts: userNFTs, 
+            referralData 
+          })
         });
+        
         const data = await response.json();
         if (data.success) {
           localStorage.setItem('userBalance', userBalance);
           localStorage.setItem('miningData', JSON.stringify(miningData));
           localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
+          
           updateBalance();
           updateMiningCard();
           updateLeaderboard();
-        } else {
-          console.error('Update user data failed:', data.error);
         }
       } catch (error) {
         console.error('Update user data failed:', error);
       }
     }
 
-    // Update Referral Data
-    async function updateReferralData(referrerId, amount) {
-      if (!referrerId) return;
-      try {
-        const response = await fetch(`${BASE_URL}/api/update-referral`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referrerId, amount })
-        });
-        const data = await response.json();
-        if (data.success) {
-          referralData = data.referralData || { level1: 0, level2: 0, level3: 0 };
-          document.querySelectorAll('.referral-card').forEach((card, index) => {
-            card.children[1].textContent = `${referralData[`level${index + 1}`]} Hash/s`;
-            card.children[2].textContent = `${referralData[`level${index + 1}`]} Referrals`;
-          });
-        } else {
-          console.error('Update referral data failed:', data.error);
-        }
-      } catch (error) {
-        console.error('Update referral data failed:', error);
-      }
+    // Update Referral Data Display
+    function updateReferralDisplay() {
+      document.getElementById('ref-level1-hash').textContent = `${referralData.level1} Hash/s`;
+      document.getElementById('ref-level1-count').textContent = `${referralData.level1} Referrals`;
+      document.getElementById('ref-level2-hash').textContent = `${referralData.level2} Hash/s`;
+      document.getElementById('ref-level2-count').textContent = `${referralData.level2} Referrals`;
+      document.getElementById('ref-level3-hash').textContent = `${referralData.level3} Hash/s`;
+      document.getElementById('ref-level3-count').textContent = `${referralData.level3} Referrals`;
     }
   </script>
 </body>
-</html>
+            </html>
