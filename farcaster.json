@@ -1,1 +1,19 @@
-
+{
+  "accountAssociation": {
+    "frame": {
+      "allowedAddresses": ["0x6630fb9ceb3203375c936661015eda4df77e3cdb"]
+    },
+    "baseBuilder": {
+      "allowedAddresses": ["0x6630fb9ceb3203375c936661015eda4df77e3cdb"]
+    }
+  },
+  "frame": {
+    "image": "https://github.com/tgneuroai/TgNeuroai.github.io/blob/main/assets/images/Logo.png",
+    "imageType": "image/png",
+    "title": "NEURO AI Mining",
+    "subtitle": "Earn NAI tokens by mining",
+    "postUrl": "https://tgneuroai.github.io",
+    "interactionUrl": "https://tgneuroai.github.io"
+  },
+  "manifestUrl": "https://tgneuroai.github.io/manifest.json"
+}
