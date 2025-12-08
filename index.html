@@ -227,7 +227,7 @@
               <span class="text-sm font-semibold">Quantum Spark #2 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">44 Hash/s</p>
             </div>
-            <button id="buy-nft-1" onclick="buyNFT(1, 70,000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
+            <button id="buy-nft-1" onclick="buyNFT(1, 2500)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
               70,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
             </button>
           </div>
@@ -237,7 +237,7 @@
               <span class="text-sm font-semibold">Astro Core #3 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">64 Hash/s</p>
             </div>
-            <button id="buy-nft-2" onclick="buyNFT(2, 105,000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
+            <button id="buy-nft-2" onclick="buyNFT(2, 5000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
               105,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
             </button>
           </div>
@@ -247,7 +247,7 @@
               <span class="text-sm font-semibold">Cosmic Surge #4 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">84 Hash/s</p>
             </div>
-            <button id="buy-nft-3" onclick="buyNFT(3, 309,000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
+            <button id="buy-nft-3" onclick="buyNFT(3, 9000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
               309,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
             </button>
           </div>
@@ -257,7 +257,7 @@
               <span class="text-sm font-semibold">Galactic Prime #5 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
               <p class="text-gray-400 text-xs">148 Hash/s</p>
             </div>
-            <button id="buy-nft-4" onclick="buyNFT(4, 1,025,000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
+            <button id="buy-nft-4" onclick="buyNFT(4, 25000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
               1,025,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
             </button>
           </div>
@@ -348,10 +348,10 @@
     let userBalance = 0;
     let userNFTs = [
       { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter #1 - Free', hashRate: 12, owned: false },
-      { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark #2', hashRate: 44, owned: false, stars: 70,000 },
-      { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core #3', hashRate: 64, owned: false, stars: 105,000 },
-      { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge #4', hashRate: 84, owned: false, stars: 309,000 },
-      { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime #5', hashRate: 148, owned: false, stars: 1,025,000 }
+      { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark #2', hashRate: 44, owned: false, stars: 2500 },
+      { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core #3', hashRate: 64, owned: false, stars: 5000 },
+      { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge #4', hashRate: 84, owned: false, stars: 9000 },
+      { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime #5', hashRate: 148, owned: false, stars: 25000 }
     ];
     let selectedNFTIndex = 0;
     let miningData = { power: 12, totalMined: 0, isMining: false };
