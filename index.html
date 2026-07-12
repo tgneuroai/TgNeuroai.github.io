@@ -1,1120 +1,875 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEURO AI Mining</title>
-  
-  <!-- PWA & Base.dev Meta Tags -->
-  <meta name="description" content="Earn NAI tokens through mining and referrals in the NEURO AI ecosystem">
-  <meta name="theme-color" content="#a855f7">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="NEURO AI">
-  
-  <!-- Farcaster & Base.dev -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="farcaster:frame" content="true">
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
-  <style>
-    /* Animated gradient border for NFTs, Referral Cards, and Rank Card */
-    .nft-card, .referral-card, .rank-card {
-      position: relative;
-      overflow: hidden;
-    }
-    .nft-card::before, .referral-card::before, .rank-card::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      background: linear-gradient(45deg, #a855f7, #3b82f6, #a855f7);
-      z-index: -1;
-      animation: rotateBorder 3s linear infinite;
-    }
-    @keyframes rotateBorder {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    /* Fade-in transition for sections */
-    .section {
-      animation: fadeIn 0.3s ease-in-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    /* Neon glow and active state for nav buttons */
-    .nav-button:hover {
-      filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.7));
-      transform: scale(1.05);
-    }
-    .nav-button.active {
-      border-bottom: 2px solid #a855f7;
-      filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.9));
-    }
-    /* Farcaster loading */
-    .loading-spinner {
-      border: 2px solid #f3f4f6;
-      border-top: 2px solid #a855f7;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    /* Logo styling for stars replacement */
-    .star-logo {
-      width: 16px;
-      height: 16px;
-      vertical-align: middle;
-      display: inline-block;
-      margin: 0 2px;
-    }
-  </style>
-</head>
-<body class="bg-gray-950 text-white font-sans m-0 overflow-x-hidden">
-  <!-- Header Card -->
-  <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-b-3xl shadow-lg text-center">
-    <div class="flex items-center justify-center space-x-3">
-      <img id="profile-logo" src="https://iili.io/FuJkzpR.png" alt="NAI Logo" class="w-10 h-10 rounded-full cursor-pointer" />
-      <h1 class="text-2xl font-bold tracking-wide">NEURO AI</h1>
-    </div>
-    <p class="mt-2 text-sm text-gray-200">Balance:</p>
-    <h2 class="text-3xl font-bold"><span id="user-balance">0</span> <span class="text-yellow-300">NAI</span></h2>
-    <button id="connect-farcaster" class="mt-3 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">
-      <span id="connect-text">Connect Farcaster Wallet</span>
-      <div id="connect-loading" class="hidden flex items-center space-x-2">
-        <div class="loading-spinner"></div>
-        <span>Connecting...</span>
-      </div>
-    </button>
-  </div>
-
-  <!-- Profile Section -->
-  <div id="profile" class="section hidden space-y-6 p-4">
-    <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK8lt.png" alt="Profile" class="inline w-5 h-5 mr-1" />Profile</h2>
-    <div id="wallet-id" class="text-sm text-gray-300 hidden">Wallet: <span id="wallet-address">Not Connected</span></div>
-    <button id="logout-button" onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full font-bold text-white transition hidden">Logout</button>
-    <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjK8lt.png" alt="NFT Wallet" class="inline w-5 h-5 mr-1" />NFT Wallet</h3>
-    <div id="nft-wallet" class="space-y-4"></div>
-  </div>
-
-  <!-- Bottom Navigation -->
-  <div class="fixed bottom-0 w-full bg-white flex justify-around py-4 border-t border-gray-300 z-50 text-xs rounded-t-xl">
-    <button onclick="showSection('home')" class="nav-button flex flex-col items-center transition text-gray-900 active" id="nav-home">
-      <img src="https://iili.io/FTGpikF.png" class="w-8 h-8 mb-1" />
-      <span class="font-semibold uppercase">Home</span>
-    </button>
-    <button onclick="showSection('mining')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-mining">
-      <img src="https://iili.io/FTGpZhJ.png" class="w-8 h-8 mb-1" />
-      <span class="font-semibold uppercase">Mining</span>
-    </button>
-    <button onclick="showSection('referral')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-referral">
-      <img src="https://iili.io/FTGpm1p.png" class="w-8 h-8 mb-1" />
-      <span class="font-semibold uppercase">Referral</span>
-    </button>
-    <button onclick="showSection('tasks')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-tasks">
-      <img src="https://iili.io/FTGpQIa.png" class="w-8 h-8 mb-1" />
-      <span class="font-semibold uppercase">Tasks</span>
-    </button>
-    <button onclick="showSection('leaderboard')" class="nav-button flex flex-col items-center transition text-gray-900" id="nav-leaderboard">
-      <img src="https://iili.io/FTGpsmg.png" class="w-8 h-8 mb-1" />
-      <span class="font-semibold uppercase">Top</span>
-    </button>
-  </div>
-
-  <!-- Main Content -->
-  <div id="content" class="p-4 pb-24 space-y-8 rounded-t-2xl bg-gray-950">
-    <!-- HOME SECTION -->
-    <div id="home" class="section space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjKSUX.png" alt="Dashboard" class="inline w-5 h-5 mr-1" />Dashboard</h2>
-      <!-- Mining Card Preview -->
-      <div class="bg-gray-800 p-4 rounded-xl text-center shadow relative overflow-hidden"
-           style="background-image: url('https://iili.io/FIhQez7.gif'); background-size: cover; background-position: center;">
-        <div class="bg-black bg-opacity-60 p-6 rounded-xl">
-          <button onclick="showSection('mining')" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-full font-bold text-white transition">Start Mining</button>
-        </div>
-      </div>
-      <!-- NFT Preview -->
-      <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTjK8lt.png" alt="NFTs" class="inline w-5 h-5 mr-1" />NFTs</h3>
-        <ul class="space-y-1 text-sm">
-          <li class="flex justify-between">
-            <span>Neon Starter #1 - Free <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-            <span class="text-gray-400 text-xs">12 Hash/s</span>
-          </li>
-          <li class="flex justify-between">
-            <span>Quantum Spark #2 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-            <span class="text-gray-400 text-xs">44 Hash/s</span>
-          </li>
-        </ul>
-        <button onclick="showSection('mining')" class="mt-2 text-sm text-blue-400 underline">View All</button>
-      </div>
-      <!-- Referral Summary -->
-      <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTjKrRs.png" alt="Referral Bonus" class="inline w-5 h-5 mr-1" />Referral Bonus</h3>
-        <p class="text-sm text-gray-400">Earn up to 3 levels bonus</p>
-        <button onclick="showSection('referral')" class="mt-2 text-sm text-blue-400 underline">Referral Details</button>
-      </div>
-      <!-- Tasks -->
-      <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTjKix4.png" alt="Tasks" class="inline w-5 h-5 mr-1" />Tasks</h3>
-        <ul class="text-sm text-gray-300">
-          <li class="flex justify-between items-center">Join Telegram Channel - <span class="text-green-400">+10 NAI</span>
-            <button id="task-telegram" onclick="completeTask('telegram', 'https://t.me/NeuroAi44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-          </li>
-          <li class="flex justify-between items-center">Join Telegram Group - <span class="text-green-400">+5 NAI</span>
-            <button id="task-telegram-group" onclick="completeTask('telegram-group', 'https://t.me/Neuroai4')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-          </li>
-          <li class="flex justify-between items-center">Follow X - <span class="text-green-400">+5 NAI</span>
-            <button id="task-x" onclick="completeTask('x', 'https://x.com/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-          </li>
-          <li class="flex justify-between items-center">Join Discord - <span class="text-green-400">+5 NAI</span>
-            <button id="task-discord" onclick="completeTask('discord', 'https://discord.gg/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-          </li>
-          <li class="flex justify-between items-center">Share Referral Link - <span class="text-green-400">+3 NAI</span>
-            <button id="task-share" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-          </li>
-        </ul>
-        <button onclick="showSection('tasks')" class="mt-2 text-sm text-blue-400 underline">View All</button>
-      </div>
-      <!-- Leaderboard -->
-      <div class="bg-gray-800 p-4 rounded-xl">
-        <h3 class="font-semibold mb-2"><img src="https://iili.io/FTjK4OG.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top Miners</h3>
-        <p id="leaderboard-preview" class="hidden">🥇 <span id="leader-1">Not Available</span> - 0 NAI</p>
-        <button onclick="showSection('leaderboard')" class="mt-2 text-sm text-blue-400 underline">View Full</button>
-      </div>
-    </div>
-
-    <!-- MINING SECTION -->
-    <div id="mining" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjgdBI.png" alt="Start Bord" class="inline w-5 h-5 mr-1" />Start Bord</h2>
-      <div id="mining-card" class="relative rounded-xl overflow-hidden text-center shadow-inner"
-           style="background-image: url('https://iili.io/FIkdc3x.gif'); background-size: cover; background-position: center;">
-        <div class="bg-black bg-opacity-60 p-6">
-          <button onclick="startMining()" class="bg-green-500 hover:bg-green-600 transition px-4 py-2 rounded-full text-white font-bold">
-            Start FREE Mining
-          </button>
-          <p class="mt-3 text-sm text-gray-100">Your Mining Power: <strong id="mining-power">12 Hash/s</strong></p>
-          <p class="text-sm text-gray-100">Total Mined: <strong id="total-mined">0 NAI</strong></p>
-        </div>
-      </div>
-      <!-- NFT Selection Page -->
-      <div id="nft-selection" class="section hidden space-y-6">
-        <h2 class="text-xl font-semibold"><img src="https://iili.io/FTXcZL7.png" alt="NFTs" class="inline w-5 h-5 mr-1" />Select NFT for Mining</h2>
-        <div class="space-y-4" id="nft-selection-list"></div>
-        <button onclick="showSection('mining')" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-full font-bold text-white transition">Back to Mining</button>
-      </div>
-      <!-- NFTs Full -->
-      <div>
-        <h2 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjK8lt.png" alt="NFTs" class="inline w-5 h-5 mr-1" />Your NFTs</h2>
-        <div class="space-y-4">
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-            <img src="https://iili.io/FIkdc3x.gif" alt="Neon Starter #1" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Neon Starter #1 - Free <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">12 Hash/s</p>
-            </div>
-            <button id="claim-nft-0" onclick="claimFreeNFT()" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Claim</button>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-            <img src="https://iili.io/FIkdhGa.gif" alt="Quantum Spark #2" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Quantum Spark #2 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">44 Hash/s</p>
-            </div>
-            <button id="buy-nft-1" onclick="buyNFT(1, 2500)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
-              70,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
-            </button>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-            <img src="https://iili.io/FIkdj6J.gif" alt="Astro Core #3" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Astro Core #3 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">64 Hash/s</p>
-            </div>
-            <button id="buy-nft-2" onclick="buyNFT(2, 5000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
-              105,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
-            </button>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-            <img src="https://iili.io/FIkdSjt.gif" alt="Cosmic Surge #4" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Cosmic Surge #4 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">84 Hash/s</p>
-            </div>
-            <button id="buy-nft-3" onclick="buyNFT(3, 9000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
-              309,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
-            </button>
-          </div>
-          <div class="nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-            <img src="https://iili.io/FIkdXCg.gif" alt="Galactic Prime #5" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">Galactic Prime #5 <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">148 Hash/s</p>
-            </div>
-            <button id="buy-nft-4" onclick="buyNFT(4, 25000)" class="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-600 transition">
-              1,025,000 <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- REFERRAL SECTION -->
-    <div id="referral" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjKrRs.png" alt="Referral Program" class="inline w-5 h-5 mr-1" />Referral Program</h2>
-      <p class="text-sm text-gray-300">Earn rewards for each level:</p>
-      <ul class="mt-2 text-sm text-gray-400 space-y-1">
-        <li>🔹 Level 1: 10% of referrals earnings</li>
-        <li>🔹 Level 2: 5% of referrals earnings</li>
-        <li>🔹 Level 3: 2% of referrals earnings</li>
-      </ul>
-      <input id="referral-link" class="mt-3 w-full p-2 bg-gray-700 rounded text-sm" readonly value="https://tgneuroai.github.io?ref=your_wallet" />
-      <button onclick="copyReferralLink()" class="mt-2 w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded-full font-bold text-white transition">Copy Referral Link</button>
-      <h3 class="text-lg font-semibold mt-6 mb-2"><img src="https://iili.io/FTjKLs2.png" alt="Referral History" class="inline w-5 h-5 mr-1" />Referral History</h3>
-      <div class="space-y-2">
-        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-          <span class="font-semibold">Level 1 Direct</span>
-          <span id="ref-level1-hash">0 Hash/s</span>
-          <span id="ref-level1-count">0 Referrals</span>
-        </div>
-        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-          <span class="font-semibold">Level 2</span>
-          <span id="ref-level2-hash">0 Hash/s</span>
-          <span id="ref-level2-count">0 Referrals</span>
-        </div>
-        <div class="referral-card bg-gray-800 py-2 px-3 rounded-lg flex justify-between items-center text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow">
-          <span class="font-semibold">Level 3</span>
-          <span id="ref-level3-hash">0 Hash/s</span>
-          <span id="ref-level3-count">0 Referrals</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- TASKS SECTION -->
-    <div id="tasks" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjKix4.png" alt="Tasks" class="inline w-5 h-5 mr-1" />Daily Tasks</h2>
-      <ul class="mt-2 space-y-3">
-        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Join Telegram Channel - <span class="text-green-400">+10 NAI</span></span>
-          <button id="task-telegram-full" onclick="completeTask('telegram', 'https://t.me/NeuroAi44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-        </li>
-        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Join Telegram Group - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-telegram-group-full" onclick="completeTask('telegram-group', 'https://t.me/Neuroai4')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-        </li>
-        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Follow X Account - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-x-full" onclick="completeTask('x', 'https://x.com/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-        </li>
-        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Join Discord Server - <span class="text-green-400">+5 NAI</span></span>
-          <button id="task-discord-full" onclick="completeTask('discord', 'https://discord.gg/NeuroAI44')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-        </li>
-        <li class="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-          <span>Share Referral Link - <span class="text-green-400">+3 NAI</span></span>
-          <button id="task-share-full" onclick="completeTask('share', 'https://t.me/TgNeuroAi_bot')" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition">Go</button>
-        </li>
-      </ul>
-    </div>
-
-    <!-- LEADERBOARD SECTION -->
-    <div id="leaderboard" class="section hidden space-y-6">
-      <h2 class="text-xl font-semibold"><img src="https://iili.io/FTjK6bf.png" alt="Top Miners" class="inline w-5 h-5 mr-1" />Top 15 Miners</h2>
-      <div class="rank-card bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50">
-        <span>Your Rank: <strong id="user-rank">Not Ranked</strong></span>
-        <span class="block mt-1">Balance: <strong id="user-balance-leaderboard">0 NAI</strong></span>
-      </div>
-      <div id="leaderboard-list" class="mt-2 space-y-2 text-sm hidden">
-        <ol id="leaderboard-entries"></ol>
-      </div>
-      <p id="leaderboard-empty" class="text-gray-400">No users available yet. Connect your wallet to start mining!</p>
-    </div>
-  </div>
-
-  <!-- Script -->
-  <script>
-    // Base URL for backend API (update to your hosted backend URL after deployment)
-    const BASE_URL = 'http://localhost:3000';
-    const APP_URL = 'https://tgneuroai.github.io';
-
-    // User data
-    let walletAddress = '';
-    let userBalance = 0;
-    let userNFTs = [
-      { url: 'https://iili.io/FIkdc3x.gif', name: 'Neon Starter #1 - Free', hashRate: 12, owned: false },
-      { url: 'https://iili.io/FIkdhGa.gif', name: 'Quantum Spark #2', hashRate: 44, owned: false, stars: 2500 },
-      { url: 'https://iili.io/FIkdj6J.gif', name: 'Astro Core #3', hashRate: 64, owned: false, stars: 5000 },
-      { url: 'https://iili.io/FIkdSjt.gif', name: 'Cosmic Surge #4', hashRate: 84, owned: false, stars: 9000 },
-      { url: 'https://iili.io/FIkdXCg.gif', name: 'Galactic Prime #5', hashRate: 148, owned: false, stars: 25000 }
-    ];
-    let selectedNFTIndex = 0;
-    let miningData = { power: 12, totalMined: 0, isMining: false };
-    let miningInterval = null;
-    let userRank = 'Not Ranked';
-    let referralData = { level1: 0, level2: 0, level3: 0 };
-    let leaderboard = [];
-
-    // Task status tracking
-    let taskStatus = {
-      telegram: 'Go',
-      'telegram-group': 'Go',
-      x: 'Go',
-      discord: 'Go',
-      share: 'Go'
-    };
-
-    // Initialize App
-    window.onload = async () => {
-      // Load saved data
-      loadUserData();
-      
-      // Initialize UI
-      initializeUI();
-      
-      // Setup event listeners
-      setupEventListeners();
-      
-      // Show home section
-      showSection('home');
-    };
-
-    // Load user data from localStorage
-    function loadUserData() {
-      const savedNFTs = localStorage.getItem('userNFTs');
-      if (savedNFTs) userNFTs = JSON.parse(savedNFTs);
-      
-      const savedMiningData = localStorage.getItem('miningData');
-      if (savedMiningData) miningData = JSON.parse(savedMiningData);
-      
-      const savedTaskStatus = localStorage.getItem('taskStatus');
-      if (savedTaskStatus) taskStatus = JSON.parse(savedTaskStatus);
-      
-      const savedBalance = localStorage.getItem('userBalance');
-      if (savedBalance) userBalance = parseFloat(savedBalance);
-      
-      const savedWalletAddress = localStorage.getItem('walletAddress');
-      if (savedWalletAddress) {
-        walletAddress = savedWalletAddress;
-        setupConnectedWallet();
-      }
-    }
-
-    // Initialize UI elements
-    function initializeUI() {
-      // Update NFT buttons
-      updateNFTButtons();
-      
-      // Update task buttons
-      updateTaskButtons();
-      
-      // Update balance display
-      updateBalance();
-      
-      // Render sections
-      renderNFTSelection();
-      renderNFTWallet();
-    }
-
-    // Setup event listeners
-    function setupEventListeners() {
-      // Profile logo click
-      document.getElementById('profile-logo').addEventListener('click', () => {
-        if (walletAddress) {
-          document.getElementById('wallet-id').classList.remove('hidden');
-          document.getElementById('wallet-address').textContent = formatAddress(walletAddress);
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mfer · Alchemy NFT ডাউনলোডার</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* ===== ভেরিয়েবল ===== */
+        :root {
+            --bg-color: #0b0b0b;
+            --card-color: #151515;
+            --accent-color: #D8FF00;
+            --accent-hover: #b3cc00;
+            --text-color: #ffffff;
+            --text-muted: #aaaaaa;
+            --danger-color: #ff3333;
+            --success-color: #33ff33;
+            --border-color: #252525;
         }
-        renderNFTWallet();
-        showSection('profile');
-      });
 
-      // Farcaster/MetaMask Connect Button
-      document.getElementById('connect-farcaster').addEventListener('click', connectWallet);
-    }
-
-    // Setup connected wallet UI
-    function setupConnectedWallet() {
-      document.getElementById('connect-farcaster').classList.add('hidden');
-      document.getElementById('logout-button').classList.remove('hidden');
-      document.getElementById('wallet-id').classList.remove('hidden');
-      document.getElementById('wallet-address').textContent = formatAddress(walletAddress);
-      document.getElementById('referral-link').value = `${APP_URL}?ref=${walletAddress}`;
-      
-      // Auto-claim free NFT if not claimed
-      if (!userNFTs[0].owned) {
-        claimFreeNFT();
-      }
-      
-      // Fetch user data
-      fetchUserData();
-      updateLeaderboard();
-    }
-
-    // Format wallet address for display
-    function formatAddress(address) {
-      return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    }
-
-    // Connect Wallet (Farcaster/MetaMask)
-    async function connectWallet() {
-      const connectBtn = document.getElementById('connect-farcaster');
-      const connectText = document.getElementById('connect-text');
-      const connectLoading = document.getElementById('connect-loading');
-      
-      // Show loading
-      connectText.classList.add('hidden');
-      connectLoading.classList.remove('hidden');
-      connectBtn.disabled = true;
-      
-      try {
-        // Try Farcaster first, then fallback to MetaMask
-        if (window.farcaster && window.farcaster.connect) {
-          const user = await window.farcaster.connect();
-          walletAddress = user.address;
-        } else if (window.ethereum) {
-          // MetaMask fallback
-          const accounts = await window.ethereum.request({ 
-            method: 'eth_requestAccounts' 
-          });
-          walletAddress = accounts[0];
-        } else {
-          throw new Error('No wallet found. Please install MetaMask or use Farcaster.');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        // Save and setup
-        localStorage.setItem('walletAddress', walletAddress);
-        setupConnectedWallet();
-        
-      } catch (error) {
-        console.error('Wallet connection failed:', error);
-        alert('Failed to connect wallet: ' + error.message);
-      } finally {
-        // Hide loading
-        connectText.classList.remove('hidden');
-        connectLoading.classList.add('hidden');
-        connectBtn.disabled = false;
-      }
-    }
 
-    // Logout function
-    function logout() {
-      // Stop mining
-      if (miningData.isMining) {
-        clearInterval(miningInterval);
-        miningData.isMining = false;
-      }
-      
-      // Reset data
-      walletAddress = '';
-      userBalance = 0;
-      userRank = 'Not Ranked';
-      userNFTs = userNFTs.map(nft => ({ ...nft, owned: false }));
-      miningData = { power: 12, totalMined: 0, isMining: false };
-      taskStatus = { telegram: 'Go', 'telegram-group': 'Go', x: 'Go', discord: 'Go', share: 'Go' };
-      
-      // Clear localStorage
-      localStorage.removeItem('walletAddress');
-      localStorage.removeItem('userNFTs');
-      localStorage.removeItem('miningData');
-      localStorage.removeItem('userBalance');
-      localStorage.removeItem('taskStatus');
-      
-      // Reset UI
-      document.getElementById('wallet-id').classList.add('hidden');
-      document.getElementById('wallet-address').textContent = 'Not Connected';
-      document.getElementById('connect-farcaster').classList.remove('hidden');
-      document.getElementById('logout-button').classList.add('hidden');
-      document.getElementById('referral-link').value = `${APP_URL}?ref=your_wallet`;
-      
-      // Reset buttons
-      resetNFTButtons();
-      resetTaskButtons();
-      
-      // Re-render
-      renderNFTSelection();
-      renderNFTWallet();
-      updateBalance();
-      updateLeaderboard();
-      showSection('home');
-    }
-
-    // Update NFT buttons based on ownership
-    function updateNFTButtons() {
-      userNFTs.forEach((nft, index) => {
-        const buttonId = index === 0 ? 'claim-nft-0' : `buy-nft-${index}`;
-        const button = document.getElementById(buttonId);
-        
-        if (nft.owned) {
-          if (index === 0) {
-            button.textContent = 'Claimed ✓';
-            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            button.classList.add('bg-gray-500', 'cursor-not-allowed');
-            button.disabled = true;
-          } else {
-            button.innerHTML = 'Owned ✓';
-            button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.classList.add('bg-gray-500', 'cursor-not-allowed');
-            button.disabled = true;
-          }
-        } else {
-          if (index === 0) {
-            button.textContent = 'Claim Free';
-            button.classList.remove('bg-gray-500', 'cursor-not-allowed');
-            button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            button.disabled = false;
-          } else {
-            button.innerHTML = `${nft.stars} <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />`;
-            button.classList.remove('bg-gray-500', 'cursor-not-allowed');
-            button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.disabled = false;
-          }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 40px 20px;
+            min-height: 100vh;
         }
-      });
-    }
 
-    // Reset NFT buttons
-    function resetNFTButtons() {
-      userNFTs.forEach((nft, index) => {
-        const buttonId = index === 0 ? 'claim-nft-0' : `buy-nft-${index}`;
-        const button = document.getElementById(buttonId);
-        
-        if (index === 0) {
-          button.textContent = 'Claim Free';
-          button.classList.remove('bg-gray-500', 'cursor-not-allowed');
-          button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-          button.disabled = false;
-        } else {
-          button.innerHTML = `${nft.stars} <img src="https://iili.io/FuJkzpR.png" alt="Logo" class="inline star-logo" />`;
-          button.classList.remove('bg-gray-500', 'cursor-not-allowed');
-          button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-          button.disabled = false;
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
-      });
-    }
 
-    // Update task buttons
-    function updateTaskButtons() {
-      Object.keys(taskStatus).forEach(taskId => {
-        const buttonId = `task-${taskId}`;
-        const fullButtonId = `task-${taskId}-full`;
-        const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
-        
-        if (button) {
-          if (taskStatus[taskId] === 'Done') {
-            button.textContent = 'Done ✓';
-            button.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.classList.add('bg-gray-500', 'cursor-not-allowed');
-            button.disabled = true;
-          } else if (taskStatus[taskId] === 'Check') {
-            button.textContent = 'Check';
-            button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-            button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.disabled = false;
-          } else {
-            button.textContent = 'Go';
-            button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-            button.disabled = false;
-          }
+        /* ===== হেডার ===== */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
         }
-      });
-    }
 
-    // Reset task buttons
-    function resetTaskButtons() {
-      Object.keys(taskStatus).forEach(taskId => {
-        const buttonId = `task-${taskId}`;
-        const fullButtonId = `task-${taskId}-full`;
-        const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
-        
-        if (button) {
-          button.textContent = 'Go';
-          button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-          button.classList.add('bg-blue-500', 'hover:bg-blue-600');
-          button.disabled = false;
+        header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
         }
-      });
-    }
 
-    // Render NFT Wallet
-    function renderNFTWallet() {
-      const walletList = document.getElementById('nft-wallet');
-      walletList.innerHTML = '';
-      const ownedNFTs = userNFTs.filter(nft => nft.owned);
-      
-      if (ownedNFTs.length === 0) {
-        walletList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs owned yet. Claim your free NFT!</p>';
-      } else {
-        ownedNFTs.forEach(nft => {
-          const card = document.createElement('div');
-          card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 transition-shadow';
-          card.innerHTML = `
-            <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
-            <div class="flex-1">
-              <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-              <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
-            </div>
-          `;
-          walletList.appendChild(card);
-        });
-      }
-    }
+        .text-accent {
+            color: var(--accent-color);
+        }
+        .text-danger {
+            color: var(--danger-color);
+        }
+        .text-success {
+            color: var(--success-color);
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
 
-    // Update Balance Display
-    function updateBalance() {
-      document.getElementById('user-balance').textContent = userBalance.toFixed(2);
-      document.getElementById('user-balance-leaderboard').textContent = `${userBalance.toFixed(2)} NAI`;
-    }
+        /* ===== কনফিগ প্যানেল ===== */
+        .config-panel {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
 
-    // Copy Referral Link
-    function copyReferralLink() {
-      const referralLink = document.getElementById('referral-link');
-      referralLink.select();
-      document.execCommand('copy');
-      alert('Referral link copied! Share it with friends to earn bonuses.');
-    }
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
 
-    // Complete Task
-    async function completeTask(taskId, link) {
-      if (!walletAddress) {
-        alert('Please connect your wallet first.');
-        return;
-      }
-      
-      const buttonId = `task-${taskId}`;
-      const fullButtonId = `task-${taskId}-full`;
-      const button = document.getElementById(buttonId) || document.getElementById(fullButtonId);
-      
-      if (taskStatus[taskId] === 'Done') return;
-      
-      if (taskStatus[taskId] === 'Go') {
-        // Open link
-        const refLink = link.includes('your_ref') ? link.replace('your_ref', walletAddress) : link;
-        window.open(refLink, '_blank');
-        
-        // Update to check state
-        taskStatus[taskId] = 'Check';
-        button.textContent = 'Check';
-        button.classList.remove('bg-blue-500', 'hover:bg-blue-600');
-        button.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-        
-        localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
-      } else if (taskStatus[taskId] === 'Check') {
-        // Verify completion
-        button.textContent = 'Verifying...';
-        button.disabled = true;
-        
-        try {
-          const response = await fetch(`${BASE_URL}/api/complete-task`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress, taskId })
-          });
-          
-          const data = await response.json();
-          if (data.success) {
-            taskStatus[taskId] = 'Done';
-            button.textContent = 'Done ✓';
-            button.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
-            button.classList.add('bg-gray-500', 'cursor-not-allowed');
-            button.disabled = true;
-            
-            localStorage.setItem('taskStatus', JSON.stringify(taskStatus));
-            
-            // Add reward
-            let reward = 0;
-            switch(taskId) {
-              case 'telegram': reward = 10; break;
-              case 'telegram-group': reward = 5; break;
-              case 'x': reward = 5; break;
-              case 'discord': reward = 5; break;
-              case 'share': reward = 3; break;
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .input-group input,
+        .input-group select {
+            background-color: #202020;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(216, 255, 0, 0.2);
+        }
+
+        .input-group input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ===== বাটন ===== */
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background-color: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+        .btn-accent:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+        .btn-accent:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== প্রগ্রেস প্যানেল ===== */
+        .progress-panel {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar-container {
+            background-color: #202020;
+            height: 12px;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-color), #aacc00);
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        /* ===== সার্চ প্যানেল ===== */
+        .filter-panel {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 500px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            padding: 14px 16px 14px 45px;
+            border-radius: 30px;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* ===== গ্যালারি গ্রিড ===== */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+        }
+
+        .nft-card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .nft-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+            box-shadow: 0 12px 30px rgba(216, 255, 0, 0.1);
+        }
+
+        .nft-image-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 8px;
+            background-color: #202020;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .nft-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .nft-image-wrapper img.loaded {
+            opacity: 1;
+        }
+
+        .card-meta {
+            margin-top: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .card-id {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .card-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-url-box {
+            background-color: #202020;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 12px;
+        }
+
+        .btn-card-download {
+            background-color: #252525;
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-card-download:hover {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+
+        /* ===== মোডাল ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content-wrapper {
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-caption {
+            margin-top: 15px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 25px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .modal-close:hover {
+            color: var(--accent-color);
+        }
+
+        /* ===== ইউটিলিটি ===== */
+        .hidden {
+            display: none !important;
+        }
+        .sentinel {
+            height: 20px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .text-center {
+            text-align: center;
+        }
+
+        /* ===== রেসপন্সিভ ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 10px;
             }
-            
-            userBalance += reward;
-            localStorage.setItem('userBalance', userBalance);
-            updateBalance();
-            await updateUserData();
-            
-            alert(`Task completed! +${reward} NAI earned!`);
-          } else {
-            throw new Error(data.error || 'Task verification failed');
-          }
-        } catch (error) {
-          console.error('Task completion failed:', error);
-          button.textContent = 'Check';
-          button.disabled = false;
-          alert('Verification failed. Please try again.');
+            header h1 {
+                font-size: 2.2rem;
+            }
+            .config-panel {
+                padding: 20px;
+            }
+            .action-row {
+                flex-direction: column;
+            }
         }
-      }
-    }
+    </style>
+</head>
+<body>
 
-    // Section Navigation
-    function showSection(id) {
-      // Hide all sections
-      ['home', 'mining', 'referral', 'tasks', 'leaderboard', 'nft-selection', 'profile'].forEach(section => {
-        document.getElementById(section).classList.add('hidden');
-        const navButton = document.getElementById(`nav-${section}`);
-        if (navButton) navButton.classList.remove('active');
-      });
-      
-      // Show selected section
-      document.getElementById(id).classList.remove('hidden');
-      const navButton = document.getElementById(`nav-${id}`);
-      if (navButton) navButton.classList.add('active');
-      
-      // Section-specific actions
-      switch(id) {
-        case 'mining':
-          updateMiningCard();
-          renderNFTSelection();
-          break;
-        case 'profile':
-          renderNFTWallet();
-          break;
-        case 'leaderboard':
-          updateLeaderboard();
-          updateUserRank();
-          break;
-      }
-    }
+    <div class="container">
+        <!-- হেডার -->
+        <header>
+            <h1><i class="fa-solid fa-bolt text-accent"></i> mfer · Alchemy ডাউনলোডার</h1>
+            <p class="subtitle">শুধু <span class="text-accent">৫১৭</span> টি নির্দিষ্ট NFT · ব্যাকগ্রাউন্ড #D8FF00</p>
+        </header>
 
-    // Update Mining Card Display
-    function updateMiningCard() {
-      if (userNFTs[selectedNFTIndex]) {
-        document.getElementById('mining-card').style.backgroundImage = `url('${userNFTs[selectedNFTIndex].url}')`;
-      }
-      document.getElementById('mining-power').textContent = `${miningData.power} Hash/s`;
-      document.getElementById('total-mined').textContent = `${miningData.totalMined.toFixed(2)} NAI`;
-      const miningBtn = document.querySelector('#mining-card button');
-      miningBtn.textContent = miningData.isMining ? 'Stop Mining' : 'Start FREE Mining';
-      miningBtn.className = miningData.isMining ? 'bg-red-500 hover:bg-red-600 transition' : 'bg-green-500 hover:bg-green-600 transition';
-    }
+        <!-- কনফিগ প্যানেল -->
+        <section class="config-panel">
+            <div class="grid-inputs">
+                <div class="input-group">
+                    <label for="apiKey">Alchemy API Key</label>
+                    <input type="text" id="apiKey" value="Sgfq6KI6igqQuemutQiHy" />
+                </div>
+                <div class="input-group">
+                    <label for="contractAddress">Contract Address</label>
+                    <input type="text" id="contractAddress" value="0x79fcdef22feed20eddacbb2587640e45491b757f" />
+                </div>
+                <div class="input-group">
+                    <label for="network">Network</label>
+                    <select id="network">
+                        <option value="eth-mainnet">Ethereum Mainnet</option>
+                    </select>
+                </div>
+            </div>
 
-    // Render NFT Selection for Mining
-    function renderNFTSelection() {
-      const nftList = document.getElementById('nft-selection-list');
-      nftList.innerHTML = '';
-      const ownedNFTs = userNFTs.filter(nft => nft.owned);
-      
-      if (ownedNFTs.length === 0) {
-        nftList.innerHTML = '<p class="text-gray-400 text-sm">No NFTs available. Claim your free NFT first!</p>';
-        return;
-      }
-      
-      ownedNFTs.forEach((nft, index) => {
-        const card = document.createElement('div');
-        card.className = 'nft-card bg-gray-800 p-3 rounded-lg flex items-center space-x-4 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer transition-shadow';
-        card.onclick = () => selectNFT(index);
-        card.innerHTML = `
-          <img src="${nft.url}" alt="${nft.name}" class="w-16 h-16 rounded-md border border-purple-500" />
-          <div class="flex-1">
-            <span class="text-sm font-semibold">${nft.name} <img src="https://iili.io/FTMV4xp.png" alt="Verified" class="inline w-4 h-4 ml-1" /></span>
-            <p class="text-gray-400 text-xs">${nft.hashRate} Hash/s</p>
-          </div>
-          ${index === selectedNFTIndex ? '<span class="text-green-400 text-xs">Selected</span>' : ''}
-        `;
-        nftList.appendChild(card);
-      });
-    }
+            <div class="grid-inputs sub-grid">
+                <div class="input-group">
+                    <label for="folderName">Download Folder Name</label>
+                    <input type="text" id="folderName" value="mfers-collection" />
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--accent-color);">🔥 Token IDs</label>
+                    <input type="text" value="৫১৭ টি নির্দিষ্ট Token ID" disabled style="color:var(--accent-color);" />
+                </div>
+            </div>
 
-    // Select NFT for Mining
-    function selectNFT(index) {
-      if (!userNFTs[index].owned) {
-        alert('You do not own this NFT.');
-        return;
-      }
-      selectedNFTIndex = index;
-      miningData.power = userNFTs[index].hashRate;
-      localStorage.setItem('miningData', JSON.stringify(miningData));
-      updateMiningCard();
-      updateUserData();
-      showSection('mining');
-    }
+            <button id="loadBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> লোড শুরু</button>
+        </section>
 
-    // Claim Free NFT
-    async function claimFreeNFT() {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (userNFTs[0].owned) {
-        alert('Free NFT already claimed!');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/claim-nft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress, nftIndex: 0 })
+        <!-- প্রগ্রেস প্যানেল -->
+        <section id="progressPanel" class="progress-panel hidden">
+            <div class="progress-stats">
+                <span>Progress: <strong id="progressPercent">0%</strong></span>
+                <span>Current ID: <strong id="currentId">-</strong></span>
+                <span>Loaded: <strong id="loadedCount" class="text-success">0</strong></span>
+                <span>Failed: <strong id="failedCount" class="text-danger">0</strong></span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <div class="action-row">
+                <button id="downloadAllBtn" class="btn btn-accent" disabled>
+                    <i class="fa-solid fa-file-zipper"></i> সব ছবি জিপে ডাউনলোড
+                </button>
+                <button id="retryBtn" class="btn btn-danger hidden">
+                    <i class="fa-solid fa-rotate-right"></i> ফেইলড রিট্রাই
+                </button>
+            </div>
+        </section>
+
+        <!-- সার্চ প্যানেল -->
+        <section id="filterPanel" class="filter-panel hidden">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchBar" placeholder="Token ID বা নাম দিয়ে খুঁজুন..." />
+            </div>
+        </section>
+
+        <!-- গ্যালারি গ্রিড -->
+        <main id="galleryGrid" class="gallery-grid"></main>
+
+        <!-- ইনফিনিট স্ক্রল সেন্টিনেল -->
+        <div id="sentinel" class="sentinel"></div>
+    </div>
+
+    <!-- মোডাল -->
+    <div id="previewModal" class="modal">
+        <span class="modal-close">&times;</span>
+        <div class="modal-content-wrapper">
+            <img class="modal-content" id="modalImg" />
+            <div id="modalCaption" class="modal-caption"></div>
+        </div>
+    </div>
+
+    <!-- JSZip এবং FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js">
+    </script>
+
+    <script>
+        // ============================================================
+        //  ৫১৭টি Token ID (আপনার CSV থেকে)
+        // ============================================================
+        const TOKEN_IDS = [
+            465, 439, 432, 414, 473, 397, 204, 583, 564, 71, 268, 237, 682, 505, 796, 736, 625, 697, 979, 546, 866, 576, 726,
+            1025, 1077, 1059, 1170, 920, 966, 1218, 1221, 1200, 909, 1222, 971, 1009, 1284, 1568, 1143, 1299, 1317, 1375,
+            1378, 1298, 1062, 1367, 1439, 1557, 1454, 1535, 1559, 1564, 1641, 1734, 1619, 1416, 1411, 1291, 1611, 1732, 1727,
+            1742, 1806, 1661, 1691, 1731, 1544, 1847, 1798, 1770, 1799, 1903, 1846, 1832, 1968, 1810, 1998, 1964, 2067, 1833,
+            2060, 2014, 1937, 2139, 2040, 2173, 2063, 1980, 2084, 2149, 2117, 2222, 2137, 2123, 2197, 2303, 2313, 2244, 2320,
+            2347, 2366, 2296, 2421, 2286, 2400, 2516, 2405, 2477, 2487, 2623, 2513, 2429, 2196, 2620, 2733, 2523, 2627, 2700,
+            2702, 2608, 2641, 2707, 2768, 2852, 2695, 2762, 2872, 2858, 2663, 2821, 2868, 2772, 2994, 2571, 2524, 2911, 2844,
+            2717, 2909, 2939, 2880, 3047, 3108, 3058, 3116, 2983, 2914, 3156, 2997, 2398, 3341, 3151, 3352, 3180, 3169, 3048,
+            3303, 3095, 3186, 3132, 3019, 3147, 3483, 3394, 3559, 3473, 3669, 3615, 3412, 3540, 3571, 3636, 3391, 3286, 3251,
+            3683, 3692, 3612, 3668, 3759, 3639, 3805, 3922, 3769, 3821, 3753, 3828, 3703, 3729, 3776, 3643, 3913, 4172, 4119,
+            4104, 3910, 3860, 4171, 3783, 4170, 3966, 4187, 3902, 3933, 4374, 4383, 3716, 4244, 4336, 4109, 4421, 4265, 4263,
+            4398, 4524, 4382, 4406, 4463, 4323, 4279, 4613, 4508, 4570, 4309, 4559, 4556, 4545, 4473, 4710, 4522, 4377, 4453,
+            4698, 4620, 4642, 4832, 4986, 4682, 4661, 4566, 4649, 4742, 4683, 4860, 4974, 4833, 4935, 4768, 4970, 5157, 5130,
+            4778, 5133, 5019, 5027, 4981, 5265, 4965, 4933, 5178, 4955, 5083, 5263, 5257, 5244, 5253, 4850, 4883, 5304, 5319,
+            5317, 5273, 5346, 5426, 5497, 5417, 5596, 5623, 5572, 5168, 5324, 5531, 5196, 5566, 5341, 5653, 5669, 5592, 5742,
+            5723, 5654, 5789, 5767, 5716, 5624, 5613, 5729, 5689, 5709, 5751, 5894, 5861, 6014, 5759, 5848, 6064, 5820, 6101,
+            6057, 5977, 6150, 6061, 6196, 6426, 6031, 6214, 6388, 6295, 6185, 6132, 6091, 6417, 6605, 5882, 6310, 6043, 6233,
+            6644, 6287, 6325, 6374, 6418, 6626, 6711, 6589, 6773, 6579, 6440, 6585, 6775, 7023, 7035, 6793, 7013, 6807, 6927,
+            6677, 6692, 7007, 6918, 6714, 7095, 7005, 7228, 7111, 7058, 7010, 7192, 7320, 7097, 7128, 7149, 7067, 7109, 7191,
+            7401, 7287, 7461, 7133, 7478, 7360, 7223, 7433, 7356, 7521, 7316, 7537, 7445, 7476, 7436, 7661, 7605, 7771, 7825,
+            7705, 7805, 7645, 7463, 7808, 7747, 7685, 7850, 7883, 7975, 7669, 7881, 7939, 7896, 7773, 7729, 7823, 8142, 7759,
+            7899, 8144, 8286, 8033, 8046, 7962, 7907, 7880, 8328, 8066, 8067, 7972, 8156, 7864, 8194, 8395, 8244, 8305, 8437,
+            8155, 8336, 8233, 8537, 8312, 8442, 8511, 8516, 8393, 8602, 8531, 8656, 8273, 8626, 8324, 8898, 8980, 8140, 8885,
+            8921, 8751, 8951, 8728, 8758, 8456, 8487, 8824, 8894, 8910, 9151, 9141, 9052, 9139, 9028, 8794, 8786, 8919, 9249,
+            8643, 9218, 8986, 9095, 9247, 9176, 9189, 9349, 9179, 9104, 9421, 9311, 9324, 9395, 9356, 9310, 9384, 9221, 9304,
+            9336, 9258, 9436, 9562, 9518, 9276, 9500, 9485, 9672, 9531, 9544, 9565, 9479, 9642, 9543, 9607, 9580, 9632, 9648,
+            9807, 9871, 9445, 9750, 9826, 9751, 9828, 9915, 9980, 9773, 9722, 9712, 9733, 9977, 9820, 9844, 9989, 9988, 9902
+        ];
+
+        // ============================================================
+        //  স্টেট ম্যানেজমেন্ট
+        // ============================================================
+        let nftCollection = [];
+        let displayedCount = 0;
+        let failedTokens = [];
+        const ITEMS_PER_PAGE = 20;
+
+        // ============================================================
+        //  DOM এলিমেন্ট
+        // ============================================================
+        const loadBtn = document.getElementById('loadBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const retryBtn = document.getElementById('retryBtn');
+        const progressPanel = document.getElementById('progressPanel');
+        const filterPanel = document.getElementById('filterPanel');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const searchBar = document.getElementById('searchBar');
+        const sentinel = document.getElementById('sentinel');
+
+        const progressPercent = document.getElementById('progressPercent');
+        const currentIdIndicator = document.getElementById('currentId');
+        const loadedCountIndicator = document.getElementById('loadedCount');
+        const failedCountIndicator = document.getElementById('failedCount');
+        const progressBar = document.getElementById('progressBar');
+
+        const modal = document.getElementById('previewModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalCaption = document.getElementById('modalCaption');
+        const modalClose = document.querySelector('.modal-close');
+
+        // ============================================================
+        //  লোড ফাংশন
+        // ============================================================
+        loadBtn.addEventListener('click', async () => {
+            nftCollection = [];
+            failedTokens = [];
+            galleryGrid.innerHTML = '';
+            displayedCount = 0;
+
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const contract = document.getElementById('contractAddress').value.trim();
+            const network = document.getElementById('network').value;
+
+            if (!apiKey || !contract) {
+                alert('API Key এবং Contract Address দিন!');
+                return;
+            }
+
+            progressPanel.classList.remove('hidden');
+            filterPanel.classList.add('hidden');
+            downloadAllBtn.disabled = true;
+            retryBtn.classList.add('hidden');
+
+            await fetchAllNFTs(apiKey, contract, network);
         });
-        
-        const data = await response.json();
-        if (data.success) {
-          userNFTs[0].owned = true;
-          miningData.power = userNFTs[0].hashRate;
-          selectedNFTIndex = 0;
-          
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          
-          updateNFTButtons();
-          renderNFTSelection();
-          renderNFTWallet();
-          updateMiningCard();
-          
-          await updateUserData();
-          alert('🎉 Free NFT claimed successfully! Start mining now!');
-        } else {
-          alert('Failed to claim NFT: ' + (data.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Claim NFT failed:', error);
-        alert('Failed to claim NFT. Please try again.');
-      }
-    }
 
-    // Buy NFT with Logo (formerly stars)
-    async function buyNFT(index, stars) {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (userNFTs[index].owned) {
-        alert('NFT already owned!');
-        return;
-      }
-      
-      if (!confirm(`Confirm purchase of ${userNFTs[index].name} for ${stars} Logo?`)) {
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/buy-nft`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            walletAddress, 
-            nftIndex: index, 
-            stars, 
-            receiver: '0xNeuroAIAdminWallet' 
-          })
+        // ============================================================
+        //  সব NFT ফেচ
+        // ============================================================
+        async function fetchAllNFTs(apiKey, contract, network) {
+            let loaded = 0;
+            let failed = 0;
+            const total = TOKEN_IDS.length;
+
+            for (let i = 0; i < total; i++) {
+                const tokenId = TOKEN_IDS[i];
+                currentIdIndicator.textContent = tokenId;
+
+                const endpoint =
+                    `https://${network}.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=false`;
+
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const metadata = await response.json();
+
+                    let rawImageUrl = metadata.image?.cachedUrl || metadata.image?.originalUrl || metadata.raw?.metadata
+                        ?.image;
+
+                    if (!rawImageUrl && metadata.raw?.metadata?.image) {
+                        rawImageUrl = metadata.raw.metadata.image;
+                    }
+
+                    if (rawImageUrl && rawImageUrl.startsWith('ipfs://')) {
+                        rawImageUrl = rawImageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                    }
+
+                    if (rawImageUrl) {
+                        nftCollection.push({
+                            tokenId: tokenId,
+                            name: metadata.name || `mfer #${tokenId}`,
+                            imageUrl: rawImageUrl,
+                            downloadName: `${tokenId}.png`
+                        });
+                        loaded++;
+                        loadedCountIndicator.textContent = loaded;
+                    } else {
+                        throw new Error('ইমেজ URL পাওয়া যায়নি');
+                    }
+                } catch (error) {
+                    console.error(`#${tokenId} লোড ব্যর্থ:`, error);
+                    failed++;
+                    failedTokens.push(tokenId);
+                    failedCountIndicator.textContent = failed;
+                }
+
+                const percent = Math.round(((loaded + failed) / total) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressPercent.textContent = `${percent}%`;
+            }
+
+            if (nftCollection.length > 0) {
+                downloadAllBtn.disabled = false;
+                filterPanel.classList.remove('hidden');
+                renderNextItems();
+                setupInfiniteScroll();
+            }
+
+            if (failedTokens.length > 0) {
+                retryBtn.classList.remove('hidden');
+            }
+        }
+
+        // ============================================================
+        //  রেন্ডারিং
+        // ============================================================
+        function renderNextItems(filteredList = null) {
+            const list = filteredList || nftCollection;
+            const targetLimit = Math.min(displayedCount + ITEMS_PER_PAGE, list.length);
+
+            for (let i = displayedCount; i < targetLimit; i++) {
+                const item = list[i];
+                const card = document.createElement('div');
+                card.className = 'nft-card';
+                card.innerHTML = `
+                        <div class="nft-image-wrapper" onclick="openImageModal('${item.imageUrl}', '${item.name}')">
+                            <img data-src="${item.imageUrl}" alt="${item.name}" class="lazy-img">
+                        </div>
+                        <div class="card-meta">
+                            <span class="card-id">ID: #${item.tokenId}</span>
+                            <h3 class="card-name">${item.name}</h3>
+                            <div class="card-url-box" title="${item.imageUrl}">${item.imageUrl.substring(0, 60)}...</div>
+                            <button class="btn-card-download" onclick="downloadSingleAsset('${item.imageUrl}', '${item.downloadName}')">
+                                <i class="fa-solid fa-download"></i> ডাউনলোড
+                            </button>
+                        </div>
+                    `;
+                galleryGrid.appendChild(card);
+            }
+
+            displayedCount = targetLimit;
+            setupLazyLoading();
+        }
+
+        // ============================================================
+        //  লেজি লোডিং
+        // ============================================================
+        function setupLazyLoading() {
+            const lazyImages = document.querySelectorAll('.lazy-img:not(.loaded)');
+
+            if ('IntersectionObserver' in window) {
+                const imgObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.onload = () => img.classList.add('loaded');
+                            observer.unobserve(img);
+                        }
+                    });
+                });
+
+                lazyImages.forEach(img => imgObserver.observe(img));
+            } else {
+                lazyImages.forEach(img => {
+                    img.src = img.dataset.src;
+                    img.classList.add('loaded');
+                });
+            }
+        }
+
+        // ============================================================
+        //  ইনফিনিট স্ক্রল
+        // ============================================================
+        function setupInfiniteScroll() {
+            const scrollObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && displayedCount < nftCollection.length && !searchBar.value.trim()) {
+                    renderNextItems();
+                }
+            }, { rootMargin: '200px' });
+
+            scrollObserver.observe(sentinel);
+        }
+
+        // ============================================================
+        //  সার্চ
+        // ============================================================
+        searchBar.addEventListener('input', () => {
+            const query = searchBar.value.toLowerCase().trim();
+            galleryGrid.innerHTML = '';
+            displayedCount = 0;
+
+            if (!query) {
+                renderNextItems();
+                return;
+            }
+
+            const filtered = nftCollection.filter(item =>
+                item.tokenId.toString().includes(query) ||
+                item.name.toLowerCase().includes(query)
+            );
+
+            renderNextItems(filtered);
         });
-        
-        const data = await response.json();
-        if (data.success) {
-          userNFTs[index].owned = true;
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          
-          updateNFTButtons();
-          renderNFTSelection();
-          renderNFTWallet();
-          
-          await updateUserData();
-          alert(`🎉 ${userNFTs[index].name} purchased successfully!`);
-        } else {
-          alert('Failed to purchase NFT: ' + (data.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Buy NFT failed:', error);
-        alert('Failed to purchase NFT. Please try again.');
-      }
-    }
 
-    // Start/Stop Mining
-    async function startMining() {
-      if (!walletAddress) {
-        alert('Please connect your Farcaster wallet first.');
-        return;
-      }
-      if (!userNFTs[selectedNFTIndex]?.owned) {
-        alert('Please select an owned NFT to mine.');
-        return;
-      }
-      
-      miningData.isMining = !miningData.isMining;
-      
-      if (miningData.isMining) {
-        // Start mining interval
-        miningInterval = setInterval(() => {
-          const minedAmount = miningData.power / 3600; // 1 hour = 3600 seconds
-          miningData.totalMined += minedAmount;
-          userBalance += minedAmount;
-          
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          localStorage.setItem('userBalance', userBalance);
-          
-          updateMiningCard();
-          updateBalance();
-          updateUserData();
-        }, 1000);
-      } else {
-        // Stop mining
-        if (miningInterval) {
-          clearInterval(miningInterval);
-          miningInterval = null;
+        // ============================================================
+        //  ডাউনলোড
+        // ============================================================
+        async function downloadSingleAsset(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                saveAs(blob, filename);
+            } catch (e) {
+                alert('ডাউনলোড ব্যর্থ। লিংকটি ম্যানুয়ালি খুলুন।');
+            }
         }
-      }
-      
-      localStorage.setItem('miningData', JSON.stringify(miningData));
-      updateMiningCard();
-      await updateUserData();
-    }
 
-    // Update Leaderboard
-    async function updateLeaderboard() {
-      if (!walletAddress) {
-        document.getElementById('leaderboard-list').classList.add('hidden');
-        document.getElementById('leaderboard-empty').classList.remove('hidden');
-        document.getElementById('leaderboard-preview').classList.add('hidden');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/leaderboard`);
-        const data = await response.json();
-        
-        if (data.success && data.leaderboard?.length > 0) {
-          leaderboard = data.leaderboard.slice(0, 15).map(user => ({
-            id: user.id,
-            username: user.username || formatAddress(user.walletAddress),
-            balance: user.balance || 0
-          }));
-          
-          const leaderboardEntries = document.getElementById('leaderboard-entries');
-          leaderboardEntries.innerHTML = '';
-          
-          leaderboard.forEach((user, index) => {
-            const li = document.createElement('li');
-            li.className = index < 3 
-              ? 'bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg text-base font-semibold shadow-lg shadow-purple-500/50'
-              : 'bg-gray-800 p-3 rounded';
-            li.innerHTML = `
-              ${index < 3 ? ['🥇', '🥈', '🥉'][index] : `${index + 1}.`} 
-              ${user.username} - ${user.balance.toFixed(2)} NAI
-            `;
-            leaderboardEntries.appendChild(li);
-          });
-          
-          document.getElementById('leaderboard-list').classList.remove('hidden');
-          document.getElementById('leaderboard-empty').classList.add('hidden');
-          document.getElementById('leaderboard-preview').classList.remove('hidden');
-          document.getElementById('leader-1').textContent = leaderboard[0]?.username || 'Not Available';
-        } else {
-          document.getElementById('leaderboard-list').classList.add('hidden');
-          document.getElementById('leaderboard-empty').classList.remove('hidden');
-          document.getElementById('leaderboard-preview').classList.add('hidden');
-        }
-      } catch (error) {
-        console.error('Fetch leaderboard failed:', error);
-        document.getElementById('leaderboard-list').classList.add('hidden');
-        document.getElementById('leaderboard-empty').classList.remove('hidden');
-        document.getElementById('leaderboard-preview').classList.add('hidden');
-      }
-    }
+        downloadAllBtn.addEventListener('click', async () => {
+            const folderName = document.getElementById('folderName').value.trim() || 'mfers';
+            downloadAllBtn.disabled = true;
+            downloadAllBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> জিপ তৈরি হচ্ছে...`;
 
-    // Update User Rank
-    async function updateUserRank() {
-      if (!walletAddress) {
-        document.getElementById('user-rank').textContent = 'Not Ranked';
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/user-rank?walletAddress=${encodeURIComponent(walletAddress)}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          userRank = data.rank || 'Not Ranked';
-          document.getElementById('user-rank').textContent = userRank;
-        } else {
-          document.getElementById('user-rank').textContent = 'Not Ranked';
-        }
-      } catch (error) {
-        console.error('Fetch user rank failed:', error);
-        document.getElementById('user-rank').textContent = 'Not Ranked';
-      }
-    }
+            const zip = new JSZip();
+            const imgFolder = zip.folder(folderName);
 
-    // Fetch User Data from Backend
-    async function fetchUserData() {
-      if (!walletAddress) return;
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/user-data?walletAddress=${encodeURIComponent(walletAddress)}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          userBalance = data.userData.balance || 0;
-          miningData = data.userData.miningData || { power: 12, totalMined: 0, isMining: false };
-          userNFTs = data.userData.nfts || userNFTs;
-          referralData = data.userData.referralData || { level1: 0, level2: 0, level3: 0 };
-          
-          // Update localStorage
-          localStorage.setItem('userBalance', userBalance);
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          
-          // Update UI
-          updateBalance();
-          updateMiningCard();
-          updateNFTButtons();
-          renderNFTSelection();
-          renderNFTWallet();
-          updateTaskButtons();
-        }
-      } catch (error) {
-        console.error('Fetch user data failed:', error);
-      }
-    }
+            for (let i = 0; i < nftCollection.length; i++) {
+                const item = nftCollection[i];
+                try {
+                    const imgResponse = await fetch(item.imageUrl);
+                    const blob = await imgResponse.blob();
+                    imgFolder.file(item.downloadName, blob);
+                } catch (err) {
+                    console.error(`#${item.tokenId} জিপে যোগ করতে ব্যর্থ:`, err);
+                }
+            }
 
-    // Update User Data to Backend
-    async function updateUserData() {
-      if (!walletAddress) return;
-      
-      try {
-        const response = await fetch(`${BASE_URL}/api/update-user`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            walletAddress, 
-            balance: userBalance, 
-            miningData, 
-            nfts: userNFTs, 
-            referralData 
-          })
+            zip.generateAsync({ type: 'blob' }).then(function(content) {
+                saveAs(content, `${folderName}.zip`);
+                downloadAllBtn.disabled = false;
+                downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> সব ছবি জিপে ডাউনলোড`;
+            }).catch(err => {
+                alert('জিপ তৈরি ব্যর্থ।');
+                downloadAllBtn.disabled = false;
+            });
         });
-        
-        const data = await response.json();
-        if (data.success) {
-          localStorage.setItem('userBalance', userBalance);
-          localStorage.setItem('miningData', JSON.stringify(miningData));
-          localStorage.setItem('userNFTs', JSON.stringify(userNFTs));
-          
-          updateBalance();
-          updateMiningCard();
-          updateLeaderboard();
-        }
-      } catch (error) {
-        console.error('Update user data failed:', error);
-      }
-    }
 
-    // Update Referral Data Display
-    function updateReferralDisplay() {
-      document.getElementById('ref-level1-hash').textContent = `${referralData.level1} Hash/s`;
-      document.getElementById('ref-level1-count').textContent = `${referralData.level1} Referrals`;
-      document.getElementById('ref-level2-hash').textContent = `${referralData.level2} Hash/s`;
-      document.getElementById('ref-level2-count').textContent = `${referralData.level2} Referrals`;
-      document.getElementById('ref-level3-hash').textContent = `${referralData.level3} Hash/s`;
-      document.getElementById('ref-level3-count').textContent = `${referralData.level3} Referrals`;
-    }
-  </script>
+        // ============================================================
+        //  রিট্রাই
+        // ============================================================
+        retryBtn.addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const contract = document.getElementById('contractAddress').value.trim();
+            const network = document.getElementById('network').value;
+
+            const targetsToRetry = [...failedTokens];
+            failedTokens = [];
+            retryBtn.classList.add('hidden');
+
+            for (let tokenId of targetsToRetry) {
+                const endpoint =
+                    `https://${network}.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=true`;
+                try {
+                    const response = await fetch(endpoint);
+                    if (!response.ok) throw new Error();
+                    const metadata = await response.json();
+                    let rawImageUrl = metadata.image?.cachedUrl || metadata.image?.originalUrl || metadata.raw?.metadata
+                        ?.image;
+
+                    if (rawImageUrl && rawImageUrl.startsWith('ipfs://')) {
+                        rawImageUrl = rawImageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                    }
+
+                    if (rawImageUrl) {
+                        nftCollection.push({
+                            tokenId: tokenId,
+                            name: metadata.name || `mfer #${tokenId}`,
+                            imageUrl: rawImageUrl,
+                            downloadName: `${tokenId}.png`
+                        });
+                        nftCollection.sort((a, b) => a.tokenId - b.tokenId);
+                    } else {
+                        throw new Error();
+                    }
+                } catch (e) {
+                    failedTokens.push(tokenId);
+                }
+            }
+
+            galleryGrid.innerHTML = '';
+            displayedCount = 0;
+            renderNextItems();
+
+            loadedCountIndicator.textContent = nftCollection.length;
+            failedCountIndicator.textContent = failedTokens.length;
+            if (failedTokens.length > 0) retryBtn.classList.remove('hidden');
+        });
+
+        // ============================================================
+        //  মোডাল
+        // ============================================================
+        function openImageModal(src, caption) {
+            modal.style.display = 'flex';
+            modalImg.src = src;
+            modalCaption.textContent = caption;
+        }
+
+        modalClose.addEventListener('click', () => modal.style.display = 'none');
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+
+        // ============================================================
+        //  পেজ লোডে ইনফো
+        // ============================================================
+        console.log(`🔥 ${TOKEN_IDS.length} টি Token ID লোডের জন্য প্রস্তুত`);
+    </script>
+
 </body>
 </html>
