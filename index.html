@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mfer · Alchemy NFT ডাউনলোডার</title>
+    <title>mfer · Alchemy NFT Downloader</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
-        /* ===== ভেরিয়েবল ===== */
+        /* ===== Variables ===== */
         :root {
             --bg-color: #0b0b0b;
             --card-color: #151515;
@@ -39,7 +39,7 @@
             margin: 0 auto;
         }
 
-        /* ===== হেডার ===== */
+        /* ===== Header ===== */
         header {
             text-align: center;
             margin-bottom: 40px;
@@ -69,7 +69,7 @@
             font-size: 1.1rem;
         }
 
-        /* ===== কনফিগ প্যানেল ===== */
+        /* ===== Config Panel ===== */
         .config-panel {
             background-color: var(--card-color);
             border: 1px solid var(--border-color);
@@ -123,7 +123,7 @@
             cursor: not-allowed;
         }
 
-        /* ===== বাটন ===== */
+        /* ===== Buttons ===== */
         .btn {
             padding: 14px 24px;
             border: none;
@@ -170,14 +170,6 @@
             opacity: 0.9;
         }
 
-        .btn-success {
-            background-color: var(--success-color);
-            color: #000;
-        }
-        .btn-success:hover {
-            opacity: 0.9;
-        }
-
         .action-row {
             display: flex;
             gap: 15px;
@@ -185,7 +177,7 @@
             flex-wrap: wrap;
         }
 
-        /* ===== প্রগ্রেস প্যানেল ===== */
+        /* ===== Progress Panel ===== */
         .progress-panel {
             background-color: var(--card-color);
             border: 1px solid var(--border-color);
@@ -209,10 +201,6 @@
             gap: 6px;
         }
 
-        .progress-stats .stat-item .icon {
-            font-size: 1rem;
-        }
-
         .progress-bar-container {
             background-color: #202020;
             height: 12px;
@@ -227,14 +215,14 @@
             transition: width 0.2s ease;
         }
 
-        /* ===== লাইভ লগ ===== */
+        /* ===== Live Log ===== */
         .live-log {
             background-color: #111;
             border: 1px solid #252525;
             border-radius: 8px;
             padding: 12px 16px;
             margin-top: 15px;
-            max-height: 120px;
+            max-height: 150px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 0.8rem;
@@ -258,8 +246,11 @@
         .live-log .log-entry.info {
             color: var(--text-muted);
         }
+        .live-log .log-entry.done {
+            color: var(--accent-color);
+        }
 
-        /* ===== সার্চ প্যানেল ===== */
+        /* ===== Search Panel ===== */
         .filter-panel {
             margin-bottom: 30px;
         }
@@ -292,7 +283,7 @@
             border-color: var(--accent-color);
         }
 
-        /* ===== গ্যালারি গ্রিড ===== */
+        /* ===== Gallery Grid ===== */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -307,6 +298,7 @@
             display: flex;
             flex-direction: column;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .nft-card:hover {
@@ -386,21 +378,6 @@
             text-overflow: ellipsis;
         }
 
-        .card-status-text {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .card-status-text .status-success {
-            color: var(--success-color);
-        }
-        .card-status-text .status-error {
-            color: var(--danger-color);
-        }
-        .card-status-text .status-loading {
-            color: var(--warning-color);
-        }
-
         .btn-card-download {
             background-color: #252525;
             color: white;
@@ -411,6 +388,10 @@
             border: none;
             cursor: pointer;
             transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         .btn-card-download:hover:not(:disabled) {
             background-color: var(--accent-color);
@@ -421,7 +402,7 @@
             cursor: not-allowed;
         }
 
-        /* ===== মোডাল ===== */
+        /* ===== Modal ===== */
         .modal {
             display: none;
             position: fixed;
@@ -471,7 +452,7 @@
             color: var(--accent-color);
         }
 
-        /* ===== ইউটিলিটি ===== */
+        /* ===== Utilities ===== */
         .hidden {
             display: none !important;
         }
@@ -484,24 +465,19 @@
             text-align: center;
         }
 
-        /* ===== স্ক্রলবার ===== */
-        .live-log::-webkit-scrollbar,
-        .log-container::-webkit-scrollbar {
+        /* ===== Scrollbar ===== */
+        .live-log::-webkit-scrollbar {
             width: 6px;
         }
-
-        .live-log::-webkit-scrollbar-track,
-        .log-container::-webkit-scrollbar-track {
+        .live-log::-webkit-scrollbar-track {
             background: #1a1a1a;
         }
-
-        .live-log::-webkit-scrollbar-thumb,
-        .log-container::-webkit-scrollbar-thumb {
+        .live-log::-webkit-scrollbar-thumb {
             background: var(--accent-color);
             border-radius: 10px;
         }
 
-        /* ===== রেসপন্সিভ ===== */
+        /* ===== Responsive ===== */
         @media (max-width: 768px) {
             body {
                 padding: 20px 10px;
@@ -521,13 +497,13 @@
 <body>
 
     <div class="container">
-        <!-- হেডার -->
+        <!-- Header -->
         <header>
-            <h1><i class="fa-solid fa-bolt text-accent"></i> mfer · Alchemy ডাউনলোডার</h1>
-            <p class="subtitle">শুধু <span class="text-accent">৫১৭</span> টি নির্দিষ্ট NFT · <span class="text-success">Alchemy API + CDN</span></p>
+            <h1><i class="fa-solid fa-bolt text-accent"></i> mfer · Alchemy Downloader</h1>
+            <p class="subtitle"><span class="text-accent">517</span> specific NFTs · <span class="text-success">Alchemy CDN Only</span> · No IPFS</p>
         </header>
 
-        <!-- কনফিগ প্যানেল -->
+        <!-- Config Panel -->
         <section class="config-panel">
             <div class="grid-inputs">
                 <div class="input-group">
@@ -555,15 +531,21 @@
                     <input type="text" id="folderName" value="mfers-collection" />
                 </div>
                 <div class="input-group">
-                    <label style="color:var(--accent-color);">🔥 Token IDs</label>
-                    <input type="text" value="৫১৭ টি নির্দিষ্ট Token ID" disabled style="color:var(--accent-color);" />
+                    <label for="batchSize">📦 Batch Size</label>
+                    <select id="batchSize">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                    </select>
                 </div>
             </div>
 
-            <button id="loadBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> লোড শুরু (Alchemy API)</button>
+            <button id="loadBtn" class="btn btn-primary"><i class="fa-solid fa-cloud-arrow-down"></i> Start Loading (Alchemy CDN)</button>
         </section>
 
-        <!-- প্রগ্রেস প্যানেল -->
+        <!-- Progress Panel -->
         <section id="progressPanel" class="progress-panel hidden">
             <div class="progress-stats">
                 <span class="stat-item"><i class="fa-solid fa-spinner fa-spin text-warning"></i> Progress: <strong id="progressPercent">0%</strong></span>
@@ -576,37 +558,37 @@
                 <div id="progressBar" class="progress-bar"></div>
             </div>
 
-            <!-- লাইভ লগ -->
+            <!-- Live Log -->
             <div class="live-log" id="liveLog">
-                <div class="log-entry info">⏳ লোড শুরু করতে "লোড শুরু" ক্লিক করুন...</div>
+                <div class="log-entry info">⏳ Click "Start Loading" to begin...</div>
             </div>
 
             <div class="action-row">
                 <button id="downloadAllBtn" class="btn btn-accent" disabled>
-                    <i class="fa-solid fa-file-zipper"></i> সব ছবি জিপে ডাউনলোড
+                    <i class="fa-solid fa-file-zipper"></i> Download All as ZIP
                 </button>
                 <button id="retryBtn" class="btn btn-danger hidden">
-                    <i class="fa-solid fa-rotate-right"></i> ফেইলড রিট্রাই
+                    <i class="fa-solid fa-rotate-right"></i> Retry Failed
                 </button>
             </div>
         </section>
 
-        <!-- সার্চ প্যানেল -->
+        <!-- Search Panel -->
         <section id="filterPanel" class="filter-panel hidden">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchBar" placeholder="Token ID বা নাম দিয়ে খুঁজুন..." />
+                <input type="text" id="searchBar" placeholder="Search by Token ID or Name..." />
             </div>
         </section>
 
-        <!-- গ্যালারি গ্রিড -->
+        <!-- Gallery Grid -->
         <main id="galleryGrid" class="gallery-grid"></main>
 
-        <!-- ইনফিনিট স্ক্রল সেন্টিনেল -->
+        <!-- Infinite Scroll Sentinel -->
         <div id="sentinel" class="sentinel"></div>
     </div>
 
-    <!-- মোডাল -->
+    <!-- Modal -->
     <div id="previewModal" class="modal">
         <span class="modal-close">&times;</span>
         <div class="modal-content-wrapper">
@@ -615,7 +597,7 @@
         </div>
     </div>
 
-    <!-- JSZip এবং FileSaver -->
+    <!-- JSZip and FileSaver -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js">
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js">
@@ -623,7 +605,7 @@
 
     <script>
         // ============================================================
-        //  ৫১৭টি Token ID (আপনার CSV থেকে)
+        //  517 Token IDs (from your CSV)
         // ============================================================
         const TOKEN_IDS = [
             465, 439, 432, 414, 473, 397, 204, 583, 564, 71, 268, 237, 682, 505, 796, 736, 625, 697, 979, 546, 866, 576, 726,
@@ -656,18 +638,20 @@
         ];
 
         // ============================================================
-        //  স্টেট ম্যানেজমেন্ট
+        //  State Management
         // ============================================================
         let nftCollection = [];
         let displayedCount = 0;
         let failedTokens = [];
         let isProcessing = false;
+        let loadedCount = 0;
+        let failedCount = 0;
         const ITEMS_PER_PAGE = 20;
         let startTime = null;
         let timerInterval = null;
 
         // ============================================================
-        //  DOM এলিমেন্ট
+        //  DOM Elements
         // ============================================================
         const loadBtn = document.getElementById('loadBtn');
         const downloadAllBtn = document.getElementById('downloadAllBtn');
@@ -692,7 +676,7 @@
         const modalClose = document.querySelector('.modal-close');
 
         // ============================================================
-        //  লাইভ লগ ফাংশন
+        //  Live Log Function
         // ============================================================
         function addLog(message, type = 'info') {
             const div = document.createElement('div');
@@ -703,7 +687,7 @@
         }
 
         // ============================================================
-        //  টাইমার
+        //  Timer Functions
         // ============================================================
         function startTimer() {
             startTime = Date.now();
@@ -720,7 +704,7 @@
         }
 
         // ============================================================
-        //  লোড ফাংশন (শুধু Alchemy API, IPFS নয়)
+        //  Load Function (Batch by Batch)
         // ============================================================
         loadBtn.addEventListener('click', async () => {
             if (isProcessing) return;
@@ -729,15 +713,18 @@
             failedTokens = [];
             galleryGrid.innerHTML = '';
             displayedCount = 0;
+            loadedCount = 0;
+            failedCount = 0;
             liveLog.innerHTML = '';
             isProcessing = true;
 
             const apiKey = document.getElementById('apiKey').value.trim();
             const contract = document.getElementById('contractAddress').value.trim();
             const network = document.getElementById('network').value;
+            const batchSize = parseInt(document.getElementById('batchSize').value);
 
             if (!apiKey || !contract) {
-                alert('API Key এবং Contract Address দিন!');
+                alert('Please enter API Key and Contract Address!');
                 isProcessing = false;
                 return;
             }
@@ -748,103 +735,108 @@
             retryBtn.classList.add('hidden');
             startTimer();
 
-            addLog('🚀 Alchemy API থেকে লোড শুরু হচ্ছে...', 'info');
-            addLog(`📊 মোট ${TOKEN_IDS.length} টি NFT`, 'info');
+            addLog(`🚀 Starting load from Alchemy CDN (${TOKEN_IDS.length} NFTs)`, 'info');
+            addLog(`📦 Batch size: ${batchSize}`, 'info');
 
-            await fetchAllNFTs(apiKey, contract, network);
+            await fetchBatchNFTs(apiKey, contract, network, batchSize);
             isProcessing = false;
         });
 
         // ============================================================
-        //  সব NFT ফেচ (শুধু Alchemy API)
+        //  Fetch NFTs in Batches (Alchemy API Only)
         // ============================================================
-        async function fetchAllNFTs(apiKey, contract, network) {
-            let loaded = 0;
-            let failed = 0;
+        async function fetchBatchNFTs(apiKey, contract, network, batchSize) {
             const total = TOKEN_IDS.length;
 
-            for (let i = 0; i < total; i++) {
-                const tokenId = TOKEN_IDS[i];
-                currentIdIndicator.textContent = tokenId;
+            for (let start = 0; start < total; start += batchSize) {
+                const end = Math.min(start + batchSize, total);
+                const batch = TOKEN_IDS.slice(start, end);
 
-                // Alchemy NFT API v3 endpoint (শুধু এখান থেকে ডেটা নেওয়া হচ্ছে)
-                const endpoint =
-                    `https://${network}.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=false`;
+                addLog(`📦 Processing batch ${Math.floor(start / batchSize) + 1} (IDs ${batch[0]} - ${batch[batch.length-1]})`, 'info');
 
-                try {
-                    addLog(`⏳ #${tokenId} লোড হচ্ছে...`, 'loading');
+                const promises = batch.map(async (tokenId) => {
+                    currentIdIndicator.textContent = tokenId;
 
-                    const response = await fetch(endpoint);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const endpoint =
+                        `https://${network}.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=false`;
 
-                    const metadata = await response.json();
+                    try {
+                        addLog(`⏳ #${tokenId} loading...`, 'loading');
 
-                    // 🔥 ইমেজ URL বের করা (শুধু Alchemy থেকে, IPFS নয়)
-                    let rawImageUrl = null;
+                        const response = await fetch(endpoint);
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                    // Alchemy এর cachedUrl বা originalUrl ব্যবহার
-                    if (metadata.image?.cachedUrl) {
-                        rawImageUrl = metadata.image.cachedUrl;
-                    } else if (metadata.image?.originalUrl) {
-                        rawImageUrl = metadata.image.originalUrl;
-                    } else if (metadata.raw?.metadata?.image) {
-                        rawImageUrl = metadata.raw.metadata.image;
-                    }
+                        const metadata = await response.json();
 
-                    // ⛔ IPFS URL বাদ দেওয়া হচ্ছে (শুধু HTTP/HTTPS CDN URL নেওয়া হবে)
-                    if (rawImageUrl && rawImageUrl.startsWith('ipfs://')) {
-                        addLog(`⚠️ #${tokenId}: IPFS URL বাদ দেওয়া হচ্ছে (Alchemy CDN থেকে লোড করুন)`, 'error');
-                        rawImageUrl = null;
-                    }
+                        let rawImageUrl = null;
 
-                    // Alchemy CDN URL ফরম্যাটে কনভার্ট (যদি IPFS হয়)
-                    if (!rawImageUrl && metadata.raw?.metadata?.image) {
-                        const ipfsPath = metadata.raw.metadata.image;
-                        if (ipfsPath && ipfsPath.startsWith('ipfs://')) {
-                            const cid = ipfsPath.replace('ipfs://', '');
-                            // Alchemy CDN ব্যবহার (IPFS গেটওয়ে নয়)
-                            rawImageUrl =
-                            `https://nft-cdn.alchemy.com/ipfs/${cid}`;
+                        // Get CDN URL from Alchemy
+                        if (metadata.image?.cachedUrl) {
+                            rawImageUrl = metadata.image.cachedUrl;
+                        } else if (metadata.image?.originalUrl) {
+                            rawImageUrl = metadata.image.originalUrl;
+                        } else if (metadata.raw?.metadata?.image) {
+                            rawImageUrl = metadata.raw.metadata.image;
                         }
-                    }
 
-                    // শেষ চেষ্টা: Alchemy এর media gateway
-                    if (!rawImageUrl && metadata.media && metadata.media.length > 0) {
-                        for (const media of metadata.media) {
-                            if (media.gateway && !media.gateway.includes('ipfs.io')) {
-                                rawImageUrl = media.gateway;
-                                break;
+                        // Skip IPFS URLs - use Alchemy CDN instead
+                        if (rawImageUrl && rawImageUrl.startsWith('ipfs://')) {
+                            const cid = rawImageUrl.replace('ipfs://', '');
+                            rawImageUrl = `https://nft-cdn.alchemy.com/ipfs/${cid}`;
+                        }
+
+                        if (!rawImageUrl && metadata.raw?.metadata?.image) {
+                            const ipfsPath = metadata.raw.metadata.image;
+                            if (ipfsPath && ipfsPath.startsWith('ipfs://')) {
+                                const cid = ipfsPath.replace('ipfs://', '');
+                                rawImageUrl = `https://nft-cdn.alchemy.com/ipfs/${cid}`;
                             }
                         }
+
+                        // Final fallback: Alchemy media gateway
+                        if (!rawImageUrl && metadata.media && metadata.media.length > 0) {
+                            for (const media of metadata.media) {
+                                if (media.gateway && !media.gateway.includes('ipfs.io')) {
+                                    rawImageUrl = media.gateway;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (rawImageUrl) {
+                            nftCollection.push({
+                                tokenId: tokenId,
+                                name: metadata.name || `mfer #${tokenId}`,
+                                imageUrl: rawImageUrl,
+                                downloadName: `${tokenId}.png`,
+                                status: 'loaded'
+                            });
+                            loadedCount++;
+                            loadedCountIndicator.textContent = loadedCount;
+                            addLog(`✅ #${tokenId}: Success (CDN)`, 'success');
+                        } else {
+                            throw new Error('No CDN URL found');
+                        }
+
+                    } catch (error) {
+                        console.error(`#${tokenId} failed:`, error);
+                        failedCount++;
+                        failedTokens.push(tokenId);
+                        failedCountIndicator.textContent = failedCount;
+                        addLog(`❌ #${tokenId}: ${error.message}`, 'error');
                     }
 
-                    if (rawImageUrl) {
-                        nftCollection.push({
-                            tokenId: tokenId,
-                            name: metadata.name || `mfer #${tokenId}`,
-                            imageUrl: rawImageUrl,
-                            downloadName: `${tokenId}.png`,
-                            status: 'loaded'
-                        });
-                        loaded++;
-                        loadedCountIndicator.textContent = loaded;
-                        addLog(`✅ #${tokenId}: সফল (CDN)`, 'success');
-                    } else {
-                        throw new Error('কোনো CDN URL পাওয়া যায়নি');
-                    }
+                    // Update progress
+                    const processed = loadedCount + failedCount;
+                    const percent = Math.round((processed / total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                    progressPercent.textContent = `${percent}%`;
+                });
 
-                } catch (error) {
-                    console.error(`#${tokenId} লোড ব্যর্থ:`, error);
-                    failed++;
-                    failedTokens.push(tokenId);
-                    failedCountIndicator.textContent = failed;
-                    addLog(`❌ #${tokenId}: ${error.message}`, 'error');
-                }
+                await Promise.all(promises);
 
-                // প্রগ্রেস আপডেট
-                const percent = Math.round(((loaded + failed) / total) * 100);
-                progressBar.style.width = `${percent}%`;
-                progressPercent.textContent = `${percent}%`;
+                // Small delay between batches
+                await new Promise(r => setTimeout(r, 100));
             }
 
             stopTimer();
@@ -854,21 +846,22 @@
                 filterPanel.classList.remove('hidden');
                 renderNextItems();
                 setupInfiniteScroll();
-                addLog(`✅ মোট ${nftCollection.length} টি NFT সফলভাবে লোড হয়েছে`, 'success');
+                addLog(`✅ Total ${nftCollection.length} NFTs loaded successfully`, 'success');
             } else {
-                addLog('❌ কোনো NFT লোড হয়নি!', 'error');
+                addLog('❌ No NFTs loaded!', 'error');
             }
 
             if (failedTokens.length > 0) {
                 retryBtn.classList.remove('hidden');
-                addLog(`⚠️ ${failedTokens.length} টি NFT ফেইল হয়েছে`, 'error');
+                addLog(`⚠️ ${failedTokens.length} NFTs failed`, 'error');
             }
 
-            addLog(`⏱️ সময় লেগেছে: ${timeElapsed.textContent}`, 'info');
+            addLog(`⏱️ Time elapsed: ${timeElapsed.textContent}`, 'info');
+            addLog(`📊 Summary: ${loadedCount} loaded, ${failedCount} failed`, 'done');
         }
 
         // ============================================================
-        //  রেন্ডারিং
+        //  Render Functions
         // ============================================================
         function renderNextItems(filteredList = null) {
             const list = filteredList || nftCollection;
@@ -881,7 +874,7 @@
                 card.dataset.tokenId = item.tokenId;
 
                 const statusBadge = item.status === 'loaded' ? 'success' : 'error';
-                const statusText = item.status === 'loaded' ? '✅ লোড হয়েছে' : '❌ ব্যর্থ';
+                const statusText = item.status === 'loaded' ? '✅ Loaded' : '❌ Failed';
 
                 card.innerHTML = `
                         <div class="nft-image-wrapper" onclick="openImageModal('${item.imageUrl}', '${item.name}')">
@@ -891,9 +884,8 @@
                         <div class="card-meta">
                             <span class="card-id">ID: #${item.tokenId}</span>
                             <h3 class="card-name">${item.name}</h3>
-                            <div class="card-url-box" title="${item.imageUrl}">${item.imageUrl.substring(0, 60)}...</div>
                             <button class="btn-card-download" onclick="downloadSingleAsset('${item.imageUrl}', '${item.downloadName}')">
-                                <i class="fa-solid fa-download"></i> ডাউনলোড
+                                <i class="fa-solid fa-download"></i> Download
                             </button>
                         </div>
                     `;
@@ -905,7 +897,7 @@
         }
 
         // ============================================================
-        //  লেজি লোডিং
+        //  Lazy Loading
         // ============================================================
         function setupLazyLoading() {
             const lazyImages = document.querySelectorAll('.lazy-img:not(.loaded)');
@@ -932,7 +924,7 @@
         }
 
         // ============================================================
-        //  ইনফিনিট স্ক্রল
+        //  Infinite Scroll
         // ============================================================
         function setupInfiniteScroll() {
             const scrollObserver = new IntersectionObserver((entries) => {
@@ -945,7 +937,7 @@
         }
 
         // ============================================================
-        //  সার্চ
+        //  Search
         // ============================================================
         searchBar.addEventListener('input', () => {
             const query = searchBar.value.toLowerCase().trim();
@@ -966,12 +958,12 @@
         });
 
         // ============================================================
-        //  🔥 ডাউনলোড সিস্টেম (CORS-মুক্ত)
+        //  🔥 DOWNLOAD SYSTEM (FIXED - CORS Free)
         // ============================================================
 
-        // ----- ১. একক ডাউনলোড (CORS-মুক্ত) -----
+        // ----- Single Download (CORS-free using <a download>) -----
         function downloadSingleAsset(url, filename) {
-            // <a download> ব্যবহার করলে CORS ব্লক করে না
+            // Use <a download> which bypasses CORS
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
@@ -981,17 +973,17 @@
             document.body.removeChild(link);
         }
 
-        // ----- ২. জিপ ডাউনলোড (প্রোক্সি ব্যবহার) -----
+        // ----- ZIP Download (using proxy for CORS) -----
         downloadAllBtn.addEventListener('click', async () => {
             const folderName = document.getElementById('folderName').value.trim() || 'mfers';
 
             if (nftCollection.length === 0) {
-                alert('কোনো ছবি লোড হয়নি। প্রথমে লোড করুন।');
+                alert('No images loaded. Please load NFTs first.');
                 return;
             }
 
             downloadAllBtn.disabled = true;
-            downloadAllBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> জিপ তৈরি হচ্ছে...`;
+            downloadAllBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP...`;
 
             try {
                 const zip = new JSZip();
@@ -1002,65 +994,83 @@
 
                 for (let i = 0; i < nftCollection.length; i++) {
                     const item = nftCollection[i];
+
+                    // Try multiple methods to get the image
+                    let blob = null;
+
+                    // Method 1: Use proxy (allorigins)
                     try {
-                        // CORS এড়ানোর জন্য প্রোক্সি ব্যবহার
                         const proxyUrl =
                             `https://api.allorigins.win/raw?url=${encodeURIComponent(item.imageUrl)}`;
                         const response = await fetch(proxyUrl);
-
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                        const blob = await response.blob();
-                        imgFolder.file(item.downloadName, blob);
-                        successCount++;
-                    } catch (err) {
-                        console.error(`#${item.tokenId} জিপে যোগ করতে ব্যর্থ:`, err);
-                        failCount++;
-
-                        // ব্যাকআপ: সরাসরি লিংক ব্যবহার
+                        if (response.ok) {
+                            blob = await response.blob();
+                        }
+                    } catch (e) {
+                        // Method 2: Try direct fetch (may work for some URLs)
                         try {
-                            const directResponse = await fetch(item.imageUrl);
-                            if (directResponse.ok) {
-                                const blob = await directResponse.blob();
-                                imgFolder.file(item.downloadName, blob);
-                                successCount++;
-                                failCount--;
+                            const response = await fetch(item.imageUrl);
+                            if (response.ok) {
+                                blob = await response.blob();
                             }
                         } catch (e2) {
-                            // ব্যর্থ হলে স্কিপ
+                            // Method 3: Try with no-cors mode (fallback)
+                            try {
+                                const response = await fetch(item.imageUrl, { mode: 'no-cors' });
+                                // Note: no-cors gives opaque response, but we can still try
+                                blob = await response.blob();
+                            } catch (e3) {
+                                // All methods failed
+                            }
                         }
                     }
 
-                    // প্রগ্রেস আপডেট
+                    if (blob && blob.size > 0) {
+                        imgFolder.file(item.downloadName, blob);
+                        successCount++;
+                    } else {
+                        failCount++;
+                        console.warn(`#${item.tokenId}: Could not download image`);
+                    }
+
+                    // Update progress
                     const percent = Math.round(((i + 1) / nftCollection.length) * 100);
                     downloadAllBtn.innerHTML =
                         `<i class="fa-solid fa-spinner fa-spin"></i> ${percent}% (${i+1}/${nftCollection.length})`;
                 }
 
-                // জিপ জেনারেট ও ডাউনলোড
+                if (successCount === 0) {
+                    throw new Error('No images could be downloaded. Please check your internet connection.');
+                }
+
                 const content = await zip.generateAsync({ type: 'blob' });
                 saveAs(content, `${folderName}.zip`);
 
                 downloadAllBtn.innerHTML =
-                    `<i class="fa-solid fa-check-circle"></i> ✅ সম্পন্ন! (সফল: ${successCount}, ফেইল: ${failCount})`;
+                    `<i class="fa-solid fa-check-circle"></i> ✅ Done! (${successCount} success, ${failCount} failed)`;
                 setTimeout(() => {
-                    downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> সব ছবি জিপে ডাউনলোড`;
+                    downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Download All as ZIP`;
                     downloadAllBtn.disabled = false;
-                }, 3000);
+                }, 4000);
 
             } catch (error) {
-                console.error('জিপ তৈরি ব্যর্থ:', error);
-                alert('জিপ তৈরি করতে সমস্যা হয়েছে। নেটওয়ার্ক চেক করে আবার চেষ্টা করুন।');
+                console.error('ZIP creation failed:', error);
+                alert('ZIP creation failed. Please check your internet connection and try again.');
                 downloadAllBtn.disabled = false;
-                downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> সব ছবি জিপে ডাউনলোড`;
+                downloadAllBtn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Download All as ZIP`;
             }
         });
 
         // ============================================================
-        //  রিট্রাই (ফেইলড Token ID গুলো আবার চেষ্টা)
+        //  Retry Failed Tokens
         // ============================================================
         retryBtn.addEventListener('click', async () => {
             if (isProcessing) return;
+            if (failedTokens.length === 0) {
+                retryBtn.classList.add('hidden');
+                return;
+            }
+
             isProcessing = true;
 
             const apiKey = document.getElementById('apiKey').value.trim();
@@ -1071,13 +1081,14 @@
             failedTokens = [];
             retryBtn.classList.add('hidden');
 
-            addLog(`🔄 ${targetsToRetry.length} টি ফেইলড NFT রিট্রাই করা হচ্ছে...`, 'info');
+            addLog(`🔄 Retrying ${targetsToRetry.length} failed NFTs...`, 'info');
 
             for (let tokenId of targetsToRetry) {
                 const endpoint =
                     `https://${network}.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=true`;
+
                 try {
-                    addLog(`⏳ #${tokenId} রিট্রাই...`, 'loading');
+                    addLog(`⏳ #${tokenId} retrying...`, 'loading');
 
                     const response = await fetch(endpoint);
                     if (!response.ok) throw new Error();
@@ -1125,32 +1136,37 @@
                             status: 'loaded'
                         });
                         nftCollection.sort((a, b) => a.tokenId - b.tokenId);
-                        addLog(`✅ #${tokenId}: রিট্রাই সফল`, 'success');
+                        loadedCount++;
+                        loadedCountIndicator.textContent = loadedCount;
+                        addLog(`✅ #${tokenId}: Retry successful`, 'success');
                     } else {
-                        throw new Error('CDN URL পাওয়া যায়নি');
+                        throw new Error('No CDN URL found');
                     }
                 } catch (e) {
                     failedTokens.push(tokenId);
-                    addLog(`❌ #${tokenId}: রিট্রাই ব্যর্থ`, 'error');
+                    addLog(`❌ #${tokenId}: Retry failed`, 'error');
                 }
             }
 
-            // UI রিফ্রেশ
+            // Refresh UI
             galleryGrid.innerHTML = '';
             displayedCount = 0;
             renderNextItems();
 
-            loadedCountIndicator.textContent = nftCollection.length;
-            failedCountIndicator.textContent = failedTokens.length;
-            if (failedTokens.length > 0) retryBtn.classList.remove('hidden');
+            failedCount = failedTokens.length;
+            failedCountIndicator.textContent = failedCount;
 
-            addLog(`✅ রিট্রাই সম্পন্ন! সফল: ${targetsToRetry.length - failedTokens.length}, ফেইল: ${failedTokens.length}`,
+            if (failedTokens.length > 0) {
+                retryBtn.classList.remove('hidden');
+            }
+
+            addLog(`✅ Retry complete! Success: ${targetsToRetry.length - failedTokens.length}, Failed: ${failedTokens.length}`,
                 'success');
             isProcessing = false;
         });
 
         // ============================================================
-        //  মোডাল
+        //  Modal Functions
         // ============================================================
         function openImageModal(src, caption) {
             modal.style.display = 'flex';
@@ -1164,11 +1180,11 @@
         });
 
         // ============================================================
-        //  পেজ লোডে ইনফো
+        //  Page Load Info
         // ============================================================
-        console.log(`🔥 ${TOKEN_IDS.length} টি Token ID Alchemy API থেকে লোডের জন্য প্রস্তুত`);
-        console.log('📁 ফাইলের নাম হবে: TOKEN_ID.png (যেমন: 465.png)');
-        console.log('✅ IPFS বাদ, শুধু Alchemy API + CDN');
+        console.log(`🔥 ${TOKEN_IDS.length} Token IDs ready for Alchemy CDN load`);
+        console.log('📁 Filename format: TOKEN_ID.png (e.g., 465.png)');
+        console.log('✅ IPFS disabled - Alchemy CDN only');
     </script>
 
 </body>
