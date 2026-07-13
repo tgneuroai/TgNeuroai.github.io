@@ -318,7 +318,7 @@
       }
     }
     
-    // ================ DOWNLOAD AS INDIVIDUAL JSON FILES IN ZIP (1-10000) ================
+    // ================ DOWNLOAD AS INDIVIDUAL JSON FILES IN ZIP (1-10000) - NO DUPLICATE ================
     async function downloadAsZip() {
       const total = TOTAL_NFTS; // 10000
       
@@ -374,14 +374,14 @@
           try {
             const meta = await fetchNFT(id);
             
-            // Clean metadata object for JSON file
+            // Clean metadata object - NO DUPLICATE, only essential fields
             const cleanMetadata = {
               tokenId: meta.tokenId,
               name: meta.name,
               image: meta.image,
               attributes: meta.attributes,
-              fetchedAt: new Date().toISOString(),
-              rawMetadata: meta.raw
+              fetchedAt: new Date().toISOString()
+              // ❌ rawMetadata REMOVED - no duplicate data
             };
             
             // Add to zip with filename "id.json"
@@ -401,7 +401,7 @@
             console.error(`Failed ID ${id}:`, err);
             failedIds.push(id);
             
-            // Fallback JSON
+            // Fallback JSON - also NO DUPLICATE
             const fallbackMetadata = {
               tokenId: id,
               name: `#${id}`,
@@ -462,9 +462,9 @@
       
       // Show success message
       if (failedIds.length > 0) {
-        alert(`✅ ZIP Archive Created Successfully!\n\n📊 Stats:\n• Total files: ${total}\n• Time: ${totalTime} seconds\n• Speed: ${(total/totalTime).toFixed(1)} files/sec\n• Failed: ${failedIds.length}\n• Failed IDs: ${failedIds.slice(0, 10).join(', ')}${failedIds.length > 10 ? '...' : ''}\n\n📦 ZIP contains: ${total} JSON files (1.json to ${total}.json)`);
+        alert(`✅ ZIP Archive Created Successfully!\n\n📊 Stats:\n• Total files: ${total}\n• Time: ${totalTime} seconds\n• Speed: ${(total/totalTime).toFixed(1)} files/sec\n• Failed: ${failedIds.length}\n• Failed IDs: ${failedIds.slice(0, 10).join(', ')}${failedIds.length > 10 ? '...' : ''}\n\n📦 ZIP contains: ${total} JSON files (1.json to ${total}.json)\n✅ No duplicate data - each file contains clean metadata only!`);
       } else {
-        alert(`✅ ZIP Archive Created Successfully!\n\n📊 Stats:\n• Total files: ${total}\n• Time: ${totalTime} seconds\n• Speed: ${(total/totalTime).toFixed(1)} files/sec\n• All files downloaded successfully!\n\n📦 ZIP contains: ${total} JSON files (1.json to ${total}.json)`);
+        alert(`✅ ZIP Archive Created Successfully!\n\n📊 Stats:\n• Total files: ${total}\n• Time: ${totalTime} seconds\n• Speed: ${(total/totalTime).toFixed(1)} files/sec\n• All files downloaded successfully!\n\n📦 ZIP contains: ${total} JSON files (1.json to ${total}.json)\n✅ No duplicate data - each file contains clean metadata only!`);
       }
     }
     
