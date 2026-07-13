@@ -114,10 +114,10 @@
         </div>
         
         <div class="flex items-center gap-3">
-          <!-- DOWNLOAD AS ZIP BUTTON -->
+          <!-- DOWNLOAD AS ZIP BUTTON (all 1-10000 JSON) -->
           <button id="download-metadata-btn" class="download-btn flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-bold mono shadow-lg">
             <i data-lucide="archive" class="w-4 h-4"></i>
-            <span>📦 ZIP (1-9998.json)</span>
+            <span>📦 ZIP (1-10000.json)</span>
           </button>
           
           <!-- Pagination -->
@@ -132,7 +132,7 @@
           </div>
           
           <!-- Direct ID jump -->
-          <input id="search-input" type="number" placeholder="ID #" min="1" max="9998" 
+          <input id="search-input" type="number" placeholder="ID #" min="1" max="10000" 
                  class="w-28 bg-[#16162a] border border-[#2a2a4a] rounded-full px-4 py-2 text-sm outline-none focus:border-[#ff5a5f] transition text-white placeholder:text-gray-500 mono">
         </div>
       </div>
@@ -180,7 +180,7 @@
     const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
     const BASE_HASH = 'QmWiQE65tmpYzcokCheQmng2DCM33DEhjXcPB6PanwpAZo';
     const PER_PAGE = 20;
-    const TOTAL_NFTS = 10000;
+    const TOTAL_NFTS = 10000;          // 1 to 10000
     const TOTAL_PAGES = Math.ceil(TOTAL_NFTS / PER_PAGE);
     const CONCURRENT_LIMIT = 50;
     
@@ -318,11 +318,11 @@
       }
     }
     
-    // ================ DOWNLOAD AS INDIVIDUAL JSON FILES IN ZIP ================
+    // ================ DOWNLOAD AS INDIVIDUAL JSON FILES IN ZIP (1-10000) ================
     async function downloadAsZip() {
-      const total = TOTAL_NFTS;
+      const total = TOTAL_NFTS; // 10000
       
-      if (!confirm(`📦 Download ${total} individual JSON files (1.json to ${total}.json) as a ZIP archive?\n\nThis will take ~15-20 seconds. Continue?`)) {
+      if (!confirm(`📦 Download ${total} individual JSON files (1.json to ${total}.json) as a ZIP archive?\n\nThis will take ~20-30 seconds. Continue?`)) {
         return;
       }
       
@@ -374,7 +374,7 @@
           try {
             const meta = await fetchNFT(id);
             
-            // Create clean metadata object for the JSON file
+            // Clean metadata object for JSON file
             const cleanMetadata = {
               tokenId: meta.tokenId,
               name: meta.name,
@@ -401,7 +401,7 @@
             console.error(`Failed ID ${id}:`, err);
             failedIds.push(id);
             
-            // Still add a fallback JSON
+            // Fallback JSON
             const fallbackMetadata = {
               tokenId: id,
               name: `#${id}`,
@@ -419,7 +419,7 @@
         await Promise.all(promises);
       }
       
-      // Create batches
+      // Create batches (1..10000)
       const batchSize = CONCURRENT_LIMIT;
       const batches = [];
       for (let i = 1; i <= total; i += batchSize) {
