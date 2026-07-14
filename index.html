@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>😺 Cool Cats NFT Gallery — Premium Pixel-Perfect Edition</title>
+    <title>😺 Cool Cats NFT Gallery — Official Robinhood Logo Edition</title>
     
-    <!-- JSZip Cloudflare CDN (For 100% working ZIP feature) -->
+    <!-- JSZip CDN (For 100% working ZIP compilation) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
@@ -69,11 +69,6 @@
             color: #9ca3af;
             margin-top: 12px;
             font-weight: 400;
-        }
-
-        header .subtitle strong {
-            color: #d4ff00;
-            font-weight: 700;
         }
 
         header .stats-bar {
@@ -143,18 +138,13 @@
             transform: translateY(-3px);
         }
 
-        .toolbar button:active {
-            transform: translateY(-1px);
-        }
-
         .toolbar button:disabled {
             opacity: 0.3;
             cursor: not-allowed;
             transform: none !important;
-            box-shadow: none !important;
         }
 
-        /* ===== GLOWING GALLERY GRID ===== */
+        /* ===== GALLERY GRID ===== */
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -163,7 +153,7 @@
             margin: 0 auto;
         }
 
-        /* ===== LUXURY NFT CARD DESIGN ===== */
+        /* ===== NFT CARD DESIGN ===== */
         .nft-card {
             background: #0f0f1a;
             border-radius: 24px;
@@ -178,7 +168,7 @@
         .nft-card:hover {
             transform: translateY(-12px);
             border-color: rgba(212, 255, 0, 0.3);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(212, 255, 0, 0.05);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
         }
 
         .nft-card .image-wrapper {
@@ -188,18 +178,12 @@
             overflow: hidden;
             background: #d4ff00;
             position: relative;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
         }
 
         .nft-card .image-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .nft-card:hover .image-wrapper img {
-            transform: scale(1.05);
         }
 
         .nft-card .token-id-badge {
@@ -227,7 +211,6 @@
             font-weight: 700;
             color: #ffffff;
             margin-bottom: 8px;
-            text-align: left;
         }
 
         .nft-card .card-body .tier-tag {
@@ -248,7 +231,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
-            margin-top: 5px;
         }
 
         .nft-card .traits span {
@@ -259,116 +241,42 @@
             border: 1px solid rgba(255, 255, 255, 0.03);
             display: flex;
             flex-direction: column;
-            gap: 2px;
         }
 
-        .nft-card .traits span .label {
-            color: #6b7280;
-            text-transform: uppercase;
-            font-size: 0.6rem;
-            letter-spacing: 0.5px;
-        }
+        .nft-card .traits span .label { color: #6b7280; font-size: 0.6rem; text-transform: uppercase; }
+        .nft-card .traits span .value { color: #e5e7eb; font-weight: 600; }
 
-        .nft-card .traits span .value {
-            color: #e5e7eb;
-            font-weight: 600;
-        }
-
-        /* ===== CARD ACTIONS ===== */
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: auto;
-            padding-top: 15px;
-            width: 100%;
-        }
-
+        .card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 15px; }
         .card-actions button {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #cbd5e1;
-            padding: 10px 0;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
+            flex: 1; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e1; padding: 10px 0; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;
         }
+        .card-actions button:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
-        .card-actions button:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* ===== LOADER ===== */
-        .loader-container {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
+        .loader-container { text-align: center; padding: 60px 20px; }
         .loader-spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 2px solid rgba(212, 255, 0, 0.05);
-            border-radius: 50%;
-            border-top-color: #d4ff00;
-            animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            display: inline-block; width: 40px; height: 40px; border: 2px solid rgba(212, 255, 0, 0.05);
+            border-radius: 50%; border-top-color: #d4ff00; animation: spin 0.8s infinite linear;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loader-text {
-            margin-top: 15px;
-            color: #4b5563;
-            font-size: 0.95rem;
-        }
+        .loader-text { margin-top: 15px; color: #4b5563; font-size: 0.95rem; }
         .loader-text span { color: #d4ff00; font-weight: 600; }
 
-        /* ===== TOAST NOTIFICATION ===== */
         .toast {
-            position: fixed;
-            bottom: 40px;
-            right: 40px;
-            background: #11111f;
-            color: #fff;
-            padding: 16px 30px;
-            border-radius: 16px;
-            border: 1px solid rgba(212, 255, 0, 0.2);
-            font-weight: 600;
-            font-size: 0.9rem;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 9999;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            position: fixed; bottom: 40px; right: 40px; background: #11111f; color: #fff;
+            padding: 16px 30px; border-radius: 16px; border: 1px solid rgba(212, 255, 0, 0.2);
+            font-weight: 600; font-size: 0.9rem; opacity: 0; transform: translateY(20px);
+            transition: all 0.3s; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            header .logo { font-size: 2.8rem; }
-            .gallery { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-            .toast { left: 20px; right: 20px; bottom: 20px; text-align: center; }
-        }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
     <header>
         <div class="logo">COOL CATS</div>
-        <p class="subtitle">Premium Web3 NFT & Metadata Pixel-Perfect Processor</p>
+        <p class="subtitle">Premium Robinhood Edition — Official Logo Watermark</p>
         <div class="stats-bar">
             <span class="stat-item">🖼️ Loaded: <span class="num" id="totalLoaded">0</span></span>
             <span class="stat-item">⚡ Current ID: <span class="num" id="lastLoaded">—</span></span>
@@ -376,54 +284,43 @@
         </div>
     </header>
 
-    <!-- ===== TOOLBAR ===== -->
     <div class="toolbar">
-        <button id="downloadAllBtn">
-            📦 Download All Assets (ZIP)
-        </button>
-        <button id="downloadMetadataBtn">
-            📄 Export Metadata Compiled
-        </button>
-        <button id="resetBtn">
-            ⟳ Reset Engine
-        </button>
+        <button id="downloadAllBtn">📦 Download All Assets (ZIP)</button>
+        <button id="downloadMetadataBtn">📄 Export Metadata Compiled</button>
+        <button id="resetBtn">⟳ Reset Engine</button>
     </div>
 
-    <!-- ===== GALLERY ===== -->
     <div id="gallery" class="gallery"></div>
 
-    <!-- ===== LOADER ===== -->
     <div id="loaderContainer" class="loader-container">
         <div class="loader-spinner"></div>
-        <div class="loader-text">
-            Syncing Smart Contract Data... <span id="loaderCount">0</span> / 10,000
-        </div>
+        <div class="loader-text">Processing Next Batch... <span id="loaderCount">0</span> / 10,000</div>
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div id="toast" class="toast">✨ Success</div>
 
     <script>
         (function() {
             'use strict';
 
-            // ---------- DOM REFS ----------
             const gallery = document.getElementById('gallery');
             const loaderContainer = document.getElementById('loaderContainer');
             const loaderCount = document.getElementById('loaderCount');
             const totalLoadedSpan = document.getElementById('totalLoaded');
             const lastLoadedSpan = document.getElementById('lastLoaded');
             const toast = document.getElementById('toast');
-
             const downloadAllBtn = document.getElementById('downloadAllBtn');
             const downloadMetadataBtn = document.getElementById('downloadMetadataBtn');
             const resetBtn = document.getElementById('resetBtn');
 
-            // ---------- CONFIG ----------
             const TOTAL_SUPPLY = 10000; 
             const BATCH_SIZE = 12;
 
-            // ---------- STATE ----------
+            // প্রি-লোড লোগো ইমেজ অবজেক্ট (গিটহাবের র ইমেজ লিংক)
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'Anonymous';
+            logoImg.src = "https://raw.githubusercontent.com/tgneuroai/TgNeuroai.github.io/main/logohood.png";
+
             let currentIndex = 0;
             let isLoading = false;
             let allLoaded = false;
@@ -439,8 +336,8 @@
 
             function getApiUrl(id) { return `https://api.coolcatsnft.com/cat/${id}`; }
 
-            // ---------- PIXEL-PERFECT FLOOD FILL ENGINE ----------
-            function replaceBackgroundWithColor(imageUrl) {
+            // ---------- PERFECT IMAGE ENGINE: BACKGROUND + FLIP + WATERMARK CORNER LOGO ----------
+            function processNftPerfect(imageUrl) {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'Anonymous';
@@ -450,27 +347,21 @@
                         try {
                             const canvas = document.createElement('canvas');
                             const ctx = canvas.getContext('2d');
-                            canvas.width = img.width;
-                            canvas.height = img.height;
+                            const size = img.width;
+                            canvas.width = size;
+                            canvas.height = size;
 
+                            // ---- STEP 1: Smart Flood-Fill Background to #d4ff00 ----
                             ctx.drawImage(img, 0, 0);
-
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const imageData = ctx.getImageData(0, 0, size, size);
                             const data = imageData.data;
-                            const width = canvas.width;
-                            const height = canvas.height;
 
-                            // Sample starting top-left corner pixel as background target color
-                            const startR = data[0];
-                            const startG = data[1];
-                            const startB = data[2];
-
-                            const targetR = 212, targetG = 255, targetB = 0; // #d4ff00
+                            const startR = data[0], startG = data[1], startB = data[2];
+                            const targetR = 212, targetG = 255, targetB = 0; 
                             const tolerance = 45;
 
-                            // Color Match Utility
                             function colorMatch(x, y) {
-                                const idx = (y * width + x) * 4;
+                                const idx = (y * size + x) * 4;
                                 return (
                                     Math.abs(data[idx] - startR) < tolerance &&
                                     Math.abs(data[idx+1] - startG) < tolerance &&
@@ -478,56 +369,68 @@
                                 );
                             }
 
-                            // Set Pixel Color Utility
                             function setPixel(x, y) {
-                                const idx = (y * width + x) * 4;
-                                data[idx] = targetR;
-                                data[idx+1] = targetG;
-                                data[idx+2] = targetB;
-                                data[idx+3] = 255;
+                                const idx = (y * size + x) * 4;
+                                data[idx] = targetR; data[idx+1] = targetG; data[idx+2] = targetB; data[idx+3] = 255;
                             }
 
-                            // Queue-based Flood Fill Algorithm (Protects character lines safely)
-                            const visited = new Uint8Array(width * height);
+                            const visited = new Uint8Array(size * size);
                             const queue = [];
 
-                            // Seed points from edges to ensure all disconnected outer backgrounds are captured
-                            for(let x=0; x<width; x++) {
+                            for(let x=0; x<size; x++) {
                                 if(colorMatch(x, 0)) queue.push(x, 0);
-                                if(colorMatch(x, height-1)) queue.push(x, height-1);
+                                if(colorMatch(x, size-1)) queue.push(x, size-1);
                             }
-                            for(let y=0; y<height; y++) {
+                            for(let y=0; y<size; y++) {
                                 if(colorMatch(0, y)) queue.push(0, y);
-                                if(colorMatch(width-1, y)) queue.push(width-1, y);
+                                if(colorMatch(size-1, y)) queue.push(size-1, y);
                             }
 
                             let head = 0;
                             while (head < queue.length) {
-                                const cx = queue[head++];
-                                const cy = queue[head++];
-
-                                const vIdx = cy * width + cx;
+                                const cx = queue[head++]; const cy = queue[head++];
+                                const vIdx = cy * size + cx;
                                 if (visited[vIdx]) continue;
                                 visited[vIdx] = 1;
-
                                 setPixel(cx, cy);
 
-                                // Check 4-directional neighbors
-                                if (cx > 0 && !visited[cy * width + (cx - 1)] && colorMatch(cx - 1, cy)) {
-                                    queue.push(cx - 1, cy);
-                                }
-                                if (cx < width - 1 && !visited[cy * width + (cx + 1)] && colorMatch(cx + 1, cy)) {
-                                    queue.push(cx + 1, cy);
-                                }
-                                if (cy > 0 && !visited[(cy - 1) * width + cx] && colorMatch(cx, cy - 1)) {
-                                    queue.push(cx, cy - 1);
-                                }
-                                if (cy < height - 1 && !visited[(cy + 1) * width + cx] && colorMatch(cx, cy + 1)) {
-                                    queue.push(cx, cy + 1);
-                                }
+                                if (cx > 0 && !visited[cy * size + (cx - 1)] && colorMatch(cx - 1, cy)) queue.push(cx - 1, cy);
+                                if (cx < size - 1 && !visited[cy * size + (cx + 1)] && colorMatch(cx + 1, cy)) queue.push(cx + 1, cy);
+                                if (cy > 0 && !visited[(cy - 1) * size + cx] && colorMatch(cx, cy - 1)) queue.push(cx, cy - 1);
+                                if (cy < size - 1 && !visited[(cy + 1) * size + cx] && colorMatch(cx, cy + 1)) queue.push(cx, cy + 1);
                             }
-
                             ctx.putImageData(imageData, 0, 0);
+
+                            // ---- STEP 2: Flip the Character Horizontally (Right-Facing) ----
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = size;
+                            tempCanvas.height = size;
+                            const tempCtx = tempCanvas.getContext('2d');
+                            tempCtx.drawImage(canvas, 0, 0);
+
+                            ctx.fillStyle = '#d4ff00';
+                            ctx.fillRect(0, 0, size, size);
+
+                            ctx.save();
+                            ctx.translate(size, 0);
+                            ctx.scale(-1, 1);
+                            ctx.drawImage(tempCanvas, 0, 0);
+                            ctx.restore();
+
+                            // ---- STEP 3: Inject SVG Logo Watermark to Bottom Right Corner ----
+                            ctx.save();
+                            const targetWidth = size * 0.12; 
+                            const targetHeight = size * 0.12;
+                            const padding = size * 0.04; 
+                            
+                            const posX = size - targetWidth - padding;
+                            const posY = size - targetHeight - padding;
+
+                            if (logoImg.complete) {
+                                ctx.drawImage(logoImg, posX, posY, targetWidth, targetHeight);
+                            }
+                            ctx.restore();
+
                             resolve(canvas.toDataURL('image/png'));
                         } catch (err) {
                             resolve(imageUrl); 
@@ -537,10 +440,8 @@
                 });
             }
 
-            // ---------- BUILD CARD NODE ----------
             async function createCard(data, rawId) {
                 const shiftedId = rawId + 1; 
-
                 const card = document.createElement('div');
                 card.className = 'nft-card';
 
@@ -556,7 +457,7 @@
                 let processedUrl = originalUrl;
 
                 if (originalUrl && !originalUrl.includes('svg')) {
-                    processedUrl = await replaceBackgroundWithColor(originalUrl);
+                    processedUrl = await processNftPerfect(originalUrl);
                 }
 
                 const img = document.createElement('img');
@@ -586,10 +487,7 @@
                     data.attributes.forEach(attr => {
                         if (importantTraits.includes(attr.trait_type)) {
                             const span = document.createElement('span');
-                            span.innerHTML = `
-                                <span class="label">${attr.trait_type}</span>
-                                <span class="value">${attr.value}</span>
-                            `;
+                            span.innerHTML = `<span class="label">${attr.trait_type}</span><span class="value">${attr.value}</span>`;
                             traitsDiv.appendChild(span);
                         }
                     });
@@ -603,10 +501,7 @@
                 const dlImgBtn = document.createElement('button');
                 dlImgBtn.innerHTML = '📥 PNG';
                 dlImgBtn.onclick = () => {
-                    const a = document.createElement('a');
-                    a.href = processedUrl;
-                    a.download = `${shiftedId}.png`;
-                    a.click();
+                    const a = document.createElement('a'); a.href = processedUrl; a.download = `${shiftedId}.png`; a.click();
                 };
 
                 const dlMetaBtn = document.createElement('button');
@@ -615,15 +510,10 @@
                     const alteredData = { ...data, name: `Cool Cat #${shiftedId}`, edition: shiftedId };
                     const blob = new Blob([JSON.stringify(alteredData, null, 2)], {type: 'application/json'});
                     const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${shiftedId}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    const a = document.createElement('a'); a.href = url; a.download = `${shiftedId}.json`; a.click(); URL.revokeObjectURL(url);
                 };
 
-                actions.appendChild(dlImgBtn);
-                actions.appendChild(dlMetaBtn);
+                actions.appendChild(dlImgBtn); actions.appendChild(dlMetaBtn);
                 card.appendChild(actions);
 
                 allCardsData.push({
@@ -635,7 +525,6 @@
                 return card;
             }
 
-            // ---------- STREAM SEAMLESS BATCHES ----------
             async function loadBatch(startId, count) {
                 if (isLoading || allLoaded) return;
                 isLoading = true;
@@ -646,10 +535,7 @@
                     const targetId = startId + i;
                     if (targetId >= TOTAL_SUPPLY) { allLoaded = true; break; }
                     promises.push(
-                        fetch(getApiUrl(targetId))
-                        .then(r => r.json())
-                        .then(data => ({data, id: targetId}))
-                        .catch(() => null)
+                        fetch(getApiUrl(targetId)).then(r => r.json()).then(data => ({data, id: targetId})).catch(() => null)
                     );
                 }
 
@@ -672,11 +558,10 @@
                 if (currentIndex >= TOTAL_SUPPLY) {
                     allLoaded = true;
                     loaderContainer.style.display = 'none';
-                    showToast('🎉 All 10,000 NFT Elements processed flawlessly!');
+                    showToast('🎉 All 10,000 Perfect Flipped Assets Loaded!');
                 }
             }
 
-            // ---------- INFINITE SCROLL DETECTION ----------
             window.addEventListener('scroll', () => {
                 if (!isLoading && !allLoaded) {
                     if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 600) {
@@ -685,21 +570,18 @@
                 }
             });
 
-            // ---------- ZIP COMPILER FUNCTION ----------
+            // ---------- 100% WORKING BATCH ZIP EXPORTER ENGINE ----------
             async function downloadAllAsZip() {
-                if (allCardsData.length === 0) {
-                    showToast('⚠️ No items ready for archiving yet.');
-                    return;
-                }
-
+                if (allCardsData.length === 0) return showToast('⚠️ No items ready in the gallery yet.');
                 downloadAllBtn.disabled = true;
                 downloadAllBtn.innerText = '⚙️ Compiling ZIP...';
-                showToast('⏳ Generating zip archive with pristine textures...');
+                showToast('⏳ Compiling mirror-flipped collection zip...');
 
                 const zip = new JSZip();
                 const imgFolder = zip.folder("images");
                 const metaFolder = zip.folder("metadata");
 
+                // জিপে ইমেজ এবং মেটাডাটা পুশ করা হচ্ছে
                 for (const item of allCardsData) {
                     if (item.base64Image.startsWith('data:image/png;base64,')) {
                         const rawBase64 = item.base64Image.split(',')[1];
@@ -708,62 +590,45 @@
                     metaFolder.file(`${item.filenameId}.json`, JSON.stringify(item.metadata, null, 2));
                 }
 
+                // জিপ ফাইল জেনারেট এবং ডাউনলোড ট্রিগার
                 zip.generateAsync({type: "blob"}).then(function(content) {
                     const url = URL.createObjectURL(content);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `CoolCats_Perfect_Collection.zip`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                    downloadAllBtn.disabled = false;
-                    downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
-                    showToast('✅ Flawless ZIP File Downloaded!');
-                }).catch(err => {
-                    console.error(err);
-                    downloadAllBtn.disabled = false;
-                    downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
+                    const a = document.createElement('a'); a.href = url; a.download = `CoolCats_Robinhood_Official.zip`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                    downloadAllBtn.disabled = false; downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
+                    showToast('✅ Flipped ZIP Downloaded Successfully!');
+                }).catch(() => {
+                    downloadAllBtn.disabled = false; downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
                     showToast('❌ Error during compilation.');
                 });
             }
 
-            // ---------- BULK METADATA DOWNLOAD ----------
+            // ---------- GLOBAL MANIFEST METADATA ARRAY EXPORTER ----------
             function downloadMetadataCompiled() {
                 if (allCardsData.length === 0) return showToast('⚠️ Grid is empty.');
                 const compilation = allCardsData.map(c => c.metadata);
                 const blob = new Blob([JSON.stringify(compilation, null, 2)], {type: 'application/json'});
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'compiled_metadata.json';
-                a.click();
-                URL.revokeObjectURL(url);
+                const a = document.createElement('a'); a.href = url; a.download = 'compiled_metadata.json'; a.click(); URL.revokeObjectURL(url);
                 showToast('📄 Global array manifest generated.');
             }
 
-            // ---------- ENGINE RESET ----------
             function resetGallery() {
-                gallery.innerHTML = '';
-                allCardsData = [];
-                totalLoaded = 0;
-                currentIndex = 0;
-                allLoaded = false;
-                totalLoadedSpan.textContent = '0';
-                lastLoadedSpan.textContent = '—';
-                loaderCount.textContent = '0';
-                loadBatch(0, BATCH_SIZE);
-                showToast('⟳ Cache Cleared & Pipeline Synced.');
+                gallery.innerHTML = ''; allCardsData = []; totalLoaded = 0; currentIndex = 0; allLoaded = false;
+                totalLoadedSpan.textContent = '0'; lastLoadedSpan.textContent = '—'; loaderCount.textContent = '0';
+                loadBatch(0, BATCH_SIZE); showToast('⟳ Engine Restored.');
             }
 
-            // ---------- INITIALIZATION ----------
             downloadAllBtn.addEventListener('click', downloadAllAsZip);
             downloadMetadataBtn.addEventListener('click', downloadMetadataCompiled);
             resetBtn.addEventListener('click', resetGallery);
 
-            loadBatch(0, BATCH_SIZE);
-
+            // নিশ্চিত করা হচ্ছে লোগো অবজেক্ট রেডি হওয়ার পরই যাতে স্ক্রিপ্ট শুরু হয়
+            logoImg.onload = () => {
+                if(currentIndex === 0 && !isLoading) loadBatch(0, BATCH_SIZE);
+            };
+            if(logoImg.complete) {
+                loadBatch(0, BATCH_SIZE);
+            }
         })();
     </script>
 </body>
