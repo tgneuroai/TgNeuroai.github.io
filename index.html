@@ -1,636 +1,506 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>😺 Cool Cats NFT Gallery — Official Robinhood Logo Edition</title>
-    
-    <!-- JSZip CDN (For 100% working ZIP compilation) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-    <style>
-        /* ===== PREMIUM FONTS & RESET ===== */
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        body {
-            background: #06060c;
-            color: #f3f4f6;
-            min-height: 100vh;
-            padding: 30px 20px;
-            overflow-x: hidden;
-        }
-
-        /* ===== CYBERPUNK NEON SCROLLBAR ===== */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b0b14;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #d4ff00, #00ffcc);
-            border-radius: 10px;
-            border: 2px solid #0b0b14;
-        }
-
-        /* ===== LUXURY GLASSMORPHIC HEADER ===== */
-        header {
-            text-align: center;
-            padding: 60px 20px 45px;
-            background: radial-gradient(circle at top right, rgba(212, 255, 0, 0.05), transparent 40%),
-                        linear-gradient(135deg, rgba(18, 18, 32, 0.7), rgba(10, 10, 18, 0.9));
-            border-radius: 24px;
-            margin-bottom: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            position: relative;
-        }
-
-        header .logo {
-            font-size: 4rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff 30%, #d4ff00 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -2px;
-            text-shadow: 0 0 40px rgba(212, 255, 0, 0.2);
-        }
-
-        header .subtitle {
-            font-size: 1.1rem;
-            color: #9ca3af;
-            margin-top: 12px;
-            font-weight: 400;
-        }
-
-        header .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-            flex-wrap: wrap;
-        }
-
-        header .stats-bar .stat-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 24px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.9rem;
-            color: #9ca3af;
-            font-weight: 500;
-        }
-
-        header .stats-bar .stat-item .num {
-            color: #d4ff00;
-            font-weight: 700;
-        }
-
-        /* ===== MODERN MINIMALIST TOOLBAR ===== */
-        .toolbar {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 40px;
-        }
-
-        .toolbar button {
-            background: #11111f;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #fff;
-            padding: 14px 32px;
-            border-radius: 16px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .toolbar button#downloadAllBtn {
-            background: #d4ff00;
-            color: #06060c;
-            border: none;
-        }
-
-        .toolbar button#downloadAllBtn:hover {
-            background: #fff;
-            box-shadow: 0 0 30px rgba(212, 255, 0, 0.4);
-            transform: translateY(-3px);
-        }
-
-        .toolbar button:not(#downloadAllBtn):hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: #d4ff00;
-            color: #d4ff00;
-            transform: translateY(-3px);
-        }
-
-        .toolbar button:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* ===== GALLERY GRID ===== */
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* ===== NFT CARD DESIGN ===== */
-        .nft-card {
-            background: #0f0f1a;
-            border-radius: 24px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .nft-card:hover {
-            transform: translateY(-12px);
-            border-color: rgba(212, 255, 0, 0.3);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-        }
-
-        .nft-card .image-wrapper {
-            width: 100%;
-            aspect-ratio: 1/1;
-            border-radius: 18px;
-            overflow: hidden;
-            background: #d4ff00;
-            position: relative;
-        }
-
-        .nft-card .image-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .nft-card .token-id-badge {
-            position: absolute;
-            top: 14px;
-            left: 14px;
-            background: rgba(6, 6, 12, 0.75);
-            backdrop-filter: blur(12px);
-            padding: 6px 14px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 2;
-        }
-
-        .nft-card .card-body {
-            width: 100%;
-            padding: 20px 4px 10px;
-        }
-
-        .nft-card .card-body h3 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 8px;
-        }
-
-        .nft-card .card-body .tier-tag {
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            background: rgba(212, 255, 0, 0.1);
-            color: #d4ff00;
-            padding: 4px 12px;
-            border-radius: 8px;
-            display: inline-block;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(212, 255, 0, 0.15);
-        }
-
-        .nft-card .traits {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .nft-card .traits span {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .nft-card .traits span .label { color: #6b7280; font-size: 0.6rem; text-transform: uppercase; }
-        .nft-card .traits span .value { color: #e5e7eb; font-weight: 600; }
-
-        .card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 15px; }
-        .card-actions button {
-            flex: 1; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #cbd5e1; padding: 10px 0; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
-            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px;
-        }
-        .card-actions button:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
-
-        .loader-container { text-align: center; padding: 60px 20px; }
-        .loader-spinner {
-            display: inline-block; width: 40px; height: 40px; border: 2px solid rgba(212, 255, 0, 0.05);
-            border-radius: 50%; border-top-color: #d4ff00; animation: spin 0.8s infinite linear;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loader-text { margin-top: 15px; color: #4b5563; font-size: 0.95rem; }
-        .loader-text span { color: #d4ff00; font-weight: 600; }
-
-        .toast {
-            position: fixed; bottom: 40px; right: 40px; background: #11111f; color: #fff;
-            padding: 16px 30px; border-radius: 16px; border: 1px solid rgba(212, 255, 0, 0.2);
-            font-weight: 600; font-size: 0.9rem; opacity: 0; transform: translateY(20px);
-            transition: all 0.3s; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📸 মিসিং পিকচার শনাক্তকারী (১-১০০০০)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(145deg, #f6f9fc 0%, #e6f0f5 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      border-radius: 48px;
+      box-shadow: 0 20px 40px rgba(0,20,30,0.2), 0 8px 16px rgba(0,0,0,0.06);
+      padding: 2.5rem 2rem;
+      max-width: 850px;
+      width: 100%;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: #0b2b3b;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+    h1 small {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #2d5a6d;
+      background: #d7e6ef;
+      padding: 0.2rem 1rem;
+      border-radius: 40px;
+      margin-left: 8px;
+    }
+    .subhead {
+      color: #1d4a5e;
+      font-size: 1.1rem;
+      border-left: 5px solid #3d8ba8;
+      padding-left: 18px;
+      margin-bottom: 2rem;
+      background: #dcecf5a0;
+      border-radius: 0 20px 20px 0;
+      line-height: 1.5;
+    }
+    .upload-area {
+      background: #ffffffcc;
+      border: 2px dashed #3f8dab;
+      border-radius: 36px;
+      padding: 2rem 1.5rem;
+      text-align: center;
+      transition: 0.2s;
+      margin-bottom: 2rem;
+      cursor: pointer;
+    }
+    .upload-area:hover {
+      background: #f0faff;
+      border-color: #1f6f8c;
+    }
+    .upload-area input[type="file"] {
+      display: none;
+    }
+    .upload-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: #1b4b5e;
+    }
+    .upload-label span {
+      background: #1f6f8c;
+      padding: 8px 28px;
+      border-radius: 60px;
+      color: white;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      transition: 0.15s;
+      box-shadow: 0 6px 12px #1f6f8c40;
+    }
+    .upload-label span:hover {
+      background: #13566e;
+      transform: scale(1.02);
+    }
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      background: #ffffffd0;
+      border-radius: 40px;
+      padding: 1.2rem 1.8rem;
+      margin: 1.8rem 0 1.2rem 0;
+      border: 1px solid #bcd8e6;
+    }
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 1rem;
+    }
+    .stat-item .num {
+      font-weight: 700;
+      font-size: 1.6rem;
+      color: #023b4f;
+      letter-spacing: -0.5px;
+    }
+    .badge {
+      background: #dceef8;
+      padding: 0.2rem 0.9rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #125066;
+    }
+    .missing-list {
+      background: #ffffffdd;
+      border-radius: 32px;
+      padding: 1.2rem 1.5rem;
+      margin: 1.5rem 0;
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid #cde0ea;
+      font-size: 0.95rem;
+    }
+    .missing-list .empty-msg {
+      color: #3c6d81;
+      font-style: italic;
+      text-align: center;
+      padding: 12px 0;
+    }
+    .missing-item {
+      display: inline-block;
+      background: #e9f2f8;
+      padding: 0.2rem 1rem;
+      margin: 0.2rem 0.3rem;
+      border-radius: 30px;
+      font-family: 'Courier New', monospace;
+      font-weight: 500;
+      color: #003349;
+      border: 1px solid #b8d2e1;
+    }
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: center;
+      margin: 1.8rem 0 0.5rem 0;
+    }
+    .btn {
+      background: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #023b4f;
+      border: 1px solid #bed7e5;
+      box-shadow: 0 4px 8px #00000008;
+      transition: 0.15s;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fcff;
+    }
+    .btn-primary {
+      background: #1b6f8e;
+      border: 1px solid #1b6f8e;
+      color: white;
+      box-shadow: 0 8px 14px #1b6f8e50;
+    }
+    .btn-primary:hover {
+      background: #0f5975;
+      transform: scale(1.01);
+    }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      pointer-events: none;
+      filter: grayscale(0.2);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #2b7a99;
+      color: #1a5b74;
+    }
+    .btn-outline:hover {
+      background: #e3f0f8;
+    }
+    .btn:active { transform: scale(0.96); }
+    .file-hint {
+      color: #2c5b6e;
+      font-size: 0.95rem;
+      background: #d7e9f3;
+      padding: 0.3rem 1.2rem;
+      border-radius: 40px;
+      display: inline-block;
+    }
+    .footer {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #316d84;
+      text-align: center;
+      border-top: 1px solid #c7dce8;
+      padding-top: 1.2rem;
+    }
+    .status-msg {
+      padding: 6px 14px;
+      border-radius: 40px;
+      background: #e2eff6;
+      color: #043b4e;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+  </style>
 </head>
 <body>
+<div class="card">
+  <h1>
+    🖼️ মিসিং স্ক্যানার
+    <small>1 → 10000</small>
+  </h1>
+  <div class="subhead">
+    ⚡ জিপ আপলোড করুন (১০ হাজার ছবি) — সিরিয়াল চেক & মিসিং CSV
+  </div>
 
-    <header>
-        <div class="logo">COOL CATS</div>
-        <p class="subtitle">Premium Robinhood Edition — Official Logo Watermark</p>
-        <div class="stats-bar">
-            <span class="stat-item">🖼️ Loaded: <span class="num" id="totalLoaded">0</span></span>
-            <span class="stat-item">⚡ Current ID: <span class="num" id="lastLoaded">—</span></span>
-            <span class="stat-item">📦 Target: <span class="num">10,000</span></span>
-        </div>
-    </header>
-
-    <div class="toolbar">
-        <button id="downloadAllBtn">📦 Download All Assets (ZIP)</button>
-        <button id="downloadMetadataBtn">📄 Export Metadata Compiled</button>
-        <button id="resetBtn">⟳ Reset Engine</button>
+  <!-- Upload -->
+  <div class="upload-area" id="uploadArea">
+    <input type="file" id="fileInput" webkitdirectory directory multiple accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml">
+    <div class="upload-label">
+      <span>📁 ফোল্ডার নির্বাচন করুন</span>
+      <span style="background:transparent; color:#14566b; box-shadow:none; padding:0; font-weight:400;">
+        (যেকোনো ফোল্ডার থেকে PNG/JPG/WebP ইত্যাদি)
+      </span>
     </div>
+  </div>
 
-    <div id="gallery" class="gallery"></div>
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-item"><span class="num" id="totalCount">0</span> <span class="badge">মোট ফাইল</span></div>
+    <div class="stat-item"><span class="num" id="validCount">0</span> <span class="badge">✅ সিরিয়াল ঠিক</span></div>
+    <div class="stat-item"><span class="num" id="missingCount">0</span> <span class="badge">❌ মিসিং</span></div>
+  </div>
 
-    <div id="loaderContainer" class="loader-container">
-        <div class="loader-spinner"></div>
-        <div class="loader-text">Processing Next Turbo Batch... <span id="loaderCount">0</span> / 10,000</div>
-    </div>
+  <!-- Missing list -->
+  <div class="missing-list" id="missingList">
+    <div class="empty-msg">📭 এখনও কোনো ফাইল স্ক্যান করা হয়নি</div>
+  </div>
 
-    <div id="toast" class="toast">✨ Success</div>
+  <!-- Action buttons -->
+  <div class="action-bar">
+    <button class="btn btn-primary" id="scanBtn">🔍 স্ক্যান শুরু</button>
+    <button class="btn btn-outline" id="downloadBtn" disabled>⬇️ CSV ডাউনলোড</button>
+    <span class="status-msg" id="statusMsg">⏳ ফোল্ডার সিলেক্ট করুন</span>
+  </div>
+  <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+    <span class="file-hint">📌 নাম অবশ্যই “number.png” (যেমন 1.png, 10000.png)</span>
+  </div>
+  <div class="footer">
+    🔄 শুধুমাত্র নামের সিরিয়াল চেক করে (এক্সটেনশন .png, .jpg, .jpeg, .webp, .bmp, .gif সহ)
+  </div>
+</div>
 
-    <script>
-        (function() {
-            'use strict';
+<script>
+  (function() {
+    // DOM refs
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const scanBtn = document.getElementById('scanBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const totalCountEl = document.getElementById('totalCount');
+    const validCountEl = document.getElementById('validCount');
+    const missingCountEl = document.getElementById('missingCount');
+    const missingListEl = document.getElementById('missingList');
 
-            const gallery = document.getElementById('gallery');
-            const loaderContainer = document.getElementById('loaderContainer');
-            const loaderCount = document.getElementById('loaderCount');
-            const totalLoadedSpan = document.getElementById('totalLoaded');
-            const lastLoadedSpan = document.getElementById('lastLoaded');
-            const toast = document.getElementById('toast');
-            const downloadAllBtn = document.getElementById('downloadAllBtn');
-            const downloadMetadataBtn = document.getElementById('downloadMetadataBtn');
-            const resetBtn = document.getElementById('resetBtn');
+    // state
+    let currentFileNames = [];        // stored cleaned names "123.png" "456.jpg" etc.
+    let missingNumbers = [];          // [2, 5, 7, ...] missing serials
+    let validNumbers = new Set();     // set of numbers that exist
 
-            const TOTAL_SUPPLY = 10000; 
-            const BATCH_SIZE = 150; // High-speed Turbo batch load
+    // helpers
+    function resetState() {
+      currentFileNames = [];
+      missingNumbers = [];
+      validNumbers = new Set();
+      totalCountEl.textContent = '0';
+      validCountEl.textContent = '0';
+      missingCountEl.textContent = '0';
+      missingListEl.innerHTML = `<div class="empty-msg">📭 এখনও কোনো ফাইল স্ক্যান করা হয়নি</div>`;
+      downloadBtn.disabled = true;
+      statusMsg.innerText = '⏳ ফোল্ডার সিলেক্ট করুন';
+    }
 
-            // Pre-load watermark logo from github
-            const logoImg = new Image();
-            logoImg.crossOrigin = 'Anonymous';
-            logoImg.src = "https://raw.githubusercontent.com/tgneuroai/TgNeuroai.github.io/main/logohood.png";
+    // Extract serial number from filename (case insensitive)
+    function extractSerial(filename) {
+      // remove path if any (webkitdirectory gives relative path, but we take base name)
+      const base = filename.split('/').pop().split('\\').pop(); 
+      // match: number before extension, e.g. "123.png" -> 123, "0045.jpg" -> 45 
+      const match = base.match(/^(\d+)\.(png|jpg|jpeg|webp|bmp|gif|svg)$/i);
+      if (!match) return null;
+      const num = parseInt(match[1], 10);
+      if (isNaN(num) || num < 1 || num > 10000) return null;
+      return num;
+    }
 
-            let currentIndex = 0;
-            let isLoading = false;
-            let allLoaded = false;
-            let totalLoaded = 0;
-            let allCardsData = []; 
+    // scan files: returns { missing: [], validSet: Set, total: number }
+    function scanFiles(fileList) {
+      const validSet = new Set();
+      const rawNames = [];
+      let totalFiles = 0;
+      // iterate FileList
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const fullPath = file.webkitRelativePath || file.name;
+        const baseName = fullPath.split('/').pop().split('\\').pop();
+        rawNames.push(baseName);
+        const serial = extractSerial(baseName);
+        if (serial !== null && serial >= 1 && serial <= 10000) {
+          validSet.add(serial);
+        }
+        totalFiles++;
+      }
 
-            function showToast(msg) {
-                toast.textContent = msg;
-                toast.classList.add('show');
-                clearTimeout(toast._hide);
-                toast._hide = setTimeout(() => toast.classList.remove('show'), 3000);
-            }
+      // determine missing numbers (1..10000)
+      const missing = [];
+      for (let n = 1; n <= 10000; n++) {
+        if (!validSet.has(n)) missing.push(n);
+      }
+      return { validSet, missing, total: totalFiles, rawNames };
+    }
 
-            function getApiUrl(id) { return `https://api.coolcatsnft.com/cat/${id}`; }
+    // Render missing list
+    function renderMissing(missingArr) {
+      if (!missingArr || missingArr.length === 0) {
+        missingListEl.innerHTML = `<div class="empty-msg">🎉 কোনো মিসিং নেই! সব সিরিয়াল ঠিক আছে।</div>`;
+        return;
+      }
+      // show first 200 + count
+      let html = `<div style="margin-bottom:6px; font-weight:500; color:#0f445b;">🔴 মিসিং সিরিয়াল (${missingArr.length} টি) :</div><div>`;
+      const show = missingArr.slice(0, 300);
+      show.forEach(num => {
+        html += `<span class="missing-item">${num}.png</span>`;
+      });
+      if (missingArr.length > 300) {
+        html += `<span class="missing-item" style="background:#b0ccdb;">+ আরও ${missingArr.length - 300} টি</span>`;
+      }
+      html += `</div>`;
+      missingListEl.innerHTML = html;
+    }
 
-            // ---------- TURBO IMAGE ENGINE: BACKGROUND + FLIP + WATERMARK CORNER ----------
-            function processNftPerfect(imageUrl) {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.crossOrigin = 'Anonymous';
-                    img.src = imageUrl;
+    // update UI after scan
+    function updateUIAfterScan(missingArr, validSet, total) {
+      const missingCount = missingArr.length;
+      const validCount = validSet.size;  // unique serials
+      totalCountEl.textContent = total;
+      validCountEl.textContent = validCount;
+      missingCountEl.textContent = missingCount;
+      renderMissing(missingArr);
+      downloadBtn.disabled = (missingCount === 0);
+      if (missingCount === 0) {
+        statusMsg.innerText = '✅ সব সিরিয়াল সঠিক!';
+      } else {
+        statusMsg.innerText = `⚠️ ${missingCount} টি মিসিং পাওয়া গেছে`;
+      }
+    }
 
-                    img.onload = function() {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            const size = img.width;
-                            canvas.width = size;
-                            canvas.height = size;
+    // MAIN scan action
+    function performScan() {
+      const files = fileInput.files;
+      if (!files || files.length === 0) {
+        statusMsg.innerText = '⚠️ কোনো ফাইল নির্বাচন করা হয়নি';
+        return;
+      }
 
-                            // ---- STEP 1: Smart Flood-Fill Background to #d4ff00 ----
-                            ctx.drawImage(img, 0, 0);
-                            const imageData = ctx.getImageData(0, 0, size, size);
-                            const data = imageData.data;
+      const { validSet, missing, total, rawNames } = scanFiles(files);
+      currentFileNames = rawNames;
+      validNumbers = validSet;
+      missingNumbers = missing;
 
-                            const startR = data[0], startG = data[1], startB = data[2];
-                            const targetR = 212, targetG = 255, targetB = 0; 
-                            const tolerance = 45;
+      updateUIAfterScan(missing, validSet, total);
+      // store for csv
+    }
 
-                            function colorMatch(x, y) {
-                                const idx = (y * size + x) * 4;
-                                return (
-                                    Math.abs(data[idx] - startR) < tolerance &&
-                                    Math.abs(data[idx+1] - startG) < tolerance &&
-                                    Math.abs(data[idx+2] - startB) < tolerance
-                                );
-                            }
+    // generate CSV (missing only)
+    function generateCSV(missingArr) {
+      if (!missingArr || missingArr.length === 0) return null;
+      let csv = 'Missing Serial,Expected Filename\n';
+      missingArr.forEach(num => {
+        csv += `${num},${num}.png\n`;
+      });
+      return csv;
+    }
 
-                            function setPixel(x, y) {
-                                const idx = (y * size + x) * 4;
-                                data[idx] = targetR; data[idx+1] = targetG; data[idx+2] = targetB; data[idx+3] = 255;
-                            }
+    // download CSV
+    function downloadCSV() {
+      if (missingNumbers.length === 0) {
+        alert('কোনো মিসিং নেই, CSV তৈরি করা সম্ভব নয়।');
+        return;
+      }
+      const csvData = generateCSV(missingNumbers);
+      if (!csvData) return;
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'missing_serial_list.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      statusMsg.innerText = '📥 CSV ডাউনলোড সম্পূর্ণ!';
+    }
 
-                            const visited = new Uint8Array(size * size);
-                            const queue = [];
+    // ---- Event listeners ----
+    // click on upload area triggers hidden input
+    uploadArea.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'INPUT') {
+        fileInput.click();
+      }
+    });
 
-                            for(let x=0; x<size; x++) {
-                                if(colorMatch(x, 0)) queue.push(x, 0);
-                                if(colorMatch(x, size-1)) queue.push(x, size-1);
-                            }
-                            for(let y=0; y<size; y++) {
-                                if(colorMatch(0, y)) queue.push(0, y);
-                                if(colorMatch(size-1, y)) queue.push(size-1, y);
-                            }
+    // when files selected, auto scan? we set status
+    fileInput.addEventListener('change', function(e) {
+      const files = this.files;
+      if (files && files.length > 0) {
+        statusMsg.innerText = `📂 ${files.length} টি ফাইল নির্বাচিত, "স্ক্যান শুরু" চাপুন`;
+        // we don't scan automatically, user clicks scan
+        // but we reset previous state
+        resetState();
+        // show total count from file list
+        totalCountEl.textContent = files.length;
+        // but we don't know valid/missing yet
+        missingListEl.innerHTML = `<div class="empty-msg">⏳ স্ক্যান করার জন্য "স্ক্যান শুরু" বাটনে ক্লিক করুন</div>`;
+        downloadBtn.disabled = true;
+      } else {
+        resetState();
+      }
+    });
 
-                            let head = 0;
-                            while (head < queue.length) {
-                                const cx = queue[head++]; const cy = queue[head++];
-                                const vIdx = cy * size + cx;
-                                if (visited[vIdx]) continue;
-                                visited[vIdx] = 1;
-                                setPixel(cx, cy);
+    // scan button
+    scanBtn.addEventListener('click', function() {
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert('দয়া করে একটি ফোল্ডার নির্বাচন করুন (যাতে ছবি আছে)');
+        return;
+      }
+      performScan();
+    });
 
-                                if (cx > 0 && !visited[cy * size + (cx - 1)] && colorMatch(cx - 1, cy)) queue.push(cx - 1, cy);
-                                if (cx < size - 1 && !visited[cy * size + (cx + 1)] && colorMatch(cx + 1, cy)) queue.push(cx + 1, cy);
-                                if (cy > 0 && !visited[(cy - 1) * size + cx] && colorMatch(cx, cy - 1)) queue.push(cx, cy - 1);
-                                if (cy < size - 1 && !visited[(cy + 1) * size + cx] && colorMatch(cx, cy + 1)) queue.push(cx, cy + 1);
-                            }
-                            ctx.putImageData(imageData, 0, 0);
+    // download button
+    downloadBtn.addEventListener('click', downloadCSV);
 
-                            // ---- STEP 2: Flip the Character Horizontally ----
-                            const tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = size;
-                            tempCanvas.height = size;
-                            const tempCtx = tempCanvas.getContext('2d');
-                            tempCtx.drawImage(canvas, 0, 0);
+    // reset on load
+    resetState();
 
-                            ctx.fillStyle = '#d4ff00';
-                            ctx.fillRect(0, 0, size, size);
+    // extra: if user selects folder using webkitdirectory, we show count
+    // also support drag and drop? not required but we can add minimal
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+    function preventDefaults (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // highlight drop
+    uploadArea.addEventListener('dragover', () => {
+      uploadArea.style.background = '#e3f2fa';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.style.background = '#ffffffcc';
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      uploadArea.style.background = '#ffffffcc';
+      const dt = e.dataTransfer;
+      if (dt && dt.files) {
+        fileInput.files = dt.files;
+        // trigger change event
+        const evt = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(evt);
+      }
+    });
 
-                            ctx.save();
-                            ctx.translate(size, 0);
-                            ctx.scale(-1, 1);
-                            ctx.drawImage(tempCanvas, 0, 0);
-                            ctx.restore();
+  })();
+</script>
 
-                            // ---- STEP 3: Inject SVG Logo Watermark to Bottom Right Corner ----
-                            ctx.save();
-                            const targetWidth = size * 0.12; 
-                            const targetHeight = size * 0.12;
-                            const padding = size * 0.04; 
-                            
-                            const posX = size - targetWidth - padding;
-                            const posY = size - targetHeight - padding;
-
-                            if (logoImg.complete) {
-                                ctx.drawImage(logoImg, posX, posY, targetWidth, targetHeight);
-                            }
-                            ctx.restore();
-
-                            resolve(canvas.toDataURL('image/png'));
-                        } catch (err) {
-                            resolve(imageUrl); 
-                        }
-                    };
-                    img.onerror = () => resolve(imageUrl);
-                });
-            }
-
-            async function createCard(data, rawId) {
-                const shiftedId = rawId + 1; 
-                const card = document.createElement('div');
-                card.className = 'nft-card';
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'image-wrapper';
-
-                const badge = document.createElement('span');
-                badge.className = 'token-id-badge';
-                badge.textContent = `#${shiftedId}`;
-                wrapper.appendChild(badge);
-
-                const originalUrl = data.ipfs_image || data.image || '';
-                let processedUrl = originalUrl;
-
-                if (originalUrl && !originalUrl.includes('svg')) {
-                    processedUrl = await processNftPerfect(originalUrl);
-                }
-
-                const img = document.createElement('img');
-                img.src = processedUrl;
-                img.alt = `Cool Cat #${shiftedId}`;
-                wrapper.appendChild(img);
-                card.appendChild(wrapper);
-
-                const body = document.createElement('div');
-                body.className = 'card-body';
-
-                const name = document.createElement('h3');
-                name.textContent = `Cool Cat #${shiftedId}`;
-                body.appendChild(name);
-
-                let tierVal = data.attributes?.find(a => a.trait_type === 'tier')?.value || 'Common';
-                const tag = document.createElement('div');
-                tag.className = 'tier-tag';
-                tag.textContent = tierVal.replace('_', ' ');
-                body.appendChild(tag);
-
-                const traitsDiv = document.createElement('div');
-                traitsDiv.className = 'traits';
-                const importantTraits = ['body', 'hats', 'face', 'shirt'];
-                
-                if (data.attributes) {
-                    data.attributes.forEach(attr => {
-                        if (importantTraits.includes(attr.trait_type)) {
-                            const span = document.createElement('span');
-                            span.innerHTML = `<span class="label">${attr.trait_type}</span><span class="value">${attr.value}</span>`;
-                            traitsDiv.appendChild(span);
-                        }
-                    });
-                }
-                body.appendChild(traitsDiv);
-                card.appendChild(body);
-
-                const actions = document.createElement('div');
-                actions.className = 'card-actions';
-
-                const dlImgBtn = document.createElement('button');
-                dlImgBtn.innerHTML = '📥 PNG';
-                dlImgBtn.onclick = () => {
-                    const a = document.createElement('a'); a.href = processedUrl; a.download = `${shiftedId}.png`; a.click();
-                };
-
-                const dlMetaBtn = document.createElement('button');
-                dlMetaBtn.innerHTML = '📄 JSON';
-                dlMetaBtn.onclick = () => {
-                    const alteredData = { ...data, name: `Cool Cat #${shiftedId}`, edition: shiftedId };
-                    const blob = new Blob([JSON.stringify(alteredData, null, 2)], {type: 'application/json'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a'); a.href = url; a.download = `${shiftedId}.json`; a.click(); URL.revokeObjectURL(url);
-                };
-
-                actions.appendChild(dlImgBtn); actions.appendChild(dlMetaBtn);
-                card.appendChild(actions);
-
-                allCardsData.push({
-                    filenameId: shiftedId,
-                    metadata: { ...data, name: `Cool Cat #${shiftedId}`, edition: shiftedId },
-                    base64Image: processedUrl
-                });
-
-                return card;
-            }
-
-            async function loadBatch(startId, count) {
-                if (isLoading || allLoaded) return;
-                isLoading = true;
-                loaderContainer.style.display = 'block';
-
-                const promises = [];
-                for (let i = 0; i < count; i++) {
-                    const targetId = startId + i;
-                    if (targetId >= TOTAL_SUPPLY) { allLoaded = true; break; }
-                    promises.push(
-                        fetch(getApiUrl(targetId)).then(r => r.json()).then(data => ({data, id: targetId})).catch(() => null)
-                    );
-                }
-
-                const resolved = await Promise.all(promises);
-
-                // Document fragment to bundle DOM inserts for top render speed
-                const fragment = document.createDocumentFragment();
-                for (const item of resolved) {
-                    if (item && item.data) {
-                        const node = await createCard(item.data, item.id);
-                        fragment.appendChild(node);
-                        totalLoaded++;
-                    }
-                }
-                gallery.appendChild(fragment);
-
-                currentIndex = startId + count;
-                totalLoadedSpan.textContent = totalLoaded;
-                lastLoadedSpan.textContent = currentIndex;
-                loaderCount.textContent = currentIndex;
-
-                isLoading = false;
-                if (currentIndex >= TOTAL_SUPPLY) {
-                    allLoaded = true;
-                    loaderContainer.style.display = 'none';
-                    showToast('🎉 All 10,000 Assets Loaded Successfully!');
-                }
-            }
-
-            // Proactive trigger scroll listening
-            window.addEventListener('scroll', () => {
-                if (!isLoading && !allLoaded) {
-                    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 1200) {
-                        loadBatch(currentIndex, BATCH_SIZE);
-                    }
-                }
-            });
-
-            // ---------- 100% WORKING ZIP EXPORTER ENGINE ----------
-            async function downloadAllAsZip() {
-                if (allCardsData.length === 0) return showToast('⚠️ No items ready in the gallery yet.');
-                downloadAllBtn.disabled = true;
-                downloadAllBtn.innerText = '⚙️ Compiling ZIP...';
-                showToast('⏳ Compiling mirror-flipped collection zip...');
-
-                const zip = new JSZip();
-                const imgFolder = zip.folder("images");
-                const metaFolder = zip.folder("metadata");
-
-                for (const item of allCardsData) {
-                    if (item.base64Image.startsWith('data:image/png;base64,')) {
-                        const rawBase64 = item.base64Image.split(',')[1];
-                        imgFolder.file(`${item.filenameId}.png`, rawBase64, {base64: true});
-                    }
-                    metaFolder.file(`${item.filenameId}.json`, JSON.stringify(item.metadata, null, 2));
-                }
-
-                zip.generateAsync({type: "blob"}).then(function(content) {
-                    const url = URL.createObjectURL(content);
-                    const a = document.createElement('a'); a.href = url; a.download = `CoolCats_Robinhood_Official.zip`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-                    downloadAllBtn.disabled = false; downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
-                    showToast('✅ Flipped ZIP Downloaded Successfully!');
-                }).catch(() => {
-                    downloadAllBtn.disabled = false; downloadAllBtn.innerText = '📦 Download All Assets (ZIP)';
-                    showToast('❌ Error during compilation.');
-                });
-            }
-
-            // ---------- GLOBAL MANIFEST METADATA ARRAY EXPORTER ----------
-            function downloadMetadataCompiled() {
-                if (allCardsData.length === 0) return showToast('⚠️ Grid is empty.');
-                const compilation = allCardsData.map(c => c.metadata);
-                const blob = new Blob([JSON.stringify(compilation, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'compiled_metadata.json'; a.click(); URL.revokeObjectURL(url);
-                showToast('📄 Global array manifest generated.');
-            }
-
-            function resetGallery() {
-                gallery.innerHTML = ''; allCardsData = []; totalLoaded = 0; currentIndex = 0; allLoaded = false;
-                totalLoadedSpan.textContent = '0'; lastLoadedSpan.textContent = '—'; loaderCount.textContent = '0';
-                loadBatch(0, BATCH_SIZE); showToast('⟳ Engine Restored.');
-            }
-
-            downloadAllBtn.addEventListener('click', downloadAllAsZip);
-            downloadMetadataBtn.addEventListener('click', downloadMetadataCompiled);
-            resetBtn.addEventListener('click', resetGallery);
-
-            logoImg.onload = () => {
-                if(currentIndex === 0 && !isLoading) loadBatch(0, BATCH_SIZE);
-            };
-            if(logoImg.complete) {
-                loadBatch(0, BATCH_SIZE);
-            }
-        })();
-    </script>
+<!-- Additional note: works with webkitdirectory, also supports drop -->
 </body>
 </html>
