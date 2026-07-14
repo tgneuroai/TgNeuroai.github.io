@@ -294,7 +294,7 @@
 
     <div id="loaderContainer" class="loader-container">
         <div class="loader-spinner"></div>
-        <div class="loader-text">Processing Next Batch... <span id="loaderCount">0</span> / 10,000</div>
+        <div class="loader-text">Processing Next Turbo Batch... <span id="loaderCount">0</span> / 10,000</div>
     </div>
 
     <div id="toast" class="toast">✨ Success</div>
@@ -314,9 +314,9 @@
             const resetBtn = document.getElementById('resetBtn');
 
             const TOTAL_SUPPLY = 10000; 
-            const BATCH_SIZE = 12;
+            const BATCH_SIZE = 150; // High-speed Turbo batch load
 
-            // প্রি-লোড লোগো ইমেজ অবজেক্ট (গিটহাবের র ইমেজ লিংক)
+            // Pre-load watermark logo from github
             const logoImg = new Image();
             logoImg.crossOrigin = 'Anonymous';
             logoImg.src = "https://raw.githubusercontent.com/tgneuroai/TgNeuroai.github.io/main/logohood.png";
@@ -336,7 +336,7 @@
 
             function getApiUrl(id) { return `https://api.coolcatsnft.com/cat/${id}`; }
 
-            // ---------- PERFECT IMAGE ENGINE: BACKGROUND + FLIP + WATERMARK CORNER LOGO ----------
+            // ---------- TURBO IMAGE ENGINE: BACKGROUND + FLIP + WATERMARK CORNER ----------
             function processNftPerfect(imageUrl) {
                 return new Promise((resolve) => {
                     const img = new Image();
@@ -401,7 +401,7 @@
                             }
                             ctx.putImageData(imageData, 0, 0);
 
-                            // ---- STEP 2: Flip the Character Horizontally (Right-Facing) ----
+                            // ---- STEP 2: Flip the Character Horizontally ----
                             const tempCanvas = document.createElement('canvas');
                             tempCanvas.width = size;
                             tempCanvas.height = size;
@@ -541,13 +541,16 @@
 
                 const resolved = await Promise.all(promises);
 
+                // Document fragment to bundle DOM inserts for top render speed
+                const fragment = document.createDocumentFragment();
                 for (const item of resolved) {
                     if (item && item.data) {
                         const node = await createCard(item.data, item.id);
-                        gallery.appendChild(node);
+                        fragment.appendChild(node);
                         totalLoaded++;
                     }
                 }
+                gallery.appendChild(fragment);
 
                 currentIndex = startId + count;
                 totalLoadedSpan.textContent = totalLoaded;
@@ -558,19 +561,20 @@
                 if (currentIndex >= TOTAL_SUPPLY) {
                     allLoaded = true;
                     loaderContainer.style.display = 'none';
-                    showToast('🎉 All 10,000 Perfect Flipped Assets Loaded!');
+                    showToast('🎉 All 10,000 Assets Loaded Successfully!');
                 }
             }
 
+            // Proactive trigger scroll listening
             window.addEventListener('scroll', () => {
                 if (!isLoading && !allLoaded) {
-                    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 600) {
+                    if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 1200) {
                         loadBatch(currentIndex, BATCH_SIZE);
                     }
                 }
             });
 
-            // ---------- 100% WORKING BATCH ZIP EXPORTER ENGINE ----------
+            // ---------- 100% WORKING ZIP EXPORTER ENGINE ----------
             async function downloadAllAsZip() {
                 if (allCardsData.length === 0) return showToast('⚠️ No items ready in the gallery yet.');
                 downloadAllBtn.disabled = true;
@@ -581,7 +585,6 @@
                 const imgFolder = zip.folder("images");
                 const metaFolder = zip.folder("metadata");
 
-                // জিপে ইমেজ এবং মেটাডাটা পুশ করা হচ্ছে
                 for (const item of allCardsData) {
                     if (item.base64Image.startsWith('data:image/png;base64,')) {
                         const rawBase64 = item.base64Image.split(',')[1];
@@ -590,7 +593,6 @@
                     metaFolder.file(`${item.filenameId}.json`, JSON.stringify(item.metadata, null, 2));
                 }
 
-                // জিপ ফাইল জেনারেট এবং ডাউনলোড ট্রিগার
                 zip.generateAsync({type: "blob"}).then(function(content) {
                     const url = URL.createObjectURL(content);
                     const a = document.createElement('a'); a.href = url; a.download = `CoolCats_Robinhood_Official.zip`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
@@ -622,7 +624,6 @@
             downloadMetadataBtn.addEventListener('click', downloadMetadataCompiled);
             resetBtn.addEventListener('click', resetGallery);
 
-            // নিশ্চিত করা হচ্ছে লোগো অবজেক্ট রেডি হওয়ার পরই যাতে স্ক্রিপ্ট শুরু হয়
             logoImg.onload = () => {
                 if(currentIndex === 0 && !isLoading) loadBatch(0, BATCH_SIZE);
             };
