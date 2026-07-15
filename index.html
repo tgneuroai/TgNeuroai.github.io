@@ -1,506 +1,334 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📸 মিসিং পিকচার শনাক্তকারী (১-১০০০০)</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      background: linear-gradient(145deg, #f6f9fc 0%, #e6f0f5 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-      padding: 20px;
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(8px);
-      border-radius: 48px;
-      box-shadow: 0 20px 40px rgba(0,20,30,0.2), 0 8px 16px rgba(0,0,0,0.06);
-      padding: 2.5rem 2rem;
-      max-width: 850px;
-      width: 100%;
-      transition: all 0.2s ease;
-      border: 1px solid rgba(255,255,255,0.5);
-    }
-    h1 {
-      font-size: 2.2rem;
-      font-weight: 600;
-      color: #0b2b3b;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.5px;
-    }
-    h1 small {
-      font-size: 1rem;
-      font-weight: 400;
-      color: #2d5a6d;
-      background: #d7e6ef;
-      padding: 0.2rem 1rem;
-      border-radius: 40px;
-      margin-left: 8px;
-    }
-    .subhead {
-      color: #1d4a5e;
-      font-size: 1.1rem;
-      border-left: 5px solid #3d8ba8;
-      padding-left: 18px;
-      margin-bottom: 2rem;
-      background: #dcecf5a0;
-      border-radius: 0 20px 20px 0;
-      line-height: 1.5;
-    }
-    .upload-area {
-      background: #ffffffcc;
-      border: 2px dashed #3f8dab;
-      border-radius: 36px;
-      padding: 2rem 1.5rem;
-      text-align: center;
-      transition: 0.2s;
-      margin-bottom: 2rem;
-      cursor: pointer;
-    }
-    .upload-area:hover {
-      background: #f0faff;
-      border-color: #1f6f8c;
-    }
-    .upload-area input[type="file"] {
-      display: none;
-    }
-    .upload-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      color: #1b4b5e;
-    }
-    .upload-label span {
-      background: #1f6f8c;
-      padding: 8px 28px;
-      border-radius: 60px;
-      color: white;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      transition: 0.15s;
-      box-shadow: 0 6px 12px #1f6f8c40;
-    }
-    .upload-label span:hover {
-      background: #13566e;
-      transform: scale(1.02);
-    }
-    .stats-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 12px;
-      background: #ffffffd0;
-      border-radius: 40px;
-      padding: 1.2rem 1.8rem;
-      margin: 1.8rem 0 1.2rem 0;
-      border: 1px solid #bcd8e6;
-    }
-    .stat-item {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      font-size: 1rem;
-    }
-    .stat-item .num {
-      font-weight: 700;
-      font-size: 1.6rem;
-      color: #023b4f;
-      letter-spacing: -0.5px;
-    }
-    .badge {
-      background: #dceef8;
-      padding: 0.2rem 0.9rem;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #125066;
-    }
-    .missing-list {
-      background: #ffffffdd;
-      border-radius: 32px;
-      padding: 1.2rem 1.5rem;
-      margin: 1.5rem 0;
-      max-height: 220px;
-      overflow-y: auto;
-      border: 1px solid #cde0ea;
-      font-size: 0.95rem;
-    }
-    .missing-list .empty-msg {
-      color: #3c6d81;
-      font-style: italic;
-      text-align: center;
-      padding: 12px 0;
-    }
-    .missing-item {
-      display: inline-block;
-      background: #e9f2f8;
-      padding: 0.2rem 1rem;
-      margin: 0.2rem 0.3rem;
-      border-radius: 30px;
-      font-family: 'Courier New', monospace;
-      font-weight: 500;
-      color: #003349;
-      border: 1px solid #b8d2e1;
-    }
-    .action-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      justify-content: space-between;
-      align-items: center;
-      margin: 1.8rem 0 0.5rem 0;
-    }
-    .btn {
-      background: white;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 60px;
-      font-weight: 600;
-      font-size: 1rem;
-      color: #023b4f;
-      border: 1px solid #bed7e5;
-      box-shadow: 0 4px 8px #00000008;
-      transition: 0.15s;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #f8fcff;
-    }
-    .btn-primary {
-      background: #1b6f8e;
-      border: 1px solid #1b6f8e;
-      color: white;
-      box-shadow: 0 8px 14px #1b6f8e50;
-    }
-    .btn-primary:hover {
-      background: #0f5975;
-      transform: scale(1.01);
-    }
-    .btn-primary:disabled {
-      opacity: 0.45;
-      pointer-events: none;
-      filter: grayscale(0.2);
-    }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid #2b7a99;
-      color: #1a5b74;
-    }
-    .btn-outline:hover {
-      background: #e3f0f8;
-    }
-    .btn:active { transform: scale(0.96); }
-    .file-hint {
-      color: #2c5b6e;
-      font-size: 0.95rem;
-      background: #d7e9f3;
-      padding: 0.3rem 1.2rem;
-      border-radius: 40px;
-      display: inline-block;
-    }
-    .footer {
-      margin-top: 1.5rem;
-      font-size: 0.85rem;
-      color: #316d84;
-      text-align: center;
-      border-top: 1px solid #c7dce8;
-      padding-top: 1.2rem;
-    }
-    .status-msg {
-      padding: 6px 14px;
-      border-radius: 40px;
-      background: #e2eff6;
-      color: #043b4e;
-      font-weight: 500;
-      font-size: 0.95rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Normis · 1-Bit GameBoy Ultra Batch Converter</title>
+    <!-- JSZip CDN ফাইল এক্সেস এবং ফিউচারিস্টিক ইন্টারফেসের জন্য স্টাইল -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #070a13;
+            --panel-bg: rgba(17, 25, 40, 0.75);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-green: #00ff66;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-dark);
+            background-image: radial-gradient(at 50% 0%, rgba(0, 255, 102, 0.07) 0px, transparent 50%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 3rem 1.5rem;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .header { text-align: center; margin-bottom: 2.5rem; }
+        .header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(to right, #00ff66, #ffffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(0, 255, 102, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 102, 0.03);
+        }
+        .upload-zone p { color: var(--text-muted); font-size: 1.1rem; }
+        .upload-zone strong { color: var(--accent-green); }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group select, .input-group input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn-action {
+            width: 100%;
+            background: linear-gradient(135deg, #00ff66 0%, #00b347 100%);
+            color: #070a13;
+            border: none;
+            padding: 1.2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 255, 102, 0.2);
+            display: none;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 255, 102, 0.4);
+        }
+
+        .status-box {
+            display: none;
+            margin-top: 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 100px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-bar-fill {
+            background: var(--accent-green);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .log {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #60a5fa;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-<div class="card">
-  <h1>
-    🖼️ মিসিং স্ক্যানার
-    <small>1 → 10000</small>
-  </h1>
-  <div class="subhead">
-    ⚡ জিপ আপলোড করুন (১০ হাজার ছবি) — সিরিয়াল চেক & মিসিং CSV
-  </div>
 
-  <!-- Upload -->
-  <div class="upload-area" id="uploadArea">
-    <input type="file" id="fileInput" webkitdirectory directory multiple accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml">
-    <div class="upload-label">
-      <span>📁 ফোল্ডার নির্বাচন করুন</span>
-      <span style="background:transparent; color:#14566b; box-shadow:none; padding:0; font-weight:400;">
-        (যেকোনো ফোল্ডার থেকে PNG/JPG/WebP ইত্যাদি)
-      </span>
+<div class="container">
+    <div class="header">
+        <h1>📟 পিওর মনোক্রোম পিক্সেল ফ্যাক্টরি</h1>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">১ থেকে ৯৯৯৯+ বাল্ক ইমেজ জিপ প্রসেসর</p>
     </div>
-  </div>
 
-  <!-- Stats -->
-  <div class="stats-grid" id="statsGrid">
-    <div class="stat-item"><span class="num" id="totalCount">0</span> <span class="badge">মোট ফাইল</span></div>
-    <div class="stat-item"><span class="num" id="validCount">0</span> <span class="badge">✅ সিরিয়াল ঠিক</span></div>
-    <div class="stat-item"><span class="num" id="missingCount">0</span> <span class="badge">❌ মিসিং</span></div>
-  </div>
+    <!-- কন্ট্রোল সেটিংস -->
+    <div class="controls">
+        <div class="input-group">
+            <label>টার্গেট পিক্সেল সাইজ (হুবহু সেম গ্রিড)</label>
+            <select id="pixelSize">
+                <option value="32" selected>32 x 32 পিক্সেল (স্ক্রিনশটের সাইজ)</option>
+                <option value="48">48 x 48 পিক্সেল</option>
+                <option value="64">64 x 64 পিক্সেল</option>
+                <option value="128">128 x 128 পিক্সেল</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>ব্ল্যাক/হোয়াইট থ্রেশহোল্ড (কন্ট্রাস্ট)</label>
+            <input type="range" id="threshold" min="50" max="200" value="128">
+        </div>
+    </div>
 
-  <!-- Missing list -->
-  <div class="missing-list" id="missingList">
-    <div class="empty-msg">📭 এখনও কোনো ফাইল স্ক্যান করা হয়নি</div>
-  </div>
+    <!-- ফাইল ড্রপ এরিয়া -->
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" multiple accept="image/*">
+        <p>📂 একসাথে তোমার সব ছবি (১-৯৯৯৯+) এখানে <strong>ড্র্যাগ করো</strong> অথবা <strong>সিলেক্ট করো</strong></p>
+        <span id="fileCount" style="display:block; margin-top: 10px; color: #00ff66; font-weight: bold;"></span>
+    </div>
 
-  <!-- Action buttons -->
-  <div class="action-bar">
-    <button class="btn btn-primary" id="scanBtn">🔍 স্ক্যান শুরু</button>
-    <button class="btn btn-outline" id="downloadBtn" disabled>⬇️ CSV ডাউনলোড</button>
-    <span class="status-msg" id="statusMsg">⏳ ফোল্ডার সিলেক্ট করুন</span>
-  </div>
-  <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
-    <span class="file-hint">📌 নাম অবশ্যই “number.png” (যেমন 1.png, 10000.png)</span>
-  </div>
-  <div class="footer">
-    🔄 শুধুমাত্র নামের সিরিয়াল চেক করে (এক্সটেনশন .png, .jpg, .jpeg, .webp, .bmp, .gif সহ)
-  </div>
+    <!-- অ্যাকশন বাটন -->
+    <button class="btn-action" id="processBtn">⚡ পিক্সেল কনভার্ট এবং জিপ ডাউনলোড করো</button>
+
+    <!-- স্ট্যাটাস ও প্রোগ্রেস ট্র্যাকার -->
+    <div class="status-box" id="statusBox">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+            <span id="statusText">রেডি...</span>
+            <span id="statusPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="log" id="logBox"></div>
+    </div>
 </div>
 
 <script>
-  (function() {
-    // DOM refs
     const fileInput = document.getElementById('fileInput');
-    const uploadArea = document.getElementById('uploadArea');
-    const scanBtn = document.getElementById('scanBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const statusMsg = document.getElementById('statusMsg');
-    const totalCountEl = document.getElementById('totalCount');
-    const validCountEl = document.getElementById('validCount');
-    const missingCountEl = document.getElementById('missingCount');
-    const missingListEl = document.getElementById('missingList');
+    const dropZone = document.getElementById('dropZone');
+    const processBtn = document.getElementById('processBtn');
+    const statusBox = document.getElementById('statusBox');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const statusPercent = document.getElementById('statusPercent');
+    const logBox = document.getElementById('logBox');
 
-    // state
-    let currentFileNames = [];        // stored cleaned names "123.png" "456.jpg" etc.
-    let missingNumbers = [];          // [2, 5, 7, ...] missing serials
-    let validNumbers = new Set();     // set of numbers that exist
+    let uploadedFiles = [];
 
-    // helpers
-    function resetState() {
-      currentFileNames = [];
-      missingNumbers = [];
-      validNumbers = new Set();
-      totalCountEl.textContent = '0';
-      validCountEl.textContent = '0';
-      missingCountEl.textContent = '0';
-      missingListEl.innerHTML = `<div class="empty-msg">📭 এখনও কোনো ফাইল স্ক্যান করা হয়নি</div>`;
-      downloadBtn.disabled = true;
-      statusMsg.innerText = '⏳ ফোল্ডার সিলেক্ট করুন';
-    }
-
-    // Extract serial number from filename (case insensitive)
-    function extractSerial(filename) {
-      // remove path if any (webkitdirectory gives relative path, but we take base name)
-      const base = filename.split('/').pop().split('\\').pop(); 
-      // match: number before extension, e.g. "123.png" -> 123, "0045.jpg" -> 45 
-      const match = base.match(/^(\d+)\.(png|jpg|jpeg|webp|bmp|gif|svg)$/i);
-      if (!match) return null;
-      const num = parseInt(match[1], 10);
-      if (isNaN(num) || num < 1 || num > 10000) return null;
-      return num;
-    }
-
-    // scan files: returns { missing: [], validSet: Set, total: number }
-    function scanFiles(fileList) {
-      const validSet = new Set();
-      const rawNames = [];
-      let totalFiles = 0;
-      // iterate FileList
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
-        const fullPath = file.webkitRelativePath || file.name;
-        const baseName = fullPath.split('/').pop().split('\\').pop();
-        rawNames.push(baseName);
-        const serial = extractSerial(baseName);
-        if (serial !== null && serial >= 1 && serial <= 10000) {
-          validSet.add(serial);
+    // ড্রপ জোন ইভেন্ট হ্যান্ডলার
+    fileInput.addEventListener('change', handleFilesSelect);
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#00ff66'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'rgba(0, 255, 102, 0.3)'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFilesSelect();
         }
-        totalFiles++;
-      }
-
-      // determine missing numbers (1..10000)
-      const missing = [];
-      for (let n = 1; n <= 10000; n++) {
-        if (!validSet.has(n)) missing.push(n);
-      }
-      return { validSet, missing, total: totalFiles, rawNames };
-    }
-
-    // Render missing list
-    function renderMissing(missingArr) {
-      if (!missingArr || missingArr.length === 0) {
-        missingListEl.innerHTML = `<div class="empty-msg">🎉 কোনো মিসিং নেই! সব সিরিয়াল ঠিক আছে।</div>`;
-        return;
-      }
-      // show first 200 + count
-      let html = `<div style="margin-bottom:6px; font-weight:500; color:#0f445b;">🔴 মিসিং সিরিয়াল (${missingArr.length} টি) :</div><div>`;
-      const show = missingArr.slice(0, 300);
-      show.forEach(num => {
-        html += `<span class="missing-item">${num}.png</span>`;
-      });
-      if (missingArr.length > 300) {
-        html += `<span class="missing-item" style="background:#b0ccdb;">+ আরও ${missingArr.length - 300} টি</span>`;
-      }
-      html += `</div>`;
-      missingListEl.innerHTML = html;
-    }
-
-    // update UI after scan
-    function updateUIAfterScan(missingArr, validSet, total) {
-      const missingCount = missingArr.length;
-      const validCount = validSet.size;  // unique serials
-      totalCountEl.textContent = total;
-      validCountEl.textContent = validCount;
-      missingCountEl.textContent = missingCount;
-      renderMissing(missingArr);
-      downloadBtn.disabled = (missingCount === 0);
-      if (missingCount === 0) {
-        statusMsg.innerText = '✅ সব সিরিয়াল সঠিক!';
-      } else {
-        statusMsg.innerText = `⚠️ ${missingCount} টি মিসিং পাওয়া গেছে`;
-      }
-    }
-
-    // MAIN scan action
-    function performScan() {
-      const files = fileInput.files;
-      if (!files || files.length === 0) {
-        statusMsg.innerText = '⚠️ কোনো ফাইল নির্বাচন করা হয়নি';
-        return;
-      }
-
-      const { validSet, missing, total, rawNames } = scanFiles(files);
-      currentFileNames = rawNames;
-      validNumbers = validSet;
-      missingNumbers = missing;
-
-      updateUIAfterScan(missing, validSet, total);
-      // store for csv
-    }
-
-    // generate CSV (missing only)
-    function generateCSV(missingArr) {
-      if (!missingArr || missingArr.length === 0) return null;
-      let csv = 'Missing Serial,Expected Filename\n';
-      missingArr.forEach(num => {
-        csv += `${num},${num}.png\n`;
-      });
-      return csv;
-    }
-
-    // download CSV
-    function downloadCSV() {
-      if (missingNumbers.length === 0) {
-        alert('কোনো মিসিং নেই, CSV তৈরি করা সম্ভব নয়।');
-        return;
-      }
-      const csvData = generateCSV(missingNumbers);
-      if (!csvData) return;
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', 'missing_serial_list.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      statusMsg.innerText = '📥 CSV ডাউনলোড সম্পূর্ণ!';
-    }
-
-    // ---- Event listeners ----
-    // click on upload area triggers hidden input
-    uploadArea.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'INPUT') {
-        fileInput.click();
-      }
     });
 
-    // when files selected, auto scan? we set status
-    fileInput.addEventListener('change', function(e) {
-      const files = this.files;
-      if (files && files.length > 0) {
-        statusMsg.innerText = `📂 ${files.length} টি ফাইল নির্বাচিত, "স্ক্যান শুরু" চাপুন`;
-        // we don't scan automatically, user clicks scan
-        // but we reset previous state
-        resetState();
-        // show total count from file list
-        totalCountEl.textContent = files.length;
-        // but we don't know valid/missing yet
-        missingListEl.innerHTML = `<div class="empty-msg">⏳ স্ক্যান করার জন্য "স্ক্যান শুরু" বাটনে ক্লিক করুন</div>`;
-        downloadBtn.disabled = true;
-      } else {
-        resetState();
-      }
-    });
-
-    // scan button
-    scanBtn.addEventListener('click', function() {
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert('দয়া করে একটি ফোল্ডার নির্বাচন করুন (যাতে ছবি আছে)');
-        return;
-      }
-      performScan();
-    });
-
-    // download button
-    downloadBtn.addEventListener('click', downloadCSV);
-
-    // reset on load
-    resetState();
-
-    // extra: if user selects folder using webkitdirectory, we show count
-    // also support drag and drop? not required but we can add minimal
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      uploadArea.addEventListener(eventName, preventDefaults, false);
-    });
-    function preventDefaults (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    function handleFilesSelect() {
+        uploadedFiles = Array.from(fileInput.files);
+        if (uploadedFiles.length > 0) {
+            document.getElementById('fileCount').textContent = `✓ ${uploadedFiles.length} টি ছবি আপলোড করা হয়েছে।`;
+            processBtn.style.display = 'block';
+        }
     }
-    // highlight drop
-    uploadArea.addEventListener('dragover', () => {
-      uploadArea.style.background = '#e3f2fa';
-    });
-    uploadArea.addEventListener('dragleave', () => {
-      uploadArea.style.background = '#ffffffcc';
-    });
-    uploadArea.addEventListener('drop', (e) => {
-      uploadArea.style.background = '#ffffffcc';
-      const dt = e.dataTransfer;
-      if (dt && dt.files) {
-        fileInput.files = dt.files;
-        // trigger change event
-        const evt = new Event('change', { bubbles: true });
-        fileInput.dispatchEvent(evt);
-      }
+
+    // মেইন প্রসেসিং ইঞ্জিন
+    processBtn.addEventListener('click', async () => {
+        if (uploadedFiles.length === 0) return;
+
+        processBtn.disabled = true;
+        statusBox.style.display = 'block';
+        logBox.innerHTML = '';
+        
+        const zip = new JSZip();
+        const targetRes = parseInt(document.getElementById('pixelSize').value);
+        const thresholdVal = parseInt(document.getElementById('threshold').value);
+
+        // অফস্ক্রিন ক্যানভাস (স্পিড বুস্ট করার জন্য মেমোরিতে রেন্ডার হবে)
+        const canvas = document.createElement('canvas');
+        canvas.width = targetRes;
+        canvas.height = targetRes;
+        const ctx = canvas.getContext('2d');
+
+        const total = uploadedFiles.length;
+
+        for (let i = 0; i < total; i++) {
+            const file = uploadedFiles[i];
+            statusText.textContent = `প্রসেস করা হচ্ছে: ${file.name} (${i + 1}/${total})`;
+            const percent = Math.round(((i + 1) / total) * 100);
+            progressBar.style.width = `${percent}%`;
+            statusPercent.textContent = `${percent}%`;
+
+            try {
+                // ইমেজ ডেটা রিড ও পিক্সেল জেনারেশন
+                const img = await loadImage(file);
+                ctx.clearRect(0, 0, targetRes, targetRes);
+                ctx.imageSmoothingEnabled = false; // পিক্সেল শার্পনেস ১০০% রাখার জন্য ব্লাড ইফেক্ট অফ
+                ctx.drawImage(img, 0, 0, targetRes, targetRes);
+
+                const imgData = ctx.getImageData(0, 0, targetRes, targetRes);
+                const data = imgData.data;
+
+                // ১০০% ক্লিয়ার গেমবয় 1-Bit সলিড ব্ল্যাক/হোয়াইট ক্যালকুলেশন
+                for (let j = 0; j < data.length; j += 4) {
+                    let a = data[j+3];
+                    if (a < 50) {
+                        // যদি ব্যাকগ্রাউন্ড ট্রান্সপারেন্ট হয়, তবে ব্যাকগ্রাউন্ড পিওর সাদা করে দেওয়া হবে
+                        data[j] = 245; data[j+1] = 245; data[j+2] = 245; data[j+3] = 255;
+                        continue;
+                    }
+                    
+                    let gray = 0.299 * data[j] + 0.587 * data[j+1] + 0.114 * data[j+2];
+                    
+                    // হুবহু স্ক্রিনশটের মতো হার্ড-কাটআউট (No intermediate shades)
+                    let finalColor = gray > thresholdVal ? 245 : 15; 
+                    data[j] = data[j+1] = data[j+2] = finalColor;
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+
+                // ক্যানভাস ব্লব ডেটা তৈরি করে জিপে পুশ
+                const blob = await getCanvasBlob(canvas);
+                zip.file(`pixel_${file.name.split('.')[0]}.png`, blob);
+                
+                logBox.innerHTML += `✓ জেনারেট হয়েছে: ${file.name}<br>`;
+                logBox.scrollTop = logBox.scrollHeight;
+
+            } catch (err) {
+                logBox.innerHTML += `<span style="color: #ff3333;">✕ ত্রুটি (${file.name}): ${err.message}</span><br>`;
+            }
+        }
+
+        // জিপ ফাইল কম্প্রেস এবং অটো-ডাউনলোড
+        statusText.textContent = `📦 জিপ প্যাকেজ তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন...`;
+        const content = await zip.generateAsync({ type: "blob" });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `GameBoy_Monochrome_Pixels.zip`;
+        link.click();
+
+        statusText.textContent = `🎉 জিপ ফাইল ডাউনলোড সম্পন্ন হয়েছে!`;
+        processBtn.disabled = false;
     });
 
-  })();
+    // হেল্পার ফাংশন সমূহ
+    function loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error("ইমেজ ফাইলটি রিড করা যায়নি।"));
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function getCanvasBlob(canvas) {
+        return new Promise((resolve) => {
+            canvas.toBlob((blob) => resolve(blob), 'image/png');
+        });
+    }
 </script>
-
-<!-- Additional note: works with webkitdirectory, also supports drop -->
 </body>
 </html>
