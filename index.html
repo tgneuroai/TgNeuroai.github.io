@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Normis · 1-Bit GameBoy Ultra Batch Converter</title>
-    <!-- JSZip CDN ফাইল এক্সেস এবং ফিউচারিস্টিক ইন্টারফেসের জন্য স্টাইল -->
+    <title>⚡ Normis · GameBoy Monochrome Live Studio</title>
+    <!-- JSZip CDN বাল্ক জিপিং এর জন্য -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -30,7 +30,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1240px;
             width: 100%;
             background: var(--panel-bg);
             backdrop-filter: blur(20px);
@@ -48,23 +48,6 @@
             -webkit-text-fill-color: transparent;
             font-weight: 800;
         }
-
-        .upload-zone {
-            border: 2px dashed rgba(0, 255, 102, 0.3);
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 16px;
-            padding: 3rem;
-            text-align: center;
-            margin-bottom: 2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .upload-zone:hover {
-            border-color: var(--accent-green);
-            background: rgba(0, 255, 102, 0.03);
-        }
-        .upload-zone p { color: var(--text-muted); font-size: 1.1rem; }
-        .upload-zone strong { color: var(--accent-green); }
 
         .controls {
             display: grid;
@@ -96,8 +79,31 @@
             outline: none;
         }
 
+        .upload-zone {
+            border: 2px dashed rgba(0, 255, 102, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 102, 0.03);
+        }
+        .upload-zone p { color: var(--text-muted); font-size: 1.1rem; }
+        .upload-zone strong { color: var(--accent-green); }
+
+        .btn-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
         .btn-action {
-            width: 100%;
+            flex: 1;
             background: linear-gradient(135deg, #00ff66 0%, #00b347 100%);
             color: #070a13;
             border: none;
@@ -109,6 +115,7 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 20px rgba(0, 255, 102, 0.2);
             display: none;
+            text-align: center;
         }
 
         .btn-action:hover {
@@ -116,9 +123,18 @@
             box-shadow: 0 6px 30px rgba(0, 255, 102, 0.4);
         }
 
+        .btn-zip {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
+        }
+        .btn-zip:hover {
+            box-shadow: 0 6px 30px rgba(59, 130, 246, 0.4);
+        }
+
         .status-box {
             display: none;
-            margin-top: 1.5rem;
+            margin-bottom: 2.5rem;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 1.5rem;
@@ -137,16 +153,107 @@
             background: var(--accent-green);
             height: 100%;
             width: 0%;
-            transition: width 0.1s linear;
         }
 
-        .log {
+        /* প্রিমিয়াম কার্ড গ্যালারি */
+        .gallery-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            display: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .nft-card {
+            background: rgba(30, 41, 59, 0.3);
+            border-radius: 20px;
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .nft-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 20px;
+            padding: 1px;
+            background: linear-gradient(135deg, transparent, transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        .nft-card:hover {
+            transform: translateY(-8px);
+            background: rgba(30, 41, 59, 0.6);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .nft-card:hover::before {
+            background: linear-gradient(135deg, #00ff66, #3b82f6);
+        }
+
+        .card-label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
             font-family: monospace;
-            font-size: 0.85rem;
-            color: #60a5fa;
-            max-height: 150px;
-            overflow-y: auto;
-            margin-top: 10px;
+            margin-bottom: 1rem;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+        }
+        .card-label span { color: var(--accent-green); }
+
+        .pixel-wrapper {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .pixel-canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .download-badge {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 16px;
+            border-radius: 100px;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .nft-card:hover .download-badge {
+            background: rgba(0, 255, 102, 0.15);
+            color: var(--accent-green);
         }
     </style>
 </head>
@@ -154,19 +261,17 @@
 
 <div class="container">
     <div class="header">
-        <h1>📟 পিওর মনোক্রোম পিক্সেল ফ্যাক্টরি</h1>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">১ থেকে ৯৯৯৯+ বাল্ক ইমেজ জিপ প্রসেসর</p>
+        <h1>📟 পিওর মনোক্রোম লাইভ স্টুডিও</h1>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">ছবি ড্রপ করো, লাইভ কার্ড দেখো এবং ক্লিক করে ডাউনলোড করো</p>
     </div>
 
-    <!-- কন্ট্রোল সেটিংস -->
     <div class="controls">
         <div class="input-group">
-            <label>টার্গেট পিক্সেল সাইজ (হুবহু সেম গ্রিড)</label>
+            <label>টার্গেট পিক্সেল সাইজ</label>
             <select id="pixelSize">
-                <option value="32" selected>32 x 32 পিক্সেল (স্ক্রিনশটের সাইজ)</option>
+                <option value="32" selected>32 x 32 পিক্সেল (স্ক্রিনশট সাইজ)</option>
                 <option value="48">48 x 48 পিক্সেল</option>
                 <option value="64">64 x 64 পিক্সেল</option>
-                <option value="128">128 x 128 পিক্সেল</option>
             </select>
         </div>
         <div class="input-group">
@@ -175,17 +280,17 @@
         </div>
     </div>
 
-    <!-- ফাইল ড্রপ এরিয়া -->
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <input type="file" id="fileInput" multiple accept="image/*">
         <p>📂 একসাথে তোমার সব ছবি (১-৯৯৯৯+) এখানে <strong>ড্র্যাগ করো</strong> অথবা <strong>সিলেক্ট করো</strong></p>
         <span id="fileCount" style="display:block; margin-top: 10px; color: #00ff66; font-weight: bold;"></span>
     </div>
 
-    <!-- অ্যাকশন বাটন -->
-    <button class="btn-action" id="processBtn">⚡ পিক্সেল কনভার্ট এবং জিপ ডাউনলোড করো</button>
+    <div class="btn-container">
+        <button class="btn-action" id="processBtn">⚡ লাইভ কার্ড জেনারেট করো</button>
+        <button class="btn-action btn-zip" id="downloadZipBtn">📦 সমস্ত ছবি জিপ ডাউনলোড (.zip)</button>
+    </div>
 
-    <!-- স্ট্যাটাস ও প্রোগ্রেস ট্র্যাকার -->
     <div class="status-box" id="statusBox">
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
             <span id="statusText">রেডি...</span>
@@ -194,23 +299,28 @@
         <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="progressBar"></div>
         </div>
-        <div class="log" id="logBox"></div>
     </div>
+
+    <!-- কার্ড প্রিভিউ গ্রিড -->
+    <h2 class="gallery-title" id="galleryTitle">🖼️ জেনারেটেড পিক্সেল কার্ড সমূহ (ডাউনলোড করতে ক্লিক করো)</h2>
+    <div class="card-grid" id="cardGrid"></div>
 </div>
 
 <script>
     const fileInput = document.getElementById('fileInput');
     const dropZone = document.getElementById('dropZone');
     const processBtn = document.getElementById('processBtn');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
     const statusBox = document.getElementById('statusBox');
     const progressBar = document.getElementById('progressBar');
     const statusText = document.getElementById('statusText');
     const statusPercent = document.getElementById('statusPercent');
-    const logBox = document.getElementById('logBox');
+    const cardGrid = document.getElementById('cardGrid');
+    const galleryTitle = document.getElementById('galleryTitle');
 
     let uploadedFiles = [];
+    let generatedBlobs = {}; // জিপ ফাইলের জন্য ক্যানভাস ডেটা স্টোর রাখার অবজেক্ট
 
-    // ড্রপ জোন ইভেন্ট হ্যান্ডলার
     fileInput.addEventListener('change', handleFilesSelect);
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#00ff66'; });
     dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = 'rgba(0, 255, 102, 0.3)'; });
@@ -225,99 +335,131 @@
     function handleFilesSelect() {
         uploadedFiles = Array.from(fileInput.files);
         if (uploadedFiles.length > 0) {
-            document.getElementById('fileCount').textContent = `✓ ${uploadedFiles.length} টি ছবি আপলোড করা হয়েছে।`;
+            document.getElementById('fileCount').textContent = `✓ ${uploadedFiles.length} টি ছবি লোড হয়েছে।`;
             processBtn.style.display = 'block';
+            downloadZipBtn.style.display = 'none'; // নতুন ছবি দিলে আগের জিপ হাইড হবে
         }
     }
 
-    // মেইন প্রসেসিং ইঞ্জিন
     processBtn.addEventListener('click', async () => {
         if (uploadedFiles.length === 0) return;
 
         processBtn.disabled = true;
         statusBox.style.display = 'block';
-        logBox.innerHTML = '';
+        cardGrid.innerHTML = ''; 
+        generatedBlobs = {}; 
         
-        const zip = new JSZip();
         const targetRes = parseInt(document.getElementById('pixelSize').value);
         const thresholdVal = parseInt(document.getElementById('threshold').value);
-
-        // অফস্ক্রিন ক্যানভাস (স্পিড বুস্ট করার জন্য মেমোরিতে রেন্ডার হবে)
-        const canvas = document.createElement('canvas');
-        canvas.width = targetRes;
-        canvas.height = targetRes;
-        const ctx = canvas.getContext('2d');
-
         const total = uploadedFiles.length;
 
         for (let i = 0; i < total; i++) {
             const file = uploadedFiles[i];
-            statusText.textContent = `প্রসেস করা হচ্ছে: ${file.name} (${i + 1}/${total})`;
+            statusText.textContent = `কার্ড রেন্ডার হচ্ছে: ${file.name} (${i + 1}/${total})`;
             const percent = Math.round(((i + 1) / total) * 100);
             progressBar.style.width = `${percent}%`;
             statusPercent.textContent = `${percent}%`;
 
             try {
-                // ইমেজ ডেটা রিড ও পিক্সেল জেনারেশন
                 const img = await loadImage(file);
-                ctx.clearRect(0, 0, targetRes, targetRes);
-                ctx.imageSmoothingEnabled = false; // পিক্সেল শার্পনেস ১০০% রাখার জন্য ব্লাড ইফেক্ট অফ
+                
+                // ১. ডাইনামিক কার্ড ক্রিয়েশন
+                const card = document.createElement('div');
+                card.className = 'nft-card';
+                
+                const label = document.createElement('div');
+                label.className = 'card-label';
+                label.innerHTML = `TOKEN <span>#${String(i+1).padStart(2, '0')}</span> <div>${targetRes}x${targetRes}</div>`;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'pixel-wrapper';
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = targetRes;
+                canvas.height = targetRes;
+                canvas.className = 'pixel-canvas';
+                
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
                 ctx.drawImage(img, 0, 0, targetRes, targetRes);
 
                 const imgData = ctx.getImageData(0, 0, targetRes, targetRes);
                 const data = imgData.data;
 
-                // ১০০% ক্লিয়ার গেমবয় 1-Bit সলিড ব্ল্যাক/হোয়াইট ক্যালকুলেশন
+                // ২. স্ক্রিনশটের হুবহু পিওর মনোক্রোম পিক্সেল অ্যালগরিদম
                 for (let j = 0; j < data.length; j += 4) {
                     let a = data[j+3];
                     if (a < 50) {
-                        // যদি ব্যাকগ্রাউন্ড ট্রান্সপারেন্ট হয়, তবে ব্যাকগ্রাউন্ড পিওর সাদা করে দেওয়া হবে
-                        data[j] = 245; data[j+1] = 245; data[j+2] = 245; data[j+3] = 255;
+                        data[j] = 245; data[j+1] = 245; data[j+2] = 245; data[j+3] = 255; // পিওর ব্যাকগ্রাউন্ড হোয়াইট
                         continue;
                     }
-                    
                     let gray = 0.299 * data[j] + 0.587 * data[j+1] + 0.114 * data[j+2];
-                    
-                    // হুবহু স্ক্রিনশটের মতো হার্ড-কাটআউট (No intermediate shades)
                     let finalColor = gray > thresholdVal ? 245 : 15; 
                     data[j] = data[j+1] = data[j+2] = finalColor;
                 }
-
                 ctx.putImageData(imgData, 0, 0);
 
-                // ক্যানভাস ব্লব ডেটা তৈরি করে জিপে পুশ
+                // ৩. ফাইল ব্লব ডেটা ক্যাশে সেভ রাখা (বাল্ক জিপের জন্য)
                 const blob = await getCanvasBlob(canvas);
-                zip.file(`pixel_${file.name.split('.')[0]}.png`, blob);
-                
-                logBox.innerHTML += `✓ জেনারেট হয়েছে: ${file.name}<br>`;
-                logBox.scrollTop = logBox.scrollHeight;
+                const fileName = `pixel_${file.name.split('.')[0]}.png`;
+                generatedBlobs[fileName] = blob;
+
+                // ৪. একক ডাউনলোড ইভেন্ট লজিক (কার্ডে ক্লিক করলে ডাউনলোড)
+                card.addEventListener('click', () => {
+                    const link = document.createElement('a');
+                    link.download = fileName;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                });
+
+                const badge = document.createElement('div');
+                badge.className = 'download-badge';
+                badge.textContent = '📥 ডাউনলোড করুন';
+
+                wrapper.appendChild(canvas);
+                card.appendChild(label);
+                card.appendChild(wrapper);
+                card.appendChild(badge);
+                cardGrid.appendChild(card);
 
             } catch (err) {
-                logBox.innerHTML += `<span style="color: #ff3333;">✕ ত্রুটি (${file.name}): ${err.message}</span><br>`;
+                console.error("কার্ড জেনারেশন ফেইল:", err);
             }
         }
 
-        // জিপ ফাইল কম্প্রেস এবং অটো-ডাউনলোড
-        statusText.textContent = `📦 জিপ প্যাকেজ তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন...`;
-        const content = await zip.generateAsync({ type: "blob" });
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = `GameBoy_Monochrome_Pixels.zip`;
-        link.click();
-
-        statusText.textContent = `🎉 জিপ ফাইল ডাউনলোড সম্পন্ন হয়েছে!`;
+        statusText.textContent = `🎉 সমস্ত কার্ড রেন্ডারিং সফল হয়েছে!`;
         processBtn.disabled = false;
+        downloadZipBtn.style.display = 'block'; // জিপ বাটন শো হবে
+        galleryTitle.style.display = 'block'; 
     });
 
-    // হেল্পার ফাংশন সমূহ
+    // বাল্ক জিপ ডাউনলোড ইভেন্ট
+    downloadZipBtn.addEventListener('click', async () => {
+        downloadZipBtn.disabled = true;
+        statusText.textContent = `📦 জিপ ফাইল কম্প্রেস করা হচ্ছে...`;
+        
+        const zip = new JSZip();
+        for (const [name, blob] of Object.entries(generatedBlobs)) {
+            zip.file(name, blob);
+        }
+
+        const content = await zip.generateAsync({ type: "blob" });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `Normis_Monochrome_Collection.zip`;
+        link.click();
+
+        statusText.textContent = `✓ জিপ ডাউনলোড সম্পন্ন!`;
+        downloadZipBtn.disabled = false;
+    });
+
     function loadImage(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => resolve(img);
-                img.onerror = () => reject(new Error("ইমেজ ফাইলটি রিড করা যায়নি।"));
+                img.onerror = () => reject(new Error("ইমেজ ফাইল এরর"));
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
