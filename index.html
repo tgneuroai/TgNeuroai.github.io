@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚡ Normis · GameBoy Monochrome Live Studio</title>
-    <!-- JSZip CDN বাল্ক জিপিং এর জন্য -->
+    <!-- JSZip for bulk ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
@@ -155,7 +155,6 @@
             width: 0%;
         }
 
-        /* প্রিমিয়াম কার্ড গ্যালারি */
         .gallery-title {
             font-size: 1.3rem;
             margin-bottom: 1.5rem;
@@ -261,39 +260,39 @@
 
 <div class="container">
     <div class="header">
-        <h1>📟 পিওর মনোক্রোম লাইভ স্টুডিও</h1>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">ছবি ড্রপ করো, লাইভ কার্ড দেখো এবং ক্লিক করে ডাউনলোড করো</p>
+        <h1>📟 Pure Monochrome Live Studio</h1>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Drop your images, view live cards & click to download</p>
     </div>
 
     <div class="controls">
         <div class="input-group">
-            <label>টার্গেট পিক্সেল সাইজ</label>
+            <label>Target Pixel Size</label>
             <select id="pixelSize">
-                <option value="32" selected>32 x 32 পিক্সেল (স্ক্রিনশট সাইজ)</option>
-                <option value="48">48 x 48 পিক্সেল</option>
-                <option value="64">64 x 64 পিক্সেল</option>
+                <option value="32" selected>32 x 32 pixels (Screenshot size)</option>
+                <option value="48">48 x 48 pixels</option>
+                <option value="64">64 x 64 pixels</option>
             </select>
         </div>
         <div class="input-group">
-            <label>ব্ল্যাক/হোয়াইট থ্রেশহোল্ড (কন্ট্রাস্ট)</label>
+            <label>Black/White Threshold (Contrast)</label>
             <input type="range" id="threshold" min="50" max="200" value="128">
         </div>
     </div>
 
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
         <input type="file" id="fileInput" multiple accept="image/*">
-        <p>📂 একসাথে তোমার সব ছবি (১-৯৯৯৯+) এখানে <strong>ড্র্যাগ করো</strong> অথবা <strong>সিলেক্ট করো</strong></p>
+        <p>📂 Drag & drop all your images (1-9999+) here or <strong>click to select</strong></p>
         <span id="fileCount" style="display:block; margin-top: 10px; color: #00ff66; font-weight: bold;"></span>
     </div>
 
     <div class="btn-container">
-        <button class="btn-action" id="processBtn">⚡ লাইভ কার্ড জেনারেট করো</button>
-        <button class="btn-action btn-zip" id="downloadZipBtn">📦 সমস্ত ছবি জিপ ডাউনলোড (.zip)</button>
+        <button class="btn-action" id="processBtn">⚡ Generate Live Cards</button>
+        <button class="btn-action btn-zip" id="downloadZipBtn">📦 Download All as ZIP (.zip)</button>
     </div>
 
     <div class="status-box" id="statusBox">
         <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-            <span id="statusText">রেডি...</span>
+            <span id="statusText">Ready...</span>
             <span id="statusPercent">0%</span>
         </div>
         <div class="progress-bar-bg">
@@ -301,8 +300,7 @@
         </div>
     </div>
 
-    <!-- কার্ড প্রিভিউ গ্রিড -->
-    <h2 class="gallery-title" id="galleryTitle">🖼️ জেনারেটেড পিক্সেল কার্ড সমূহ (ডাউনলোড করতে ক্লিক করো)</h2>
+    <h2 class="gallery-title" id="galleryTitle">🖼️ Generated Pixel Cards (Click to Download)</h2>
     <div class="card-grid" id="cardGrid"></div>
 </div>
 
@@ -319,7 +317,8 @@
     const galleryTitle = document.getElementById('galleryTitle');
 
     let uploadedFiles = [];
-    let generatedBlobs = {}; // জিপ ফাইলের জন্য ক্যানভাস ডেটা স্টোর রাখার অবজেক্ট
+    let generatedBlobs = {}; // Store canvas data for ZIP
+    let fileIdMap = {}; // Map original filename to numeric ID
 
     fileInput.addEventListener('change', handleFilesSelect);
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#00ff66'; });
@@ -334,10 +333,19 @@
 
     function handleFilesSelect() {
         uploadedFiles = Array.from(fileInput.files);
+        
+        // Sort files by numeric name (1.png, 2.png, etc.)
+        uploadedFiles.sort((a, b) => {
+            const numA = parseInt(a.name.split('.')[0]);
+            const numB = parseInt(b.name.split('.')[0]);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.name.localeCompare(b.name);
+        });
+
         if (uploadedFiles.length > 0) {
-            document.getElementById('fileCount').textContent = `✓ ${uploadedFiles.length} টি ছবি লোড হয়েছে।`;
+            document.getElementById('fileCount').textContent = `✓ ${uploadedFiles.length} images loaded.`;
             processBtn.style.display = 'block';
-            downloadZipBtn.style.display = 'none'; // নতুন ছবি দিলে আগের জিপ হাইড হবে
+            downloadZipBtn.style.display = 'none';
         }
     }
 
@@ -346,16 +354,17 @@
 
         processBtn.disabled = true;
         statusBox.style.display = 'block';
-        cardGrid.innerHTML = ''; 
-        generatedBlobs = {}; 
-        
+        cardGrid.innerHTML = '';
+        generatedBlobs = {};
+        fileIdMap = {};
+
         const targetRes = parseInt(document.getElementById('pixelSize').value);
         const thresholdVal = parseInt(document.getElementById('threshold').value);
         const total = uploadedFiles.length;
 
         for (let i = 0; i < total; i++) {
             const file = uploadedFiles[i];
-            statusText.textContent = `কার্ড রেন্ডার হচ্ছে: ${file.name} (${i + 1}/${total})`;
+            statusText.textContent = `Rendering card: ${file.name} (${i + 1}/${total})`;
             const percent = Math.round(((i + 1) / total) * 100);
             progressBar.style.width = `${percent}%`;
             statusPercent.textContent = `${percent}%`;
@@ -363,13 +372,17 @@
             try {
                 const img = await loadImage(file);
                 
-                // ১. ডাইনামিক কার্ড ক্রিয়েশন
+                // Get numeric ID from filename (1.png -> 1)
+                let numericId = parseInt(file.name.split('.')[0]);
+                if (isNaN(numericId)) numericId = i + 1;
+                
+                // Create card
                 const card = document.createElement('div');
                 card.className = 'nft-card';
                 
                 const label = document.createElement('div');
                 label.className = 'card-label';
-                label.innerHTML = `TOKEN <span>#${String(i+1).padStart(2, '0')}</span> <div>${targetRes}x${targetRes}</div>`;
+                label.innerHTML = `TOKEN <span>#${String(numericId).padStart(4, '0')}</span> <div>${targetRes}x${targetRes}</div>`;
                 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'pixel-wrapper';
@@ -386,25 +399,26 @@
                 const imgData = ctx.getImageData(0, 0, targetRes, targetRes);
                 const data = imgData.data;
 
-                // ২. স্ক্রিনশটের হুবহু পিওর মনোক্রোম পিক্সেল অ্যালগরিদম
+                // Pure monochrome pixel algorithm
                 for (let j = 0; j < data.length; j += 4) {
                     let a = data[j+3];
                     if (a < 50) {
-                        data[j] = 245; data[j+1] = 245; data[j+2] = 245; data[j+3] = 255; // পিওর ব্যাকগ্রাউন্ড হোয়াইট
+                        data[j] = 245; data[j+1] = 245; data[j+2] = 245; data[j+3] = 255;
                         continue;
                     }
                     let gray = 0.299 * data[j] + 0.587 * data[j+1] + 0.114 * data[j+2];
-                    let finalColor = gray > thresholdVal ? 245 : 15; 
+                    let finalColor = gray > thresholdVal ? 245 : 15;
                     data[j] = data[j+1] = data[j+2] = finalColor;
                 }
                 ctx.putImageData(imgData, 0, 0);
 
-                // ৩. ফাইল ব্লব ডেটা ক্যাশে সেভ রাখা (বাল্ক জিপের জন্য)
+                // Store blob with numeric filename
                 const blob = await getCanvasBlob(canvas);
-                const fileName = `pixel_${file.name.split('.')[0]}.png`;
+                const fileName = `${numericId}.png`;
                 generatedBlobs[fileName] = blob;
+                fileIdMap[file.name] = numericId;
 
-                // ৪. একক ডাউনলোড ইভেন্ট লজিক (কার্ডে ক্লিক করলে ডাউনলোড)
+                // Single download on card click
                 card.addEventListener('click', () => {
                     const link = document.createElement('a');
                     link.download = fileName;
@@ -414,7 +428,7 @@
 
                 const badge = document.createElement('div');
                 badge.className = 'download-badge';
-                badge.textContent = '📥 ডাউনলোড করুন';
+                badge.textContent = '📥 Download';
 
                 wrapper.appendChild(canvas);
                 card.appendChild(label);
@@ -423,23 +437,31 @@
                 cardGrid.appendChild(card);
 
             } catch (err) {
-                console.error("কার্ড জেনারেশন ফেইল:", err);
+                console.error("Card generation failed:", err);
             }
         }
 
-        statusText.textContent = `🎉 সমস্ত কার্ড রেন্ডারিং সফল হয়েছে!`;
+        statusText.textContent = `🎉 All cards rendered successfully!`;
         processBtn.disabled = false;
-        downloadZipBtn.style.display = 'block'; // জিপ বাটন শো হবে
-        galleryTitle.style.display = 'block'; 
+        downloadZipBtn.style.display = 'block';
+        galleryTitle.style.display = 'block';
     });
 
-    // বাল্ক জিপ ডাউনলোড ইভেন্ট
+    // Bulk ZIP download
     downloadZipBtn.addEventListener('click', async () => {
         downloadZipBtn.disabled = true;
-        statusText.textContent = `📦 জিপ ফাইল কম্প্রেস করা হচ্ছে...`;
-        
+        statusText.textContent = `📦 Compressing ZIP file...`;
+
         const zip = new JSZip();
-        for (const [name, blob] of Object.entries(generatedBlobs)) {
+
+        // Get all blob entries sorted by numeric ID
+        const sortedEntries = Object.entries(generatedBlobs).sort((a, b) => {
+            const numA = parseInt(a[0].split('.')[0]);
+            const numB = parseInt(b[0].split('.')[0]);
+            return numA - numB;
+        });
+
+        for (const [name, blob] of sortedEntries) {
             zip.file(name, blob);
         }
 
@@ -449,7 +471,7 @@
         link.download = `Normis_Monochrome_Collection.zip`;
         link.click();
 
-        statusText.textContent = `✓ জিপ ডাউনলোড সম্পন্ন!`;
+        statusText.textContent = `✓ ZIP download complete!`;
         downloadZipBtn.disabled = false;
     });
 
@@ -459,7 +481,7 @@
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => resolve(img);
-                img.onerror = () => reject(new Error("ইমেজ ফাইল এরর"));
+                img.onerror = () => reject(new Error("Image file error"));
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
