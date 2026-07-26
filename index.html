@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hypnotic Wave ASCII NFT Generator</title>
+    <title>Animated Glitch ASCII NFT Generator</title>
     <style>
         * {
             box-sizing: border-box;
@@ -24,7 +24,7 @@
 
         /* 512x512 Square NFT Card */
         .nft-card {
-            background-color: #0d0e15;
+            background-color: #d4ff00;
             padding: 0;
             border-radius: 16px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
@@ -235,7 +235,7 @@
 
     <div class="nft-card" id="nftCardElement">
         <div id="asciiContainer">
-            <pre id="asciiArt">⏳ Loading Hypnotic Waves...</pre>
+            <pre id="asciiArt">⏳ Loading Glitch ASCII...</pre>
         </div>
     </div>
 
@@ -244,8 +244,8 @@
             <input type="number" id="nftNumber" value="2" min="1" step="1" placeholder="#">
             
             <div class="color-picker-wrapper">
-                <input type="color" id="bgColorPicker" value="#0d0e15">
-                <input type="text" id="bgColorInput" value="#0d0e15" placeholder="#0d0e15">
+                <input type="color" id="bgColorPicker" value="#0f0f1b">
+                <input type="text" id="bgColorInput" value="#0f0f1b" placeholder="#0f0f1b">
             </div>
 
             <button class="btn-load" id="loadBtn">⟳ Load</button>
@@ -275,7 +275,7 @@
         let baseImageData = null;
         let animationFrameId = null;
         let frameCount = 0;
-        let currentBgColor = "#0d0e15";
+        let currentBgColor = "#0f0f1b";
 
         const nftNumberInput = document.getElementById('nftNumber');
         const loadBtn = document.getElementById('loadBtn');
@@ -287,9 +287,8 @@
         const bgColorPicker = document.getElementById('bgColorPicker');
         const bgColorInput = document.getElementById('bgColorInput');
 
-        // Reference GIF Style Wave Pattern Symbol Sets & Color Gradients
-        const PATTERN_CHARS = ['┼', '░', '▒', '▓', '║', '═', '╪', '┼', '╳', '•', '·'];
-        const ASCII_SUBJECT = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrftj1ijlnfiI1!i~;-:::... ';
+        // Glitch Symbol Set matching the reference GIF style
+        const GLITCH_CHARS = ['░', '▒', '▓', '█', '┼', '╳', '═', '║', '╪', '▲', '▼', '◆', '░', '▒', ' '];
 
         function updateBackgroundColor(color) {
             currentBgColor = color;
@@ -306,45 +305,37 @@
             }
         });
 
-        // SLOW & SMOOTH CONCENTRIC WAVE RENDER
-        function renderWaveFrame(imageData, width, height, frame) {
+        // ANIMATED GLITCH ASCII GENERATOR
+        function renderAnimatedFrame(imageData, width, height, frame) {
             const data = imageData.data;
             let html = '';
-            
-            // Slow animation speed calculation (Divide by 8 for smooth motion)
-            const slowTime = frame / 8;
-            const centerX = width / 2;
-            const centerY = height / 2;
 
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const index = (y * width + x) * 4;
-                    const r = data[index];
-                    const g = data[index + 1];
-                    const b = data[index + 2];
+                    let r = data[index];
+                    let g = data[index + 1];
+                    let b = data[index + 2];
                     const a = data[index + 3];
 
                     if (a < 30) {
-                        // Math for Concentric/Radial Ripples spreading outwards smoothly
-                        const dx = x - centerX;
-                        const dy = (y - centerY) * 1.6; // Vertical stretch to match aspect ratio
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        // Smooth Sinusoidal Wave Formula matching reference GIF
-                        const wave = Math.sin(distance * 0.28 - slowTime);
-                        const patternIndex = Math.floor(((wave + 1) / 2) * (PATTERN_CHARS.length - 1));
-                        const char = PATTERN_CHARS[patternIndex];
-
-                        // Retro Gold/Teal Tint Cycle matching reference gif
-                        const goldTone = Math.floor(180 + wave * 60);
-                        const tealTone = Math.floor(130 - wave * 40);
-
-                        html += `<span style="color: rgba(${goldTone}, ${tealTone}, 70, 0.75)">${char}</span>`;
+                        // Dynamic Glitch Background Pattern
+                        if ((x + y + Math.floor(frame / 3)) % 8 === 0) {
+                            const bgChar = GLITCH_CHARS[(x * 3 + y * 5 + frame) % GLITCH_CHARS.length];
+                            html += `<span style="color: rgba(255,255,255,0.15)">${bgChar}</span>`;
+                        } else {
+                            html += ' ';
+                        }
                     } else {
-                        // Main Character rendering with crisp standard pixel texture
-                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                        const charIdx = Math.floor((gray / 255) * (ASCII_SUBJECT.length - 1));
-                        const char = ASCII_SUBJECT[charIdx];
+                        // Subject Glitch / Color Shift Effect
+                        const isGlitchPixel = Math.random() < 0.03; // 3% random glitch rate
+                        let char = GLITCH_CHARS[(x + y + frame) % (GLITCH_CHARS.length - 2)];
+
+                        if (isGlitchPixel) {
+                            r = (r + 100) % 255;
+                            g = (g + 150) % 255;
+                            char = '▓';
+                        }
 
                         html += `<span style="color: rgb(${r},${g},${b})">${char}</span>`;
                     }
@@ -354,13 +345,15 @@
             return html;
         }
 
-        // ANIMATION LOOP WITH FRAMERATE LIMITER FOR ULTRA-SMOOTH MOTION
-        function startSlowWaveAnimation(imageData, width, height) {
+        // ANIMATION LOOP
+        function startGlitchAnimation(imageData, width, height) {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
             function animate() {
                 frameCount++;
-                asciiArt.innerHTML = renderWaveFrame(imageData, width, height, frameCount);
+                if (frameCount % 3 === 0) { // Controls animation speed
+                    asciiArt.innerHTML = renderAnimatedFrame(imageData, width, height, frameCount);
+                }
                 animationFrameId = requestAnimationFrame(animate);
             }
             animate();
@@ -377,7 +370,7 @@
             statusMsg.textContent = `⏳ লোড হচ্ছে #${number} ...`;
             statusMsg.className = 'loading';
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            asciiArt.innerHTML = '⏳ লোড হচ্ছে Hypnotic Waves...';
+            asciiArt.innerHTML = '⏳ লোড হচ্ছে Glitch Animation...';
 
             const imageUrl = `${BASE_URL}${number}.png`;
 
@@ -394,7 +387,7 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        let displayWidth = 85; 
+                        let displayWidth = 80; 
                         let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.58);
 
                         canvas.width = displayWidth;
@@ -405,9 +398,9 @@
 
                         baseImageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
                         
-                        startSlowWaveAnimation(baseImageData, displayWidth, displayHeight);
+                        startGlitchAnimation(baseImageData, displayWidth, displayHeight);
 
-                        statusMsg.textContent = `✓ #${number} স্লো স্মুথ পেটার্ন এনিমেশন তৈরি হয়েছে!`;
+                        statusMsg.textContent = `✓ #${number} সাইকেডেলিক গ্লিচ এনিমেশন চালু হয়েছে!`;
                         statusMsg.className = 'success';
                         nftNumberInput.value = number;
 
@@ -430,7 +423,7 @@
                 });
         }
 
-        // DOWNLOAD PNG
+        // DOWNLOAD PNG OF CURRENT ANIMATION FRAME
         function downloadAsPNG() {
             if (!baseImageData) return;
 
@@ -444,7 +437,7 @@
             ctx.fillRect(0, 0, imageSize, imageSize);
 
             const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_Wave_Frame.png`;
+            link.download = `NFT_#${currentNFTNumber}_Glitch_Frame.png`;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
@@ -457,7 +450,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `NFT_#${currentNFTNumber}_Wave.txt`;
+            link.download = `NFT_#${currentNFTNumber}_Glitch.txt`;
             link.click();
             URL.revokeObjectURL(url);
         }
@@ -472,7 +465,7 @@
         downloadPngBtn.addEventListener('click', downloadAsPNG);
 
         window.addEventListener('load', () => {
-            updateBackgroundColor('#0d0e15');
+            updateBackgroundColor('#0f0f1b');
             loadNFT(2);
         });
     </script>
