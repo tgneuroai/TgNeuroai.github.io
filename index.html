@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT ASCII Art Generator</title>
+    <title>Hypnotic Wave ASCII NFT Generator</title>
     <style>
         * {
             box-sizing: border-box;
@@ -24,7 +24,7 @@
 
         /* 512x512 Square NFT Card */
         .nft-card {
-            background-color: #d4ff00; /* Default background */
+            background-color: #0d0e15;
             padding: 0;
             border-radius: 16px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
@@ -235,7 +235,7 @@
 
     <div class="nft-card" id="nftCardElement">
         <div id="asciiContainer">
-            <pre id="asciiArt">⏳ Loading High Resolution ASCII...</pre>
+            <pre id="asciiArt">⏳ Loading Hypnotic Waves...</pre>
         </div>
     </div>
 
@@ -243,10 +243,9 @@
         <div class="input-group">
             <input type="number" id="nftNumber" value="2" min="1" step="1" placeholder="#">
             
-            <!-- Color Picker & Color Code Input -->
             <div class="color-picker-wrapper">
-                <input type="color" id="bgColorPicker" value="#d4ff00">
-                <input type="text" id="bgColorInput" value="#d4ff00" placeholder="#d4ff00">
+                <input type="color" id="bgColorPicker" value="#0d0e15">
+                <input type="text" id="bgColorInput" value="#0d0e15" placeholder="#0d0e15">
             </div>
 
             <button class="btn-load" id="loadBtn">⟳ Load</button>
@@ -273,10 +272,10 @@
     <script>
         const BASE_URL = "https://ipfs.io/ipfs/bafybeifh2kk6nv5osnwlh7qvjunuowb3vgxaoaqfufxiocozdqdpqqkvnu/";
         let currentNFTNumber = 2;
-        let currentAsciiLines = [];
-        let originalImgWidth = 512;
-        let originalImgHeight = 512;
-        let currentBgColor = "#d4ff00";
+        let baseImageData = null;
+        let animationFrameId = null;
+        let frameCount = 0;
+        let currentBgColor = "#0d0e15";
 
         const nftNumberInput = document.getElementById('nftNumber');
         const loadBtn = document.getElementById('loadBtn');
@@ -288,9 +287,10 @@
         const bgColorPicker = document.getElementById('bgColorPicker');
         const bgColorInput = document.getElementById('bgColorInput');
 
-        const ASCII_CHARS = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrftj1ijlnfiI1!i~;-:::...   ';
+        // Reference GIF Style Wave Pattern Symbol Sets & Color Gradients
+        const PATTERN_CHARS = ['┼', '░', '▒', '▓', '║', '═', '╪', '┼', '╳', '•', '·'];
+        const ASCII_SUBJECT = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrftj1ijlnfiI1!i~;-:::... ';
 
-        // Update Background Color dynamically
         function updateBackgroundColor(color) {
             currentBgColor = color;
             nftCardElement.style.backgroundColor = color;
@@ -298,10 +298,7 @@
             bgColorInput.value = color;
         }
 
-        bgColorPicker.addEventListener('input', (e) => {
-            updateBackgroundColor(e.target.value);
-        });
-
+        bgColorPicker.addEventListener('input', (e) => updateBackgroundColor(e.target.value));
         bgColorInput.addEventListener('input', (e) => {
             let val = e.target.value.trim();
             if (/^#[0-9A-F]{6}$/i.test(val) || /^#[0-9A-F]{3}$/i.test(val)) {
@@ -309,18 +306,17 @@
             }
         });
 
-        function isTransparent(r, g, b, a) {
-            return a < 30;
-        }
-
-        // GENERATE HIGH-DENSITY ASCII DATA
-        function generateAsciiData(imageData, width, height) {
+        // SLOW & SMOOTH CONCENTRIC WAVE RENDER
+        function renderWaveFrame(imageData, width, height, frame) {
             const data = imageData.data;
-            const lines = [];
-            const chars = ASCII_CHARS;
+            let html = '';
+            
+            // Slow animation speed calculation (Divide by 8 for smooth motion)
+            const slowTime = frame / 8;
+            const centerX = width / 2;
+            const centerY = height / 2;
 
             for (let y = 0; y < height; y++) {
-                const line = [];
                 for (let x = 0; x < width; x++) {
                     const index = (y * width + x) * 4;
                     const r = data[index];
@@ -328,33 +324,46 @@
                     const b = data[index + 2];
                     const a = data[index + 3];
 
-                    if (isTransparent(r, g, b, a)) {
-                        line.push({ char: ' ', color: 'transparent' });
+                    if (a < 30) {
+                        // Math for Concentric/Radial Ripples spreading outwards smoothly
+                        const dx = x - centerX;
+                        const dy = (y - centerY) * 1.6; // Vertical stretch to match aspect ratio
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        // Smooth Sinusoidal Wave Formula matching reference GIF
+                        const wave = Math.sin(distance * 0.28 - slowTime);
+                        const patternIndex = Math.floor(((wave + 1) / 2) * (PATTERN_CHARS.length - 1));
+                        const char = PATTERN_CHARS[patternIndex];
+
+                        // Retro Gold/Teal Tint Cycle matching reference gif
+                        const goldTone = Math.floor(180 + wave * 60);
+                        const tealTone = Math.floor(130 - wave * 40);
+
+                        html += `<span style="color: rgba(${goldTone}, ${tealTone}, 70, 0.75)">${char}</span>`;
                     } else {
+                        // Main Character rendering with crisp standard pixel texture
                         const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                        const charIndex = Math.floor((gray / 255) * (chars.length - 1));
-                        const char = chars[charIndex];
-                        line.push({ char: char, color: `rgb(${r},${g},${b})` });
+                        const charIdx = Math.floor((gray / 255) * (ASCII_SUBJECT.length - 1));
+                        const char = ASCII_SUBJECT[charIdx];
+
+                        html += `<span style="color: rgb(${r},${g},${b})">${char}</span>`;
                     }
                 }
-                lines.push(line);
+                html += '\n';
             }
-            return lines;
+            return html;
         }
 
-        function renderAsciiToHTML(lines) {
-            let html = '';
-            lines.forEach(line => {
-                line.forEach(item => {
-                    if (item.color === 'transparent') {
-                        html += ' ';
-                    } else {
-                        html += `<span style="color: ${item.color}">${item.char}</span>`;
-                    }
-                });
-                html += '\n';
-            });
-            return html;
+        // ANIMATION LOOP WITH FRAMERATE LIMITER FOR ULTRA-SMOOTH MOTION
+        function startSlowWaveAnimation(imageData, width, height) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            function animate() {
+                frameCount++;
+                asciiArt.innerHTML = renderWaveFrame(imageData, width, height, frameCount);
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animate();
         }
 
         function loadNFT(number) {
@@ -367,7 +376,8 @@
             currentNFTNumber = number;
             statusMsg.textContent = `⏳ লোড হচ্ছে #${number} ...`;
             statusMsg.className = 'loading';
-            asciiArt.innerHTML = '⏳ লোড হচ্ছে ASCII...';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            asciiArt.innerHTML = '⏳ লোড হচ্ছে Hypnotic Waves...';
 
             const imageUrl = `${BASE_URL}${number}.png`;
 
@@ -381,14 +391,11 @@
                     const objectUrl = URL.createObjectURL(blob);
 
                     img.onload = function() {
-                        originalImgWidth = img.width || 512;
-                        originalImgHeight = img.height || 512;
-
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        let displayWidth = 100; 
-                        let displayHeight = Math.floor(displayWidth * (originalImgHeight / originalImgWidth) * 0.58);
+                        let displayWidth = 85; 
+                        let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.58);
 
                         canvas.width = displayWidth;
                         canvas.height = displayHeight;
@@ -396,12 +403,11 @@
                         ctx.clearRect(0, 0, displayWidth, displayHeight);
                         ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-                        const imageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
-                        currentAsciiLines = generateAsciiData(imageData, displayWidth, displayHeight);
+                        baseImageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
                         
-                        asciiArt.innerHTML = renderAsciiToHTML(currentAsciiLines);
+                        startSlowWaveAnimation(baseImageData, displayWidth, displayHeight);
 
-                        statusMsg.textContent = `✓ #${number} সম্পূর্ণ ইমেজের মাপে তৈরি হয়ে গেছে!`;
+                        statusMsg.textContent = `✓ #${number} স্লো স্মুথ পেটার্ন এনিমেশন তৈরি হয়েছে!`;
                         statusMsg.className = 'success';
                         nftNumberInput.value = number;
 
@@ -424,76 +430,34 @@
                 });
         }
 
-        // DOWNLOAD PNG WITH SELECTED BACKGROUND COLOR
+        // DOWNLOAD PNG
         function downloadAsPNG() {
-            if (!currentAsciiLines || currentAsciiLines.length === 0) {
-                statusMsg.textContent = '⚠️ প্রথমে একটি NFT লোড করুন';
-                statusMsg.className = 'error';
-                return;
-            }
+            if (!baseImageData) return;
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
             const imageSize = 512;
             canvas.width = imageSize;
             canvas.height = imageSize;
 
-            // Fill canvas with dynamically selected background color
             ctx.fillStyle = currentBgColor;
             ctx.fillRect(0, 0, imageSize, imageSize);
 
-            const numRows = currentAsciiLines.length;
-            const numCols = currentAsciiLines[0].length;
-
-            const fontSize = 8.5;
-            const charWidth = 5.12; 
-            const lineHeight = 8.8;
-
-            ctx.font = `900 ${fontSize}px 'Courier New', monospace`;
-            ctx.textBaseline = 'top';
-
-            const totalAsciiWidth = numCols * charWidth;
-            const totalAsciiHeight = numRows * lineHeight;
-
-            const startX = (imageSize - totalAsciiWidth) / 2;
-            const startY = (imageSize - totalAsciiHeight) / 2;
-
-            currentAsciiLines.forEach((line, rowIndex) => {
-                const y = startY + (rowIndex * lineHeight);
-                line.forEach((item, colIndex) => {
-                    if (item.color !== 'transparent') {
-                        const x = startX + (colIndex * charWidth);
-                        ctx.fillStyle = item.color;
-                        ctx.fillText(item.char, x, y);
-                    }
-                });
-            });
-
             const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_ASCII_Image.png`;
+            link.download = `NFT_#${currentNFTNumber}_Wave_Frame.png`;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            statusMsg.textContent = `✓ নিখুঁত স্কয়ার PNG ডাউনলোড সম্পূর্ণ হয়েছে!`;
-            statusMsg.className = 'success';
         }
 
         function downloadAsciiTXT() {
-            if (!currentAsciiLines || currentAsciiLines.length === 0) return;
-            let plainText = '';
-            currentAsciiLines.forEach(line => {
-                line.forEach(item => plainText += item.char);
-                plainText += '\n';
-            });
-
-            const blob = new Blob([plainText], { type: 'text/plain' });
+            if (!asciiArt.innerText) return;
+            const blob = new Blob([asciiArt.innerText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `NFT_#${currentNFTNumber}_ASCII.txt`;
+            link.download = `NFT_#${currentNFTNumber}_Wave.txt`;
             link.click();
             URL.revokeObjectURL(url);
         }
@@ -507,7 +471,10 @@
         downloadAsciiBtn.addEventListener('click', downloadAsciiTXT);
         downloadPngBtn.addEventListener('click', downloadAsPNG);
 
-        window.addEventListener('load', () => loadNFT(2));
+        window.addEventListener('load', () => {
+            updateBackgroundColor('#0d0e15');
+            loadNFT(2);
+        });
     </script>
 
 </body>
