@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFT Gallery · Color ASCII Art</title>
     <style>
-        /* ===== ORIGINAL DESIGN ===== */
         body {
             margin: 0;
             padding: 20px;
@@ -19,51 +18,46 @@
             gap: 30px;
         }
 
+        /* NFT Card exact styling */
         .nft-card {
             background-color: #d4ff00;
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            display: inline-block;
-            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             width: 512px;
-            max-width: 100%;
+            height: 512px;
             box-sizing: border-box;
+            transition: transform 0.3s ease;
         }
 
         .nft-card:hover {
             transform: scale(1.02);
         }
 
-        /* ===== ASCII CONTAINER - Background #d4ff00 ===== */
         #asciiContainer {
-            background-color: #d4ff00;
-            border-radius: 12px;
-            padding: 16px;
-            overflow: auto;
+            background-color: transparent;
             width: 100%;
-            height: 452px;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 2px solid rgba(212, 255, 0, 0.1);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            overflow: hidden;
             box-sizing: border-box;
         }
 
-        /* ===== ASCII ART - Dark text on #d4ff00 background ===== */
         #asciiArt {
             font-size: 10px;
             line-height: 1.15;
             white-space: pre;
             font-family: 'Courier New', monospace;
-            text-align: left;
-            width: 100%;
+            text-align: center;
             margin: 0;
-            padding: 4px;
-            letter-spacing: 0.3px;
-            word-break: break-all;
-            /* Each character will have its own color via spans */
+            padding: 0;
+            letter-spacing: 0.5px;
         }
 
         .nft-title {
@@ -113,15 +107,6 @@
             box-shadow: 0 0 25px rgba(212, 255, 0, 0.1);
         }
 
-        .input-group input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-            font-weight: 400;
-        }
-
-        .input-group input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-        }
-
         .btn-load {
             padding: 12px 32px;
             font-size: 16px;
@@ -133,16 +118,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 25px rgba(212, 255, 0, 0.2);
-            letter-spacing: 0.5px;
         }
 
         .btn-load:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(212, 255, 0, 0.35);
-        }
-
-        .btn-load:active {
-            transform: scale(0.96);
         }
 
         .quick-links {
@@ -162,29 +142,14 @@
             color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
             transition: all 0.3s ease;
-            font-family: inherit;
         }
 
         .quick-links button:hover {
             background: rgba(212, 255, 0, 0.12);
             border-color: rgba(212, 255, 0, 0.3);
             color: #d4ff00;
-            transform: translateY(-2px);
         }
 
-        .quick-links .btn-random {
-            background: rgba(124, 58, 237, 0.12);
-            border-color: rgba(124, 58, 237, 0.15);
-            color: #c084fc;
-        }
-
-        .quick-links .btn-random:hover {
-            background: rgba(124, 58, 237, 0.2);
-            border-color: rgba(124, 58, 237, 0.3);
-            color: #d4ff00;
-        }
-
-        /* ===== DOWNLOAD BUTTONS ===== */
         .download-section {
             display: flex;
             gap: 12px;
@@ -204,104 +169,33 @@
             color: #1a1a2e;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(212, 255, 0, 0.15);
-            letter-spacing: 0.5px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-download:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(212, 255, 0, 0.3);
-        }
-
-        .btn-download:active {
-            transform: scale(0.96);
         }
 
         .btn-download-png {
             background: linear-gradient(135deg, #7c3aed, #6d28d9);
             color: #ffffff;
-            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
-        }
-
-        .btn-download-png:hover {
-            box-shadow: 0 12px 35px rgba(124, 58, 237, 0.35);
         }
 
         #status-message {
             color: rgba(255, 255, 255, 0.4);
             font-size: 14px;
-            min-height: 24px;
             text-align: center;
-            transition: all 0.3s ease;
         }
 
-        #status-message.success {
-            color: #69db7c;
-        }
-
-        #status-message.error {
-            color: #ff6b6b;
-        }
-
-        #status-message.loading {
-            color: #d4ff00;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 550px) {
-            .nft-card {
-                width: 100%;
-                padding: 15px;
-            }
-            #asciiContainer {
-                height: 300px;
-                padding: 10px;
-            }
-            #asciiArt {
-                font-size: 6px;
-                line-height: 1.1;
-            }
-            .input-group input {
-                width: 100px;
-                padding: 10px 14px;
-                font-size: 16px;
-            }
-            .btn-load, .btn-download {
-                padding: 10px 20px;
-                font-size: 13px;
-            }
-            .quick-links button {
-                padding: 6px 14px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 400px) {
-            #asciiArt {
-                font-size: 4px;
-                line-height: 1.05;
-            }
-            #asciiContainer {
-                height: 220px;
-                padding: 8px;
-            }
-        }
+        #status-message.success { color: #69db7c; }
+        #status-message.error { color: #ff6b6b; }
+        #status-message.loading { color: #d4ff00; }
     </style>
 </head>
 <body>
 
-    <!-- ===== NFT CARD ===== -->
-    <div class="nft-card">
+    <div class="nft-card" id="nftCardElement">
         <div id="asciiContainer">
             <pre id="asciiArt">⏳ Loading color ASCII art...</pre>
         </div>
         <div class="nft-title" id="nftTitle">✨ NFT #2</div>
     </div>
 
-    <!-- ===== CONTROLS ===== -->
     <div class="controls">
         <div class="input-group">
             <input type="number" id="nftNumber" value="2" min="1" step="1" placeholder="#">
@@ -315,53 +209,44 @@
             <button onclick="loadNFT(4)">#4</button>
             <button onclick="loadNFT(5)">#5</button>
             <button onclick="loadNFT(6)">#6</button>
-            <button onclick="loadNFT(7)">#7</button>
-            <button onclick="loadNFT(8)">#8</button>
-            <button onclick="loadNFT(9)">#9</button>
-            <button onclick="loadNFT(10)">#10</button>
             <button class="btn-random" onclick="loadRandom()">🎲 Random</button>
         </div>
 
-        <!-- ===== DOWNLOAD SECTION ===== -->
         <div class="download-section">
             <button class="btn-download" id="downloadAsciiBtn">📋 Download ASCII (TXT)</button>
-            <button class="btn-download btn-download-png" id="downloadPngBtn">🖼️ Download as PNG</button>
+            <button class="btn-download btn-download-png" id="downloadPngBtn">🖼️ Download as PNG Card</button>
         </div>
 
         <div id="status-message">Ready · Enter a number</div>
     </div>
 
     <script>
-        // ===== CONFIG =====
         const BASE_URL = "https://ipfs.io/ipfs/bafybeifh2kk6nv5osnwlh7qvjunuowb3vgxaoaqfufxiocozdqdpqqkvnu/";
         let currentNFTNumber = 2;
-        let currentAsciiHTML = '';
+        let currentAsciiLines = [];
 
-        // ===== DOM REFS =====
         const nftTitle = document.getElementById('nftTitle');
         const nftNumberInput = document.getElementById('nftNumber');
         const loadBtn = document.getElementById('loadBtn');
         const statusMsg = document.getElementById('status-message');
         const asciiArt = document.getElementById('asciiArt');
-        const asciiContainer = document.getElementById('asciiContainer');
         const downloadAsciiBtn = document.getElementById('downloadAsciiBtn');
         const downloadPngBtn = document.getElementById('downloadPngBtn');
 
-        // ===== ASCII CHARACTERS =====
         const ASCII_CHARS = '@%#*+=-:. ';
 
-        // ===== CHECK TRANSPARENCY =====
         function isTransparent(r, g, b, a) {
             return a < 30;
         }
 
-        // ===== GENERATE COLORED ASCII =====
-        function generateColoredAscii(imageData, width, height) {
+        // GENERATE COLORED ASCII DATA
+        function generateAsciiData(imageData, width, height) {
             const data = imageData.data;
-            let html = '';
+            const lines = [];
             const chars = ASCII_CHARS;
 
             for (let y = 0; y < height; y++) {
+                const line = [];
                 for (let x = 0; x < width; x++) {
                     const index = (y * width + x) * 4;
                     const r = data[index];
@@ -370,21 +255,34 @@
                     const a = data[index + 3];
 
                     if (isTransparent(r, g, b, a)) {
-                        html += ' ';
+                        line.push({ char: ' ', color: 'transparent' });
                     } else {
                         const gray = (r + g + b) / 3;
                         const charIndex = Math.floor((gray / 255) * (chars.length - 1));
                         const char = chars[charIndex];
-                        // Use the original RGB color for the character
-                        html += `<span style="color: rgb(${r},${g},${b});">${char}</span>`;
+                        line.push({ char: char, color: `rgb(${r},${g},${b})` });
                     }
                 }
-                html += '\n';
+                lines.push(line);
             }
+            return lines;
+        }
+
+        function renderAsciiToHTML(lines) {
+            let html = '';
+            lines.forEach(line => {
+                line.forEach(item => {
+                    if (item.color === 'transparent') {
+                        html += ' ';
+                    } else {
+                        html += `<span style="color: ${item.color}">${item.char}</span>`;
+                    }
+                });
+                html += '\n';
+            });
             return html;
         }
 
-        // ===== LOAD NFT =====
         function loadNFT(number) {
             if (!number || number < 1 || !Number.isInteger(number)) {
                 statusMsg.textContent = '⚠️ Please enter a valid positive integer';
@@ -413,25 +311,19 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        const maxWidth = 64;
-                        const aspectRatio = img.height / img.width;
-                        let width = maxWidth;
-                        let height = Math.floor(width * aspectRatio * 0.45);
+                        let displayWidth = 50; 
+                        let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.5);
 
-                        if (height < 10) height = 10;
-                        if (width < 20) width = 20;
+                        canvas.width = displayWidth;
+                        canvas.height = displayHeight;
 
-                        canvas.width = width;
-                        canvas.height = height;
+                        ctx.clearRect(0, 0, displayWidth, displayHeight);
+                        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-                        ctx.clearRect(0, 0, width, height);
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        const imageData = ctx.getImageData(0, 0, width, height);
-                        currentAsciiHTML = generateColoredAscii(imageData, width, height);
+                        const imageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
+                        currentAsciiLines = generateAsciiData(imageData, displayWidth, displayHeight);
                         
-                        asciiArt.innerHTML = currentAsciiHTML;
-                        adjustFontSize();
+                        asciiArt.innerHTML = renderAsciiToHTML(currentAsciiLines);
 
                         statusMsg.textContent = `✓ #${number} loaded successfully`;
                         statusMsg.className = 'success';
@@ -453,63 +345,12 @@
                     statusMsg.textContent = `✗ #${number} not found on IPFS`;
                     statusMsg.className = 'error';
                     asciiArt.innerHTML = '⚠️ Image not found';
-                    console.error('Error:', error);
                 });
         }
 
-        // ===== ADJUST FONT SIZE =====
-        function adjustFontSize() {
-            const containerWidth = asciiContainer.clientWidth;
-            let fontSize = 10;
-
-            if (containerWidth < 400) fontSize = 5;
-            else if (containerWidth < 500) fontSize = 6;
-            else if (containerWidth < 600) fontSize = 8;
-            else fontSize = 10;
-
-            const textContent = asciiArt.textContent;
-            const lines = textContent.split('\n');
-            let maxLineLength = 0;
-            for (let line of lines) {
-                if (line.length > maxLineLength) maxLineLength = line.length;
-            }
-
-            if (maxLineLength > 60) {
-                fontSize = Math.max(4, fontSize * (60 / maxLineLength));
-            }
-
-            asciiArt.style.fontSize = fontSize + 'px';
-        }
-
-        // ===== DOWNLOAD ASCII AS TXT =====
-        function downloadAsciiTXT() {
-            if (!currentAsciiHTML || currentAsciiHTML.includes('Loading')) {
-                statusMsg.textContent = '⚠️ Please load an NFT first';
-                statusMsg.className = 'error';
-                return;
-            }
-
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = currentAsciiHTML;
-            const plainText = tempDiv.textContent;
-
-            const blob = new Blob([plainText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `NFT_#${currentNFTNumber}_ASCII.txt`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
-            statusMsg.textContent = `✓ ASCII #${currentNFTNumber} downloaded as TXT`;
-            statusMsg.className = 'success';
-        }
-
-        // ===== DOWNLOAD AS PNG =====
+        // DOWNLOAD AS PERFECT CARD PNG
         function downloadAsPNG() {
-            if (!currentAsciiHTML || currentAsciiHTML.includes('Loading')) {
+            if (!currentAsciiLines || currentAsciiLines.length === 0) {
                 statusMsg.textContent = '⚠️ Please load an NFT first';
                 statusMsg.className = 'error';
                 return;
@@ -517,127 +358,89 @@
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
-            const size = 512;
-            const padding = 30;
+
+            const size = 600; // Perfect square card size
             canvas.width = size;
             canvas.height = size;
 
-            // ===== BACKGROUND #d4ff00 =====
+            // 1. Draw Card Background (#d4ff00)
             ctx.fillStyle = '#d4ff00';
             ctx.fillRect(0, 0, size, size);
 
-            // Inner background (dark) - but now it's also #d4ff00 as requested
-            // Actually we want the ASCII art on #d4ff00 background
-            // So we skip the dark inner box and draw ASCII directly on #d4ff00
+            // 2. Setup Font Parameters for ASCII
+            const numRows = currentAsciiLines.length;
+            const numCols = currentAsciiLines[0].length;
 
-            // Draw ASCII art directly on the #d4ff00 background
-            const containerWidth = size - (padding * 2) - 32;
-            const textContent = asciiArt.textContent;
-            const lines = textContent.split('\n');
-            
-            let fontSize = 10;
-            let maxLineLength = 0;
-            for (let line of lines) {
-                if (line.length > maxLineLength) maxLineLength = line.length;
-            }
-            
-            if (maxLineLength > 0) {
-                fontSize = Math.min(14, Math.floor(containerWidth / maxLineLength * 1.4));
-                fontSize = Math.max(6, fontSize);
-            }
+            const fontSize = 11;
+            const charWidth = 6.5; 
+            const lineHeight = 12;
 
-            // Parse HTML to get colored characters
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = currentAsciiHTML;
-            
-            // Get all spans with colors
-            const spans = tempDiv.querySelectorAll('span');
-            if (spans.length > 0) {
-                let currentX = padding + 16;
-                let currentY = padding + 16;
-                const lineHeight = fontSize * 1.15;
-                
-                ctx.font = `${fontSize}px 'Courier New', monospace`;
-                ctx.textBaseline = 'top';
-                
-                spans.forEach(span => {
-                    const char = span.textContent;
-                    if (char === '\n') {
-                        currentX = padding + 16;
-                        currentY += lineHeight;
-                        return;
+            ctx.font = `${fontSize}px 'Courier New', monospace`;
+            ctx.textBaseline = 'top';
+
+            const totalWidth = numCols * charWidth;
+            const totalHeight = numRows * lineHeight;
+
+            const startX = (size - totalWidth) / 2;
+            const startY = (size - totalHeight) / 2 - 15;
+
+            // 3. Render ASCII Grid Line by Line
+            currentAsciiLines.forEach((line, rowIndex) => {
+                const y = startY + (rowIndex * lineHeight);
+                line.forEach((item, colIndex) => {
+                    if (item.color !== 'transparent') {
+                        const x = startX + (colIndex * charWidth);
+                        ctx.fillStyle = item.color;
+                        ctx.fillText(item.char, x, y);
                     }
-                    const color = span.style.color || '#1a1a2e';
-                    ctx.fillStyle = color;
-                    ctx.fillText(char, currentX, currentY);
-                    currentX += ctx.measureText(char).width;
                 });
-            } else {
-                // Fallback
-                ctx.fillStyle = '#1a1a2e';
-                ctx.font = `${fontSize}px 'Courier New', monospace`;
-                ctx.textBaseline = 'top';
-                const text = tempDiv.textContent;
-                const textLines = text.split('\n');
-                textLines.forEach((line, i) => {
-                    ctx.fillText(line, padding + 16, padding + 16 + (i * fontSize * 1.15));
-                });
-            }
+            });
 
-            // Draw NFT title at bottom
+            // 4. Draw Title at Bottom
             ctx.fillStyle = '#1a1a2e';
-            ctx.font = 'bold 18px Arial, sans-serif';
+            ctx.font = 'bold 20px "Courier New", monospace';
             ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            const titleText = `✨ NFT #${currentNFTNumber}`;
-            ctx.fillText(titleText, size / 2, size - 15);
+            ctx.fillText(`✨ NFT #${currentNFTNumber}`, size / 2, size - 45);
 
-            // Download
+            // 5. Download PNG
             const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_ASCII.png`;
+            link.download = `NFT_#${currentNFTNumber}_Card.png`;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            statusMsg.textContent = `✓ NFT #${currentNFTNumber} downloaded as PNG`;
+            statusMsg.textContent = `✓ Card Downloaded successfully!`;
             statusMsg.className = 'success';
         }
 
-        // ===== RANDOM =====
+        function downloadAsciiTXT() {
+            if (!currentAsciiLines || currentAsciiLines.length === 0) return;
+            let plainText = '';
+            currentAsciiLines.forEach(line => {
+                line.forEach(item => plainText += item.char);
+                plainText += '\n';
+            });
+
+            const blob = new Blob([plainText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `NFT_#${currentNFTNumber}_ASCII.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
         function loadRandom() {
-            const randomNum = Math.floor(Math.random() * 100) + 1;
+            const randomNum = Math.floor(Math.random() * 10) + 1;
             loadNFT(randomNum);
         }
 
-        // ===== EVENT LISTENERS =====
-        loadBtn.addEventListener('click', function() {
-            const number = parseInt(nftNumberInput.value);
-            loadNFT(number);
-        });
-
-        nftNumberInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                loadBtn.click();
-            }
-        });
-
+        loadBtn.addEventListener('click', () => loadNFT(parseInt(nftNumberInput.value)));
         downloadAsciiBtn.addEventListener('click', downloadAsciiTXT);
         downloadPngBtn.addEventListener('click', downloadAsPNG);
 
-        window.addEventListener('resize', function() {
-            if (asciiArt.innerHTML && 
-                !asciiArt.innerHTML.includes('Loading') && 
-                !asciiArt.innerHTML.includes('⚠️')) {
-                adjustFontSize();
-            }
-        });
-
-        // ===== INIT =====
-        window.addEventListener('load', function() {
-            loadNFT(2);
-        });
+        window.addEventListener('load', () => loadNFT(2));
     </script>
 
 </body>
