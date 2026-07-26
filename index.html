@@ -1,277 +1,848 @@
 <!DOCTYPE html>
-<html lang="bn" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Risograph NFT Metadata Downloader</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <title>Pixel Studio · NFT #d4ff00</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #0a0a12; }
-    .mono { font-family: 'Space Mono', monospace; }
-    
-    .grain-overlay {
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 10;
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+    body { background:#0a0a1a; color:#fff; min-height:100vh; padding:20px; overflow-x:hidden; }
+    .container { max-width:1400px; margin:0 auto; }
+    h1 { text-align:center; font-size:2.3rem; margin-bottom:10px;
+         background:linear-gradient(135deg,#d4ff00 0%,#a0cc00 100%);
+         -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .subtitle { text-align:center; color:#aaa; margin-bottom:24px; font-size:1rem; line-height:1.6; }
+    .color-preview { display:inline-block; background:#d4ff00; padding:2px 15px; border-radius:4px; color:#000; font-weight:bold; }
+    .controls { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+    .btn { padding:12px 28px; border:none; border-radius:50px; font-size:1rem; font-weight:600; cursor:pointer;
+           transition:all .25s ease; background:#2a2a4a; color:#fff; box-shadow:0 4px 15px rgba(0,0,0,.3); }
+    .btn:hover { transform:translateY(-2px); box-shadow:0 8px 22px rgba(0,0,0,.5); }
+    .btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+    .btn-primary { background:linear-gradient(135deg,#d4ff00 0%,#a0cc00 100%); color:#000; }
+    .btn-success { background:linear-gradient(135deg,#11998e 0%,#38ef7d 100%); color:#000; }
+    .btn-danger  { background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%); }
+    .btn-warning { background:linear-gradient(135deg,#f7971e 0%,#ffd200 100%); color:#000; }
+    .btn-small   { padding:6px 14px; font-size:.8rem; border-radius:20px; }
+    .progress-container { width:100%; background:#1a1a2e; border-radius:10px; height:28px; margin:16px 0; overflow:hidden; display:none; }
+    .progress-bar { height:100%; width:0%; background:linear-gradient(90deg,#d4ff00,#a0cc00); border-radius:10px;
+                    display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:.85rem; color:#000;
+                    transition:width .25s ease; }
+    .status-msg { text-align:center; padding:12px; color:#aaa; font-size:.95rem; }
+
+    .logo-panel { display:none; background:#141428; border:1px solid #2a2a4a; border-radius:14px; padding:18px; margin-bottom:20px; }
+    .logo-panel.active { display:block; }
+    .logo-panel h3 { color:#d4ff00; margin-bottom:12px; font-size:1.1rem; }
+    .logo-lib-grid { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+    .logo-lib-item { width:90px; text-align:center; background:#1a1a2e; border-radius:10px; padding:8px; position:relative; border:2px solid transparent; }
+    .logo-lib-item:hover { border-color:#d4ff00; }
+    .logo-lib-item img { width:100%; height:60px; object-fit:contain; background:#fff; border-radius:6px; image-rendering:pixelated; }
+    .logo-lib-item .name { font-size:.65rem; color:#ccc; margin-top:4px; word-break:break-word; }
+    .logo-lib-item .del { position:absolute; top:-6px; right:-6px; background:#f5576c; border:none; color:#fff;
+                           width:20px; height:20px; border-radius:50%; cursor:pointer; font-size:.75rem; line-height:1; }
+    .logo-add-form { display:flex; flex-wrap:wrap; gap:10px; align-items:center; border-top:1px solid #2a2a4a; padding-top:14px; }
+    .logo-add-form input[type=text], .logo-add-form input[type=file] {
+        background:#0f0f22; border:1px solid #333; color:#fff; border-radius:8px; padding:8px 10px; font-size:.85rem; }
+    .logo-add-form input[type=file] { padding:6px; max-width:200px; }
+    .logo-preview-img { width:50px; height:50px; object-fit:contain; background:#fff; border-radius:6px; display:none; border:1px solid #444; image-rendering:pixelated; }
+
+    /* pixel grid gallery */
+    .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; margin-top:10px; }
+    .nft-item { background:#1a1a2e; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,.4);
+                transition:transform .25s ease; aspect-ratio:1; position:relative; cursor:pointer; }
+    .nft-item:hover { transform:scale(1.04); z-index:2; }
+    .nft-item img { width:100%; height:100%; object-fit:contain; display:block; image-rendering:pixelated; }
+    .nft-item .placeholder { color:#666; font-size:.85rem; text-align:center; padding:10px; display:flex; align-items:center;
+                              justify-content:center; height:100%; }
+    .nft-item.failed .placeholder { color:#ff6b6b; }
+    .nft-item .index-badge { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,.7); padding:3px 9px;
+                              border-radius:20px; font-size:.68rem; backdrop-filter:blur(4px); }
+    .nft-item .del-badge { position:absolute; top:6px; left:6px; background:rgba(245,87,108,.85); border:none; color:#fff;
+                            width:26px; height:26px; border-radius:50%; cursor:pointer; font-size:.85rem; z-index:4;
+                            display:flex; align-items:center; justify-content:center; }
+    .nft-item .retry-btn { position:absolute; top:6px; right:6px; background:rgba(255,200,0,.9); border:none; border-radius:50%;
+                            width:28px; height:28px; font-size:14px; cursor:pointer; display:none; align-items:center;
+                            justify-content:center; color:#000; font-weight:bold; z-index:4; }
+    .nft-item.failed .retry-btn { display:flex; }
+    .nft-item .logo-tag { position:absolute; top:6px; left:38px; background:rgba(212,255,0,.9); color:#000; font-size:.6rem;
+                           padding:2px 7px; border-radius:10px; font-weight:700; }
+
+    /* modal */
+    .modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.92); align-items:center;
+             justify-content:center; padding:20px; overflow-y:auto; }
+    .modal.active { display:flex; }
+    .modal-content { max-width:1100px; width:100%; background:#141428; border-radius:16px; padding:22px;
+                     box-shadow:0 20px 60px rgba(0,0,0,.8); display:flex; gap:26px; flex-wrap:wrap; position:relative; max-height:92vh; overflow-y:auto; }
+    .modal-close { position:absolute; top:-14px; right:-14px; background:#ff6b6b; border:none; border-radius:50%;
+                   width:38px; height:38px; font-size:20px; cursor:pointer; color:#fff; display:flex; align-items:center;
+                   justify-content:center; box-shadow:0 4px 15px rgba(255,0,0,.3); }
+    .modal-left { flex:1 1 380px; min-width:300px; }
+    .modal-right { flex:1 1 340px; min-width:280px; }
+    .edit-stage { position:relative; width:100%; aspect-ratio:1/1; background:#0a0a1a; border-radius:10px; overflow:hidden;
+                  border:1px solid #2a2a4a; touch-action:none; }
+    .edit-stage img.base-img { width:100%; height:100%; object-fit:contain; pointer-events:none; user-select:none; image-rendering:pixelated; }
+    .logo-instance { position:absolute; border:1px dashed #d4ff00; cursor:move; }
+    .logo-instance img { width:100%; height:100%; object-fit:contain; pointer-events:none; user-select:none; image-rendering:pixelated; }
+    .logo-instance .lg-del { position:absolute; top:-10px; right:-10px; width:20px; height:20px; border-radius:50%;
+                              background:#f5576c; border:none; color:#fff; font-size:.7rem; cursor:pointer; z-index:5; }
+    .logo-instance .lg-resize { position:absolute; bottom:-6px; right:-6px; width:14px; height:14px; background:#d4ff00;
+                                 border-radius:3px; cursor:nwse-resize; z-index:5; }
+    .modal-index { text-align:center; color:#d4ff00; font-size:1.1rem; font-weight:bold; margin-top:10px; }
+    .logo-picker { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+    .logo-picker select { flex:1; background:#0f0f22; border:1px solid #333; color:#fff; border-radius:8px; padding:8px; }
+    .placed-list { margin-top:10px; font-size:.8rem; color:#aaa; }
+    .placed-list div { padding:4px 0; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #222; }
+
+    .meta-field { margin-bottom:12px; }
+    .meta-field label { display:block; font-size:.75rem; color:#8f8fb0; margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px; }
+    .meta-field input[type=text], .meta-field textarea { width:100%; background:#0f0f22; border:1px solid #333; color:#fff;
+                                                           border-radius:8px; padding:9px 10px; font-size:.9rem; }
+    .meta-field textarea { min-height:60px; resize:vertical; }
+    .attr-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .attr-row .trait { flex:0 0 40%; font-size:.8rem; color:#d4ff00; }
+    .attr-row input { flex:1; background:#0f0f22; border:1px solid #333; color:#fff; border-radius:8px; padding:7px 9px; }
+    details.raw-json { margin-top:14px; }
+    details.raw-json summary { cursor:pointer; color:#8f8fb0; font-size:.8rem; margin-bottom:8px; }
+    details.raw-json textarea { width:100%; min-height:160px; font-family:monospace; font-size:.72rem; background:#0f0f22;
+                                 color:#9dff7a; border:1px solid #333; border-radius:8px; padding:10px; }
+    .modal-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+
+    @media (max-width:600px) {
+      h1 { font-size:1.6rem; }
+      .gallery { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+      .btn { padding:10px 20px; font-size:.85rem; }
+      .modal-content { flex-direction:column; padding:16px; }
     }
-    
-    .download-btn {
-      background: linear-gradient(135deg, #ff5a5f, #ff2a2f);
-      transition: all 0.2s ease;
-    }
-    .download-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 0 20px rgba(255,90,95,0.4);
-    }
-    
-    .scrollbar-custom::-webkit-scrollbar { width: 5px; }
-    .scrollbar-custom::-webkit-scrollbar-track { background: #1a1a2a; }
-    .scrollbar-custom::-webkit-scrollbar-thumb { background: #ff5a5f; border-radius: 10px; }
   </style>
 </head>
-<body class="scrollbar-custom overflow-x-hidden">
-  <div class="fixed inset-0 grain-overlay pointer-events-none z-0"></div>
-  
-  <div id="app" class="relative z-10 min-h-screen">
-    <!-- Header -->
-    <header class="sticky top-0 z-30 backdrop-blur-xl bg-[#0a0a12]/90 border-b border-white/10">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-1 h-6 bg-[#ff5a5f] rounded-full"></div>
-          <div>
-            <h1 class="mono text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#ff6a6f] to-[#ff5a5f] bg-clip-text text-transparent">📦 METADATA DOWNLOADER</h1>
-            <p class="text-xs text-gray-400">শুধুমাত্র JSON ফাইল · ১ থেকে ১০,০০০</p>
-          </div>
-        </div>
-        
-        <div class="flex items-center gap-3">
-          <!-- ডাউনলোড বাটন -->
-          <button id="download-metadata-btn" class="download-btn flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-bold mono shadow-lg">
-            <i data-lucide="archive" class="w-5 h-5"></i>
-            <span>⬇️ ZIP (১-১০০০০.json)</span>
-          </button>
-        </div>
-      </div>
-    </header>
+<body>
+<div class="container">
+  <h1>🎨 Pixel Studio · NFT Grid</h1>
+  <p class="subtitle">
+    Every NFT background is <span class="color-preview">#d4ff00</span> · pixel‑perfect grid · <br>
+    load 6969 pieces, add PNG logos, edit metadata, delete & auto‑renumber
+  </p>
 
-    <!-- মেইন কন্টেন্ট -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-      <div class="bg-[#16162a] rounded-2xl border border-white/10 p-8 text-center">
-        <div class="flex flex-col items-center gap-4">
-          <div class="w-20 h-20 bg-[#ff5a5f]/10 rounded-full flex items-center justify-center">
-            <i data-lucide="file-json" class="w-10 h-10 text-[#ff5a5f]"></i>
-          </div>
-          <h2 class="mono text-2xl font-bold text-white">১০,০০০ টি JSON মেটাডাটা</h2>
-          <p class="text-gray-400 max-w-md">
-            শুধুমাত্র মেটাডাটা JSON ফাইল (ছবি ছাড়া) ডাউনলোড হবে ZIP আকারে<br>
-            <span class="text-xs text-[#ff5a5f]">প্রতিটি ফাইলের নাম: 1.json, 2.json ... 10000.json</span>
-          </p>
-          
-          <div class="mt-4 p-4 bg-[#0a0a12] rounded-xl w-full max-w-md">
-            <div class="flex justify-between text-sm mono">
-              <span class="text-gray-400">মোট ফাইল:</span>
-              <span class="text-white font-bold">১০,০০০</span>
-            </div>
-            <div class="flex justify-between text-sm mono mt-2">
-              <span class="text-gray-400">আনুমানিক সাইজ:</span>
-              <span class="text-white font-bold">~১৫-২০ MB</span>
-            </div>
-            <div class="flex justify-between text-sm mono mt-2">
-              <span class="text-gray-400">সময় লাগবে:</span>
-              <span class="text-white font-bold">~৫-১০ সেকেন্ড</span>
-            </div>
-          </div>
-          
-          <button id="download-btn-main" class="download-btn flex items-center gap-3 px-8 py-4 rounded-full text-white font-bold mono text-lg shadow-2xl mt-4">
-            <i data-lucide="download" class="w-6 h-6"></i>
-            <span>ডাউনলোড শুরু করুন</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- স্ট্যাটাস -->
-      <div id="status-area" class="mt-6 hidden">
-        <div class="bg-[#16162a] rounded-xl border border-white/10 p-6">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="mono text-sm text-white" id="status-text">ডাউনলোড শুরু হচ্ছে...</span>
-          </div>
-          <div class="w-full bg-[#0a0a12] rounded-full h-4 overflow-hidden">
-            <div id="progress-bar" class="bg-gradient-to-r from-[#ff5a5f] to-[#ff8a8f] h-4 transition-all duration-300 ease-out" style="width: 0%"></div>
-          </div>
-          <div class="flex justify-between mt-2 text-xs mono">
-            <span id="progress-text" class="text-[#ff5a5f]">০ / ১০,০০০</span>
-            <span id="speed-text" class="text-green-400">প্রস্তুত...</span>
-          </div>
-        </div>
-      </div>
-    </main>
+  <div class="controls">
+    <button id="loadBtn" class="btn btn-primary">📥 Load All NFTs</button>
+    <button id="logoLibBtn" class="btn btn-warning">🖼️ Logo Library</button>
+    <button id="retryBtn" class="btn btn-warning">🔄 Retry Failed</button>
+    <button id="downloadImgBtn" class="btn btn-success" disabled>📦 Images ZIP</button>
+    <button id="downloadMetaBtn" class="btn btn-success" disabled>🗂️ Metadata ZIP</button>
+    <button id="clearBtn" class="btn btn-danger">🗑️ Clear View</button>
   </div>
 
-  <script>
-    // ======================== কনফিগারেশন ========================
-    const METADATA_BASE = 'https://ipfs.io/ipfs/bafybeiaoqcshmcyhgvvp25pw7ydjgk4re54jtpi54tppktyqh7q3vcwzau/';
-    const TOTAL_NFTS = 10000;
-    const CONCURRENT_LIMIT = 100; // বেশি কনকারেন্ট রিকোয়েস্ট для দ্রুত ডাউনলোড
-    
-    // ======================== শুধুমাত্র JSON ডাউনলোড (ছবি ছাড়া) ========================
-    async function downloadMetadataOnly() {
-      const total = TOTAL_NFTS;
-      
-      if (!confirm(`📦 ${total} টি JSON মেটাডাটা ফাইল ডাউনলোড করুন?\n\nফাইলের নাম: 1.json থেকে ${total}.json\nসাইজ: ~১৫-২০ MB\nসময়: ~৫-১০ সেকেন্ড`)) {
-        return;
+  <div class="logo-panel" id="logoPanel">
+    <h3>📂 Logo Library <span style="color:#8f8fb0; font-weight:400; font-size:.8rem;">(PNG / pixel art)</span></h3>
+    <div class="logo-lib-grid" id="logoLibGrid"></div>
+    <div class="logo-add-form">
+      <input type="text" id="logoNameInput" placeholder="Logo name" style="flex:1;min-width:100px;">
+      <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+      <img class="logo-preview-img" id="logoPreviewImg" alt="preview">
+      <button id="addLogoBtn" class="btn btn-small btn-primary">➕ Add Logo</button>
+    </div>
+  </div>
+
+  <div class="progress-container" id="progressContainer">
+    <div class="progress-bar" id="progressBar">0%</div>
+  </div>
+
+  <div id="statusMsg" class="status-msg">Click "Load All NFTs" to begin.</div>
+
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose">✕</button>
+
+    <div class="modal-left">
+      <div class="edit-stage" id="editStage">
+        <img class="base-img" id="modalBaseImg" src="" alt="NFT">
+      </div>
+      <div class="modal-index" id="modalIndex">#0</div>
+
+      <div class="logo-picker">
+        <select id="logoSelect"></select>
+        <button id="addLogoToNftBtn" class="btn btn-small btn-primary">➕ Add Logo</button>
+      </div>
+      <div class="placed-list" id="placedList"></div>
+    </div>
+
+    <div class="modal-right">
+      <h3 style="color:#d4ff00; margin-bottom:12px;">Metadata</h3>
+      <div id="metaFields"></div>
+      <details class="raw-json">
+        <summary>Advanced: raw JSON</summary>
+        <textarea id="rawJsonArea"></textarea>
+      </details>
+      <div class="modal-actions">
+        <button id="saveModalBtn" class="btn btn-success">💾 Save Changes</button>
+        <button id="deleteModalBtn" class="btn btn-danger">🗑️ Delete this NFT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const IMG_BASE  = 'https://ipfs.io/ipfs/QmTxBwjcBuhLvfrVp7bsbw6KXiTxZkPso3kpHfzw3kxGnU/';
+  const META_BASE = 'https://ipfs.io/ipfs/QmdyZTZKSd4AL7sqVHU4Zpw7tQ82iQb3zefBhynufwNQRM/';
+  const TOTAL = 6969;
+  const IMG_EXT = '.png';
+  const BG_COLOR = '#d4ff00';
+  const BATCH_SIZE = 24;
+
+  // ---------- storage ----------
+  const Store = {
+    async get(key) {
+      if (window.storage) {
+        try { const r = await window.storage.get(key, false); return r ? r.value : null; } catch (e) { return null; }
       }
-      
-      // প্রগ্রেস ওভারলে
-      const statusArea = document.getElementById('status-area');
-      const progressBar = document.getElementById('progress-bar');
-      const progressText = document.getElementById('progress-text');
-      const speedText = document.getElementById('speed-text');
-      const statusText = document.getElementById('status-text');
-      
-      statusArea.classList.remove('hidden');
-      progressBar.style.width = '0%';
-      progressText.innerText = '০ / ১০,০০০';
-      speedText.innerText = 'শুরু হচ্ছে...';
-      statusText.innerText = '⏳ JSON ফাইল সংগ্রহ করা হচ্ছে...';
-      
-      let completed = 0;
-      let failedIds = [];
-      const startTime = Date.now();
-      
-      // JSZip ইনস্ট্যান্স
-      const zip = new JSZip();
-      
-      // একটি JSON ফাইল ডাউনলোড করার ফাংশন
-      async function fetchSingleMetadata(id) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          
-          const response = await fetch(`${METADATA_BASE}${id}.json`, { 
-            signal: controller.signal,
-            headers: { 'Accept': 'application/json' }
-          });
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const data = await response.json();
-          
-          // শুধুমাত্র JSON ডেটা সংরক্ষণ (ছবি ছাড়া)
-          zip.file(`${id}.json`, JSON.stringify(data, null, 2));
-          
-          completed++;
-          updateProgress(completed, total, startTime);
-          
-        } catch (err) {
-          console.warn(`ID ${id} ব্যর্থ:`, err);
-          failedIds.push(id);
-          
-          // ফেলব্যাক JSON
-          const fallback = {
-            tokenId: id,
-            error: err.message,
-            fetchedAt: new Date().toISOString()
-          };
-          zip.file(`${id}.json`, JSON.stringify(fallback, null, 2));
-          
-          completed++;
-          updateProgress(completed, total, startTime);
-        }
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    async set(key, value) {
+      if (window.storage) {
+        try { await window.storage.set(key, value, false); return; } catch (e) { return; }
       }
-      
-      // প্রগ্রেস আপডেট
-      function updateProgress(completed, total, startTime) {
-        const percent = (completed / total) * 100;
-        progressBar.style.width = `${percent}%`;
-        progressText.innerText = `${completed} / ${total}`;
-        
-        const elapsed = (Date.now() - startTime) / 1000;
-        if (elapsed > 1 && completed > 0) {
-          const speed = (completed / elapsed).toFixed(1);
-          speedText.innerText = `${speed} ফাইল/সেকেন্ড`;
-          
-          const remaining = total - completed;
-          const eta = (remaining / parseFloat(speed)).toFixed(0);
-          statusText.innerText = `⏳ ডাউনলোড হচ্ছে... (বাকি ${remaining}, প্রায় ${eta}সে)`;
-        }
+      try { localStorage.setItem(key, value); } catch (e) {}
+    },
+    async del(key) {
+      if (window.storage) {
+        try { await window.storage.delete(key, false); return; } catch (e) { return; }
       }
-      
-      // ব্যাচ প্রক্রিয়াকরণ (কনকারেন্ট)
-      async function processBatches() {
-        const batchSize = CONCURRENT_LIMIT;
-        const batches = [];
-        
-        for (let i = 1; i <= total; i += batchSize) {
-          const batch = [];
-          for (let j = i; j < Math.min(i + batchSize, total + 1); j++) {
-            batch.push(j);
-          }
-          batches.push(batch);
-        }
-        
-        for (let i = 0; i < batches.length; i++) {
-          const batch = batches[i];
-          const promises = batch.map(id => fetchSingleMetadata(id));
-          await Promise.all(promises);
-        }
+      try { localStorage.removeItem(key); } catch (e) {}
+    },
+    async listKeys(prefix) {
+      if (window.storage) {
+        try { const r = await window.storage.list(prefix, false); return r ? r.keys : []; } catch (e) { return []; }
       }
-      
-      try {
-        await processBatches();
-        
-        const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-        statusText.innerText = '📦 ZIP আর্কাইভ তৈরি হচ্ছে...';
-        speedText.innerText = 'প্যাকেজিং...';
-        
-        // ZIP জেনারেট
-        const zipBlob = await zip.generateAsync({ 
-          type: "blob",
-          compression: "DEFLATE",
-          compressionOptions: { level: 6 }
-        });
-        
-        // ডাউনলোড
-        const downloadUrl = URL.createObjectURL(zipBlob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = `risograph_metadata_1_to_${total}_${Date.now()}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
-        
-        // সাফল্য বার্তা
-        statusText.innerText = '✅ ডাউনলোড সম্পূর্ণ!';
-        progressBar.style.width = '100%';
-        
-        setTimeout(() => {
-          if (failedIds.length > 0) {
-            alert(`✅ ডাউনলোড সম্পূর্ণ!\n\n📊 পরিসংখ্যান:\n• মোট: ${total} ফাইল\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সে\n• ব্যর্থ: ${failedIds.length} টি\n• ব্যর্থ ID: ${failedIds.slice(0, 15).join(', ')}${failedIds.length > 15 ? '...' : ''}`);
-          } else {
-            alert(`✅ ডাউনলোড সম্পূর্ণ!\n\n📊 পরিসংখ্যান:\n• মোট: ${total} ফাইল\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সে\n• সব ফাইল সফলভাবে ডাউনলোড হয়েছে!`);
-          }
-        }, 500);
-        
-      } catch (err) {
-        console.error('ডাউনলোড ব্যর্থ:', err);
-        statusText.innerText = '❌ ডাউনলোড ব্যর্থ হয়েছে!';
-        alert(`❌ ডাউনলোড ব্যর্থ:\n${err.message}`);
-      }
+      const keys = [];
+      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf(prefix) === 0) keys.push(k); } } catch (e) {}
+      return keys;
     }
-    
-    // ======================== ইভেন্ট লিসেনার ========================
-    document.getElementById('download-metadata-btn')?.addEventListener('click', downloadMetadataOnly);
-    document.getElementById('download-btn-main')?.addEventListener('click', downloadMetadataOnly);
-    
-    // ======================== লুসিড আইকন ========================
-    setTimeout(() => {
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    }, 100);
-  </script>
+  };
+
+  // ---------- state ----------
+  let order = [];
+  const baseBlobs = new Map();
+  const finalBlobs = new Map();
+  const metadataMap = new Map();
+  const itemCustom = new Map();
+  const failedSet = new Set();
+  const cardEls = new Map();
+  let logoLibrary = [];
+  let isLoading = false, isDownloading = false, isRetrying = false;
+  let currentModalIndex = null;
+  let workingLogos = [];
+  let dragCtx = null;
+
+  const el = id => document.getElementById(id);
+  const gallery = el('gallery');
+  const loadBtn = el('loadBtn'), downloadImgBtn = el('downloadImgBtn'), downloadMetaBtn = el('downloadMetaBtn');
+  const clearBtn = el('clearBtn'), retryBtn = el('retryBtn'), logoLibBtn = el('logoLibBtn');
+  const progressContainer = el('progressContainer'), progressBar = el('progressBar'), statusMsg = el('statusMsg');
+  const logoPanel = el('logoPanel'), logoLibGrid = el('logoLibGrid');
+  const modal = el('editModal'), editStage = el('editStage'), modalBaseImg = el('modalBaseImg'), modalIndex = el('modalIndex');
+  const logoSelect = el('logoSelect'), placedList = el('placedList'), metaFields = el('metaFields'), rawJsonArea = el('rawJsonArea');
+  const logoNameInput = el('logoNameInput'), logoFileInput = el('logoFileInput'), logoPreviewImg = el('logoPreviewImg');
+
+  function genId() { return 'lg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+
+  // ---------- persistence ----------
+  async function loadOrder() {
+    const raw = await Store.get('order');
+    if (raw) { try { const arr = JSON.parse(raw); if (Array.isArray(arr) && arr.length) return arr; } catch (e) {} }
+    const arr = []; for (let i = 1; i <= TOTAL; i++) arr.push(i);
+    await Store.set('order', JSON.stringify(arr));
+    return arr;
+  }
+  async function persistOrder() { await Store.set('order', JSON.stringify(order)); }
+
+  async function loadLogoLibrary() {
+    const raw = await Store.get('logoLibrary');
+    if (raw) { try { return JSON.parse(raw); } catch (e) { return []; } }
+    return [];
+  }
+  async function persistLogoLibrary() { await Store.set('logoLibrary', JSON.stringify(logoLibrary)); }
+
+  async function loadCustomizations() {
+    const keys = await Store.listKeys('item:');
+    for (const k of keys) {
+      const raw = await Store.get(k);
+      if (!raw) continue;
+      try {
+        const idx = parseInt(k.split(':')[1], 10);
+        itemCustom.set(idx, JSON.parse(raw));
+      } catch (e) {}
+    }
+  }
+  async function persistItem(sourceIndex, data) { await Store.set('item:' + sourceIndex, JSON.stringify(data)); }
+  async function deleteItemStorage(sourceIndex) { await Store.del('item:' + sourceIndex); }
+
+  // ---------- image processing ----------
+  function compositeBackground(blob, color) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(nb => { URL.revokeObjectURL(url); nb ? resolve(nb) : reject(new Error('canvas blob failed')); }, 'image/png');
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+      img.src = url;
+    });
+  }
+
+  function loadImageEl(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  // Bake PNG logos onto the NFT (pixelated)
+  async function bakeLogos(baseBlob, logos) {
+    if (!logos || !logos.length) return baseBlob;
+    const baseUrl = URL.createObjectURL(baseBlob);
+    const baseImg = await loadImageEl(baseUrl);
+    const canvas = document.createElement('canvas');
+    canvas.width = baseImg.width; canvas.height = baseImg.height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false; // pixelated
+    ctx.drawImage(baseImg, 0, 0);
+    URL.revokeObjectURL(baseUrl);
+
+    for (const lg of logos) {
+      const libItem = logoLibrary.find(l => l.id === lg.logoId);
+      if (!libItem) continue;
+      try {
+        const logoImg = await loadImageEl(libItem.dataUrl);
+        const x = (lg.xPct / 100) * canvas.width;
+        const y = (lg.yPct / 100) * canvas.height;
+        const w = (lg.wPct / 100) * canvas.width;
+        const h = (lg.hPct / 100) * canvas.height;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(logoImg, x, y, w, h);
+      } catch (e) { /* skip broken logo */ }
+    }
+    return new Promise(resolve => canvas.toBlob(b => resolve(b || baseBlob), 'image/png'));
+  }
+
+  function applyMetaOverride(meta, override) {
+    if (!override) return meta;
+    return Object.assign({}, meta, override);
+  }
+
+  // ---------- gallery rendering ----------
+  function buildSkeleton() {
+    gallery.innerHTML = '';
+    cardEls.clear();
+    const frag = document.createDocumentFragment();
+    order.forEach((sourceIndex, pos) => {
+      const div = document.createElement('div');
+      div.className = 'nft-item';
+      div.dataset.src = sourceIndex;
+      div.innerHTML = `
+        <div class="placeholder">Loading…</div>
+        <span class="index-badge">#${pos + 1}</span>
+        <button class="del-badge" title="Delete">✕</button>
+        <button class="retry-btn" title="Retry this NFT">↻</button>`;
+      div.querySelector('.del-badge').addEventListener('click', e => { e.stopPropagation(); deleteFromGallery(sourceIndex); });
+      div.querySelector('.retry-btn').addEventListener('click', e => { e.stopPropagation(); retrySingle(sourceIndex); });
+      div.addEventListener('click', () => { if (finalBlobs.has(sourceIndex)) openModal(sourceIndex); });
+      frag.appendChild(div);
+      cardEls.set(sourceIndex, div);
+    });
+    gallery.appendChild(frag);
+  }
+
+  function renderCardLoaded(sourceIndex) {
+    const div = cardEls.get(sourceIndex);
+    if (!div) return;
+    const blob = finalBlobs.get(sourceIndex);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    div.classList.remove('failed');
+    div.querySelector('.placeholder')?.remove();
+    let img = div.querySelector('img');
+    if (!img) { img = document.createElement('img'); img.style.imageRendering = 'pixelated'; div.insertBefore(img, div.firstChild); }
+    img.src = url;
+    div.querySelector('.retry-btn').style.display = 'none';
+    const custom = itemCustom.get(sourceIndex);
+    const hasLogo = custom && custom.logos && custom.logos.length;
+    let tag = div.querySelector('.logo-tag');
+    if (hasLogo && !tag) { tag = document.createElement('span'); tag.className = 'logo-tag'; tag.textContent = '🖼️'; div.appendChild(tag); }
+    if (!hasLogo && tag) tag.remove();
+  }
+
+  function renderCardFailed(sourceIndex) {
+    const div = cardEls.get(sourceIndex);
+    if (!div) return;
+    div.classList.add('failed');
+    let ph = div.querySelector('.placeholder');
+    if (!ph) { ph = document.createElement('div'); ph.className = 'placeholder'; div.insertBefore(ph, div.firstChild); }
+    const pos = order.indexOf(sourceIndex);
+    ph.textContent = `#${pos + 1} ❌ failed`;
+    div.querySelector('img')?.remove();
+    div.querySelector('.retry-btn').style.display = 'flex';
+  }
+
+  function renumberBadges(fromPos) {
+    for (let i = fromPos; i < order.length; i++) {
+      const d = cardEls.get(order[i]);
+      if (d) d.querySelector('.index-badge').textContent = '#' + (i + 1);
+    }
+  }
+
+  function updateProgress(cur, tot) {
+    const pct = Math.round((cur / tot) * 100);
+    progressBar.style.width = pct + '%';
+    progressBar.textContent = pct + '%';
+    statusMsg.textContent = `Loading… ${cur} / ${tot} (${pct}%)`;
+  }
+
+  // ---------- loading ----------
+  async function loadSingle(sourceIndex) {
+    try {
+      const [imgResp, metaResp] = await Promise.all([
+        fetch(IMG_BASE + sourceIndex + IMG_EXT),
+        fetch(META_BASE + sourceIndex + '.json')
+      ]);
+      if (!imgResp.ok) throw new Error('img HTTP ' + imgResp.status);
+      if (!metaResp.ok) throw new Error('meta HTTP ' + metaResp.status);
+      const rawBlob = await imgResp.blob();
+      let meta = await metaResp.json();
+
+      const baseBlob = await compositeBackground(rawBlob, BG_COLOR);
+      baseBlobs.set(sourceIndex, baseBlob);
+
+      const custom = itemCustom.get(sourceIndex);
+      if (custom && custom.metaOverride) meta = applyMetaOverride(meta, custom.metaOverride);
+      metadataMap.set(sourceIndex, meta);
+
+      let fBlob = baseBlob;
+      if (custom && custom.logos && custom.logos.length) {
+        fBlob = await bakeLogos(baseBlob, custom.logos);
+      }
+      finalBlobs.set(sourceIndex, fBlob);
+
+      failedSet.delete(sourceIndex);
+      renderCardLoaded(sourceIndex);
+    } catch (e) {
+      failedSet.add(sourceIndex);
+      renderCardFailed(sourceIndex);
+    }
+  }
+
+  async function loadAll() {
+    if (isLoading) return;
+    isLoading = true;
+    loadBtn.disabled = true; downloadImgBtn.disabled = true; downloadMetaBtn.disabled = true; clearBtn.disabled = true;
+    progressContainer.style.display = 'block';
+    order = await loadOrder();
+    logoLibrary = await loadLogoLibrary();
+    renderLogoLibraryUI();
+    await loadCustomizations();
+    buildSkeleton();
+
+    let done = 0;
+    const total = order.length;
+    for (let start = 0; start < order.length; start += BATCH_SIZE) {
+      const batch = order.slice(start, start + BATCH_SIZE);
+      await Promise.all(batch.map(idx => loadSingle(idx)));
+      done += batch.length;
+      updateProgress(done, total);
+    }
+
+    isLoading = false;
+    loadBtn.disabled = false; clearBtn.disabled = false;
+    if (finalBlobs.size > 0) { downloadImgBtn.disabled = false; downloadMetaBtn.disabled = false; }
+    statusMsg.textContent = failedSet.size
+      ? `✅ Loaded ${finalBlobs.size} · ⚠️ ${failedSet.size} failed — click "Retry Failed" or the ↻ on a card.`
+      : `✅ All ${finalBlobs.size} NFTs loaded with backgrounds set to ${BG_COLOR}.`;
+    setTimeout(() => { progressContainer.style.display = 'none'; }, 1500);
+  }
+
+  async function retrySingle(sourceIndex) {
+    if (isRetrying) return;
+    isRetrying = true;
+    const pos = order.indexOf(sourceIndex);
+    statusMsg.textContent = `Retrying NFT #${pos + 1}…`;
+    await loadSingle(sourceIndex);
+    isRetrying = false;
+    statusMsg.textContent = failedSet.has(sourceIndex) ? 'Retry failed, try again later.' : 'Retried successfully.';
+    if (failedSet.size === 0 && finalBlobs.size > 0) { downloadImgBtn.disabled = false; downloadMetaBtn.disabled = false; }
+  }
+
+  async function retryAllFailed() {
+    if (isRetrying) return;
+    if (failedSet.size === 0) { statusMsg.textContent = 'No failed NFTs.'; return; }
+    isRetrying = true;
+    const list = Array.from(failedSet);
+    let done = 0;
+    for (const idx of list) { await loadSingle(idx); done++; statusMsg.textContent = `Retrying failed items… ${done}/${list.length}`; }
+    isRetrying = false;
+    statusMsg.textContent = failedSet.size ? `⚠️ ${failedSet.size} still failing.` : '✅ All NFTs loaded successfully!';
+    if (failedSet.size === 0 && finalBlobs.size > 0) { downloadImgBtn.disabled = false; downloadMetaBtn.disabled = false; }
+  }
+
+  // ---------- delete & renumber ----------
+  async function deleteFromGallery(sourceIndex) {
+    const pos = order.indexOf(sourceIndex);
+    if (pos === -1) return;
+    if (!confirm(`Delete NFT #${pos + 1} permanently? Later items will shift up and be renamed.`)) return;
+    order.splice(pos, 1);
+    const div = cardEls.get(sourceIndex);
+    if (div) div.remove();
+    cardEls.delete(sourceIndex);
+    baseBlobs.delete(sourceIndex); finalBlobs.delete(sourceIndex); metadataMap.delete(sourceIndex);
+    itemCustom.delete(sourceIndex); failedSet.delete(sourceIndex);
+    await deleteItemStorage(sourceIndex);
+    await persistOrder();
+    renumberBadges(pos);
+    statusMsg.textContent = `Deleted. ${order.length} NFTs remain — sequence renumbered automatically.`;
+    if (finalBlobs.size === 0) { downloadImgBtn.disabled = true; downloadMetaBtn.disabled = true; }
+  }
+
+  // ---------- logo library UI (PNG) ----------
+  function renderLogoLibraryUI() {
+    logoLibGrid.innerHTML = '';
+    if (logoLibrary.length === 0) {
+      logoLibGrid.innerHTML = '<div style="color:#666;font-size:.85rem;padding:10px;">No logos in library. Add PNG images above.</div>';
+      return;
+    }
+    logoLibrary.forEach((item, idx) => {
+      const d = document.createElement('div');
+      d.className = 'logo-lib-item';
+      d.innerHTML = `<img src="${item.dataUrl}" alt="${item.name}" style="image-rendering:pixelated;">
+                     <div class="name">${item.name}</div>
+                     <button class="del" data-idx="${idx}">✕</button>`;
+      d.querySelector('.del').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (confirm(`Delete logo "${item.name}"?`)) {
+          logoLibrary.splice(idx, 1);
+          await persistLogoLibrary();
+          renderLogoLibraryUI();
+          populateLogoSelect();
+          statusMsg.textContent = `🗑️ Logo "${item.name}" deleted.`;
+        }
+      });
+      logoLibGrid.appendChild(d);
+    });
+  }
+
+  function populateLogoSelect() {
+    logoSelect.innerHTML = logoLibrary.length
+      ? logoLibrary.map(l => `<option value="${l.id}">${l.name}</option>`).join('')
+      : '<option value="">No logos yet — add from Logo Library</option>';
+  }
+
+  logoLibBtn.addEventListener('click', () => logoPanel.classList.toggle('active'));
+
+  logoFileInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        logoPreviewImg.src = e.target.result;
+        logoPreviewImg.style.display = 'block';
+      };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+
+  el('addLogoBtn').addEventListener('click', async () => {
+    const name = logoNameInput.value.trim() || ('Logo ' + (logoLibrary.length + 1));
+    const file = logoFileInput.files[0];
+    if (!file) { alert('Please select a PNG/JPG/SVG image.'); return; }
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const dataUrl = e.target.result;
+      const id = genId();
+      logoLibrary.push({ id, name, dataUrl });
+      await persistLogoLibrary();
+      renderLogoLibraryUI();
+      populateLogoSelect();
+      logoNameInput.value = '';
+      logoFileInput.value = '';
+      logoPreviewImg.style.display = 'none';
+      statusMsg.textContent = `✅ Logo "${name}" added to library!`;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // ---------- modal: open / build ----------
+  async function openModal(sourceIndex) {
+    currentModalIndex = sourceIndex;
+    const pos = order.indexOf(sourceIndex);
+    modalIndex.textContent = '#' + (pos + 1);
+    const baseBlob = baseBlobs.get(sourceIndex);
+    if (baseBlob) {
+      modalBaseImg.src = URL.createObjectURL(baseBlob);
+    }
+    const custom = itemCustom.get(sourceIndex);
+    workingLogos = custom && custom.logos ? JSON.parse(JSON.stringify(custom.logos)) : [];
+    populateLogoSelect();
+    renderPlacedLogos();
+    buildMetaForm(metadataMap.get(sourceIndex));
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    currentModalIndex = null;
+    workingLogos = [];
+    editStage.querySelectorAll('.logo-instance').forEach(n => n.remove());
+  }
+  el('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('active')) closeModal(); });
+
+  // ---------- modal: logo placement / drag / resize ----------
+  function renderPlacedLogos() {
+    editStage.querySelectorAll('.logo-instance').forEach(n => n.remove());
+    workingLogos.forEach((lg, i) => createLogoInstanceEl(lg, i));
+    renderPlacedListText();
+  }
+
+  function renderPlacedListText() {
+    placedList.innerHTML = workingLogos.length
+      ? workingLogos.map((lg, i) => {
+          const item = logoLibrary.find(l => l.id === lg.logoId);
+          return `<div><span>${i + 1}. ${item ? item.name : 'Unknown logo'}</span></div>`;
+        }).join('')
+      : '<div style="color:#555;">No logos placed on this NFT yet.</div>';
+  }
+
+  function createLogoInstanceEl(lg, index) {
+    const item = logoLibrary.find(l => l.id === lg.logoId);
+    const div = document.createElement('div');
+    div.className = 'logo-instance';
+    div.style.left = lg.xPct + '%';
+    div.style.top = lg.yPct + '%';
+    div.style.width = lg.wPct + '%';
+    div.style.height = lg.hPct + '%';
+    div.innerHTML = `<img src="${item ? item.dataUrl : ''}" alt="logo" style="image-rendering:pixelated;">
+                      <button class="lg-del">✕</button>
+                      <div class="lg-resize"></div>`;
+    div.querySelector('.lg-del').addEventListener('click', e => {
+      e.stopPropagation();
+      workingLogos.splice(index, 1);
+      renderPlacedLogos();
+    });
+    div.addEventListener('pointerdown', e => {
+      if (e.target.closest('.lg-del') || e.target.closest('.lg-resize')) return;
+      startDrag(e, index, div, 'move');
+    });
+    div.querySelector('.lg-resize').addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      startDrag(e, index, div, 'resize');
+    });
+    editStage.appendChild(div);
+  }
+
+  function startDrag(e, index, node, mode) {
+    e.preventDefault();
+    const rect = editStage.getBoundingClientRect();
+    dragCtx = {
+      mode, index, node,
+      startX: e.clientX, startY: e.clientY,
+      startLeft: workingLogos[index].xPct, startTop: workingLogos[index].yPct,
+      startW: workingLogos[index].wPct, startH: workingLogos[index].hPct,
+      stageW: rect.width, stageH: rect.height
+    };
+    node.setPointerCapture && node.setPointerCapture(e.pointerId);
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', onDragEnd);
+  }
+
+  function onDragMove(e) {
+    if (!dragCtx) return;
+    const dxPct = ((e.clientX - dragCtx.startX) / dragCtx.stageW) * 100;
+    const dyPct = ((e.clientY - dragCtx.startY) / dragCtx.stageH) * 100;
+    const lg = workingLogos[dragCtx.index];
+    if (dragCtx.mode === 'move') {
+      lg.xPct = Math.max(0, Math.min(100 - lg.wPct, dragCtx.startLeft + dxPct));
+      lg.yPct = Math.max(0, Math.min(100 - lg.hPct, dragCtx.startTop + dyPct));
+      dragCtx.node.style.left = lg.xPct + '%';
+      dragCtx.node.style.top = lg.yPct + '%';
+    } else {
+      const newW = Math.max(3, Math.min(95, dragCtx.startW + dxPct));
+      const ratio = newW / dragCtx.startW;
+      const newH = Math.max(3, Math.min(95, dragCtx.startH * ratio));
+      lg.wPct = newW; lg.hPct = newH;
+      dragCtx.node.style.width = newW + '%';
+      dragCtx.node.style.height = newH + '%';
+    }
+  }
+
+  function onDragEnd() {
+    dragCtx = null;
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', onDragEnd);
+  }
+
+  el('addLogoToNftBtn').addEventListener('click', () => {
+    const logoId = logoSelect.value;
+    if (!logoId) { alert('Add a logo to the library first (Logo Library button above).'); return; }
+    workingLogos.push({ logoId, xPct: 35, yPct: 35, wPct: 30, hPct: 30 });
+    renderPlacedLogos();
+  });
+
+  // ---------- modal: metadata form ----------
+  let metaFormState = null;
+  function buildMetaForm(meta) {
+    if (!meta) return;
+    metaFormState = { name: 'name' in meta, description: 'description' in meta, attrs: Array.isArray(meta.attributes) };
+    let html = '';
+    if (metaFormState.name) html += `<div class="meta-field"><label>Name</label><input type="text" id="metaName" value="${escapeAttr(meta.name)}"></div>`;
+    if (metaFormState.description) html += `<div class="meta-field"><label>Description</label><textarea id="metaDesc">${escapeHtml(meta.description)}</textarea></div>`;
+    if (metaFormState.attrs) {
+      html += `<div class="meta-field"><label>Attributes</label>` +
+        meta.attributes.map((a, i) => `<div class="attr-row"><span class="trait">${escapeHtml(a.trait_type ?? ('#' + i))}</span><input type="text" data-attr-i="${i}" value="${escapeAttr(a.value)}"></div>`).join('') +
+        `</div>`;
+    }
+    metaFields.innerHTML = html || '<p style="color:#666;">No structured fields found — use raw JSON below.</p>';
+    rawJsonArea.value = JSON.stringify(meta, null, 2);
+  }
+  function escapeHtml(s) { return String(s ?? '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+  function collectMetaFromForm(originalMeta) {
+    const rawNow = rawJsonArea.value;
+    const rawInitial = JSON.stringify(originalMeta, null, 2);
+    if (rawNow !== rawInitial) {
+      try { return JSON.parse(rawNow); }
+      catch (e) { alert('Raw JSON is invalid, please fix it or clear your changes.'); return null; }
+    }
+    const meta = Object.assign({}, originalMeta);
+    if (metaFormState.name) meta.name = el('metaName').value;
+    if (metaFormState.description) meta.description = el('metaDesc').value;
+    if (metaFormState.attrs) {
+      meta.attributes = originalMeta.attributes.map((a, i) => {
+        const input = metaFields.querySelector(`input[data-attr-i="${i}"]`);
+        return Object.assign({}, a, { value: input ? input.value : a.value });
+      });
+    }
+    return meta;
+  }
+
+  // ---------- modal: save / delete ----------
+  el('saveModalBtn').addEventListener('click', async () => {
+    const sourceIndex = currentModalIndex;
+    if (sourceIndex == null) return;
+    const originalMeta = metadataMap.get(sourceIndex);
+    if (!originalMeta) return;
+    const newMeta = collectMetaFromForm(originalMeta);
+    if (newMeta === null) return;
+
+    metadataMap.set(sourceIndex, newMeta);
+    const metaOverride = newMeta;
+    await persistItem(sourceIndex, { logos: workingLogos, metaOverride });
+    itemCustom.set(sourceIndex, { logos: workingLogos, metaOverride });
+
+    const baseBlob = baseBlobs.get(sourceIndex);
+    const finalBlob = workingLogos.length ? await bakeLogos(baseBlob, workingLogos) : baseBlob;
+    finalBlobs.set(sourceIndex, finalBlob);
+    renderCardLoaded(sourceIndex);
+
+    statusMsg.textContent = `✅ Saved changes for NFT #${order.indexOf(sourceIndex) + 1}.`;
+    closeModal();
+  });
+
+  el('deleteModalBtn').addEventListener('click', async () => {
+    const sourceIndex = currentModalIndex;
+    if (sourceIndex == null) return;
+    closeModal();
+    await deleteFromGallery(sourceIndex);
+  });
+
+  // ---------- zip downloads ----------
+  async function downloadImagesZip() {
+    if (isDownloading) return;
+    if (finalBlobs.size === 0) { alert('No NFTs loaded yet.'); return; }
+    isDownloading = true; downloadImgBtn.disabled = true;
+    statusMsg.textContent = 'Building images ZIP…';
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder('nft_images');
+      let count = 0, skipped = 0;
+      order.forEach((sourceIndex, i) => {
+        const blob = finalBlobs.get(sourceIndex);
+        if (!blob) { skipped++; return; }
+        folder.file(`${i + 1}.png`, blob);
+        count++;
+      });
+      statusMsg.textContent = `Zipping ${count} images…`;
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, `nft_images_1_to_${order.length}.zip`);
+      statusMsg.textContent = `✅ Images ZIP downloaded (${count} files${skipped ? ', ' + skipped + ' skipped (not loaded)' : ''}).`;
+    } catch (e) {
+      statusMsg.textContent = 'Error building images ZIP: ' + e.message;
+    } finally { isDownloading = false; downloadImgBtn.disabled = false; }
+  }
+
+  async function downloadMetadataZip() {
+    if (isDownloading) return;
+    if (metadataMap.size === 0) { alert('No metadata loaded yet.'); return; }
+    isDownloading = true; downloadMetaBtn.disabled = true;
+    statusMsg.textContent = 'Building metadata ZIP…';
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder('nft_metadata');
+      let count = 0, skipped = 0;
+      order.forEach((sourceIndex, i) => {
+        const meta = metadataMap.get(sourceIndex);
+        if (!meta) { skipped++; return; }
+        folder.file(`${i + 1}.json`, JSON.stringify(meta, null, 2));
+        count++;
+      });
+      statusMsg.textContent = `Zipping ${count} metadata files…`;
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, `nft_metadata_1_to_${order.length}.zip`);
+      statusMsg.textContent = `✅ Metadata ZIP downloaded (${count} files${skipped ? ', ' + skipped + ' skipped (not loaded)' : ''}).`;
+    } catch (e) {
+      statusMsg.textContent = 'Error building metadata ZIP: ' + e.message;
+    } finally { isDownloading = false; downloadMetaBtn.disabled = false; }
+  }
+
+  // ---------- clear view ----------
+  function clearView() {
+    gallery.innerHTML = '';
+    cardEls.clear();
+    baseBlobs.clear(); finalBlobs.clear(); metadataMap.clear(); failedSet.clear();
+    downloadImgBtn.disabled = true; downloadMetaBtn.disabled = true;
+    progressContainer.style.display = 'none';
+    progressBar.style.width = '0%'; progressBar.textContent = '0%';
+    statusMsg.textContent = 'View cleared. Your saved logos, edits and deletions are kept — click "Load All NFTs" to reload.';
+  }
+
+  // ---------- wire up ----------
+  loadBtn.addEventListener('click', loadAll);
+  downloadImgBtn.addEventListener('click', downloadImagesZip);
+  downloadMetaBtn.addEventListener('click', downloadMetadataZip);
+  clearBtn.addEventListener('click', clearView);
+  retryBtn.addEventListener('click', retryAllFailed);
+
+  // initial UI bootstrap
+  (async () => {
+    logoLibrary = await loadLogoLibrary();
+    renderLogoLibraryUI();
+    populateLogoSelect();
+  })();
+})();
+</script>
 </body>
 </html>
