@@ -3,30 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Risograph NFT Gallery | Sequential 1-10000</title>
+  <title>Risograph NFT Metadata Downloader</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #0a0a12; }
     .mono { font-family: 'Space Mono', monospace; }
-    
-    .riso-effect {
-      position: relative;
-    }
-    .riso-effect::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(45deg, rgba(255,80,90,0.12) 0px, rgba(255,80,90,0.12) 2px, transparent 2px, transparent 6px),
-                  repeating-linear-gradient(135deg, rgba(0,140,255,0.08) 0px, rgba(0,140,255,0.08) 3px, transparent 3px, transparent 8px);
-      pointer-events: none;
-      mix-blend-mode: overlay;
-      border-radius: inherit;
-    }
     
     .grain-overlay {
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
@@ -34,68 +19,18 @@
       z-index: 10;
     }
     
-    .card {
-      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    .download-btn {
+      background: linear-gradient(135deg, #ff5a5f, #ff2a2f);
+      transition: all 0.2s ease;
     }
-    .card:hover {
-      transform: translateY(-6px);
-    }
-    
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(25px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .animate-in {
-      animation: fadeInUp 0.4s ease forwards;
-    }
-    
-    .modal-open {
-      animation: modalFade 0.2s ease;
-    }
-    
-    @keyframes modalFade {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    
-    .image-toggle-btn {
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.2);
-      transition: all 0.2s;
-    }
-    .image-toggle-btn:hover {
-      background: #ff5a5f;
-      border-color: white;
+    .download-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(255,90,95,0.4);
     }
     
     .scrollbar-custom::-webkit-scrollbar { width: 5px; }
     .scrollbar-custom::-webkit-scrollbar-track { background: #1a1a2a; }
     .scrollbar-custom::-webkit-scrollbar-thumb { background: #ff5a5f; border-radius: 10px; }
-    
-    .download-btn {
-      background: linear-gradient(135deg, #ff5a5f, #ff2a2f);
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .download-btn:hover {
-      transform: scale(1.02);
-      box-shadow: 0 0 10px rgba(255,90,95,0.5);
-    }
-    .download-btn:active {
-      transform: scale(0.98);
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    .loading-pulse {
-      animation: pulse 1s ease-in-out infinite;
-    }
   </style>
 </head>
 <body class="scrollbar-custom overflow-x-hidden">
@@ -108,203 +43,101 @@
         <div class="flex items-center gap-3">
           <div class="w-1 h-6 bg-[#ff5a5f] rounded-full"></div>
           <div>
-            <h1 id="main-title" class="mono text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#ff6a6f] to-[#ff5a5f] bg-clip-text text-transparent">RISOGRAPH NFT</h1>
-            <p id="subtitle" class="text-xs text-gray-400">sequential archive · 1 to 10,000</p>
+            <h1 class="mono text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#ff6a6f] to-[#ff5a5f] bg-clip-text text-transparent">📦 METADATA DOWNLOADER</h1>
+            <p class="text-xs text-gray-400">শুধুমাত্র JSON ফাইল · ১ থেকে ১০,০০০</p>
           </div>
         </div>
         
         <div class="flex items-center gap-3">
-          <!-- DOWNLOAD METADATA AS ZIP (শুধুমাত্র JSON) -->
-          <button id="download-metadata-btn" class="download-btn flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-bold mono shadow-lg">
-            <i data-lucide="archive" class="w-4 h-4"></i>
-            <span>📦 ZIP (1-10000.json)</span>
+          <!-- ডাউনলোড বাটন -->
+          <button id="download-metadata-btn" class="download-btn flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-bold mono shadow-lg">
+            <i data-lucide="archive" class="w-5 h-5"></i>
+            <span>⬇️ ZIP (১-১০০০০.json)</span>
           </button>
-          
-          <!-- Pagination -->
-          <div class="flex items-center bg-[#16162a] rounded-full border border-[#ff5a5f]/30 overflow-hidden">
-            <button id="prev-btn" class="px-3 py-2 hover:bg-[#ff5a5f]/20 transition text-[#ff8a8f]"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-            <div class="flex items-center gap-1 px-2 mono text-sm">
-              <span class="text-gray-400">pg</span>
-              <input id="page-input" type="number" min="1" max="500" value="1" class="w-12 bg-transparent text-center text-[#ff5a5f] font-bold outline-none">
-              <span class="text-gray-400">/<span id="total-pages">500</span></span>
-            </div>
-            <button id="next-btn" class="px-3 py-2 hover:bg-[#ff5a5f]/20 transition"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-          </div>
-          
-          <!-- Direct ID jump -->
-          <input id="search-input" type="number" placeholder="ID #" min="1" max="10000" 
-                 class="w-28 bg-[#16162a] border border-[#2a2a4a] rounded-full px-4 py-2 text-sm outline-none focus:border-[#ff5a5f] transition text-white placeholder:text-gray-500 mono">
         </div>
       </div>
     </header>
 
-    <!-- Gallery Grid -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5"></div>
-      <div id="loading" class="hidden flex flex-col items-center justify-center py-20 gap-3">
-        <div class="w-10 h-10 border-3 border-[#ff5a5f]/30 border-t-[#ff5a5f] rounded-full animate-spin"></div>
-        <p class="mono text-sm text-gray-400">fetching riso prints...</p>
+    <!-- মেইন কন্টেন্ট -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+      <div class="bg-[#16162a] rounded-2xl border border-white/10 p-8 text-center">
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-20 h-20 bg-[#ff5a5f]/10 rounded-full flex items-center justify-center">
+            <i data-lucide="file-json" class="w-10 h-10 text-[#ff5a5f]"></i>
+          </div>
+          <h2 class="mono text-2xl font-bold text-white">১০,০০০ টি JSON মেটাডাটা</h2>
+          <p class="text-gray-400 max-w-md">
+            শুধুমাত্র মেটাডাটা JSON ফাইল (ছবি ছাড়া) ডাউনলোড হবে ZIP আকারে<br>
+            <span class="text-xs text-[#ff5a5f]">প্রতিটি ফাইলের নাম: 1.json, 2.json ... 10000.json</span>
+          </p>
+          
+          <div class="mt-4 p-4 bg-[#0a0a12] rounded-xl w-full max-w-md">
+            <div class="flex justify-between text-sm mono">
+              <span class="text-gray-400">মোট ফাইল:</span>
+              <span class="text-white font-bold">১০,০০০</span>
+            </div>
+            <div class="flex justify-between text-sm mono mt-2">
+              <span class="text-gray-400">আনুমানিক সাইজ:</span>
+              <span class="text-white font-bold">~১৫-২০ MB</span>
+            </div>
+            <div class="flex justify-between text-sm mono mt-2">
+              <span class="text-gray-400">সময় লাগবে:</span>
+              <span class="text-white font-bold">~৫-১০ সেকেন্ড</span>
+            </div>
+          </div>
+          
+          <button id="download-btn-main" class="download-btn flex items-center gap-3 px-8 py-4 rounded-full text-white font-bold mono text-lg shadow-2xl mt-4">
+            <i data-lucide="download" class="w-6 h-6"></i>
+            <span>ডাউনলোড শুরু করুন</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- স্ট্যাটাস -->
+      <div id="status-area" class="mt-6 hidden">
+        <div class="bg-[#16162a] rounded-xl border border-white/10 p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="mono text-sm text-white" id="status-text">ডাউনলোড শুরু হচ্ছে...</span>
+          </div>
+          <div class="w-full bg-[#0a0a12] rounded-full h-4 overflow-hidden">
+            <div id="progress-bar" class="bg-gradient-to-r from-[#ff5a5f] to-[#ff8a8f] h-4 transition-all duration-300 ease-out" style="width: 0%"></div>
+          </div>
+          <div class="flex justify-between mt-2 text-xs mono">
+            <span id="progress-text" class="text-[#ff5a5f]">০ / ১০,০০০</span>
+            <span id="speed-text" class="text-green-400">প্রস্তুত...</span>
+          </div>
+        </div>
       </div>
     </main>
-
-    <!-- Modal -->
-    <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="modal-backdrop"></div>
-      <div class="relative bg-[#12121f] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto border border-white/20 modal-open">
-        <div class="relative group">
-          <div id="modal-img-wrapper" class="relative overflow-hidden bg-[#0a0a12] rounded-t-2xl">
-            <img id="modal-img" class="w-full aspect-square object-cover" alt="NFT">
-          </div>
-          <button id="toggle-original" class="absolute bottom-4 right-4 z-20 image-toggle-btn rounded-full px-4 py-2 text-xs font-bold flex items-center gap-2 shadow-lg">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-            <span id="toggle-text" class="mono">RISO MODE</span>
-          </button>
-          <button id="modal-close" class="absolute top-4 right-4 z-20 bg-black/50 backdrop-blur rounded-full p-2 hover:bg-[#ff5a5f] transition border border-white/20">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-        
-        <div class="p-5">
-          <h2 id="modal-title" class="mono text-xl font-bold text-[#ff5a5f] mb-4"></h2>
-          <div id="modal-traits" class="grid grid-cols-2 gap-2"></div>
-          <div class="mt-4 pt-3 border-t border-white/10 text-right">
-            <span class="text-[10px] text-gray-500 mono">✦ risograph spectral edition</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script>
-    // ======================== কনফিগারেশন (শুধুমাত্র JSON মেটাডাটা) ========================
+    // ======================== কনফিগারেশন ========================
     const METADATA_BASE = 'https://ipfs.io/ipfs/bafybeiaoqcshmcyhgvvp25pw7ydjgk4re54jtpi54tppktyqh7q3vcwzau/';
-    const PER_PAGE = 20;
-    const TOTAL_NFTS = 10000;           // ১ থেকে ১০,০০০ পর্যন্ত
-    const TOTAL_PAGES = Math.ceil(TOTAL_NFTS / PER_PAGE);
-    const CONCURRENT_LIMIT = 50;
+    const TOTAL_NFTS = 10000;
+    const CONCURRENT_LIMIT = 100; // বেশি কনকারেন্ট রিকোয়েস্ট для দ্রুত ডাউনলোড
     
-    let currentPage = 1;
-    let currentModalState = { isRiso: true, risoUrl: null, originalUrl: null, meta: null, id: null };
-    
-    // ক্যাশ
-    let metadataCache = {};
-    let risoCache = {};
-    
-    // Default config for SDK
-    const defaultConfig = {
-      gallery_title: 'RISOGRAPH NFT',
-      subtitle_text: 'sequential archive · 1 to 10,000',
-      background_color: '#0a0a12',
-      accent_color: '#ff5a5f',
-      surface_color: '#16162a',
-      text_color: '#ffffff',
-      muted_color: '#9ca3af',
-      font_family: 'Inter',
-      font_size: 16
-    };
-    
-    // ======================== ইউটিলিটি ফাংশন ========================
-    function getMetadataUrl(id) {
-      return `${METADATA_BASE}${id}.json`;
-    }
-    
-    // ছবি সম্পর্কিত ফাংশন (প্রদর্শনের জন্য, ডাউনলোডে ব্যবহৃত হবে না)
-    function getImageUrl(ipfsUri) {
-      if (!ipfsUri) return '';
-      return ipfsUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-    
-    async function applyRisographEffect(imgSrc) {
-      // ডাউনলোডের সাথে সম্পর্কিত নয়, শুধু প্রদর্শনের জন্য
-      return imgSrc;
-    }
-    
-    async function getRisoVersion(id, originalUrl) {
-      if (risoCache[id]) return risoCache[id];
-      // প্রদর্শনের জন্য রিসো ইফেক্ট প্রয়োগ করা হচ্ছে (ছবি ছাড়া ডাউনলোডে কোনো প্রভাব নেই)
-      const risoUrl = await applyRisographEffect(originalUrl);
-      risoCache[id] = risoUrl;
-      return risoUrl;
-    }
-    
-    async function fetchNFT(id) {
-      if (metadataCache[id]) return metadataCache[id];
+    // ======================== শুধুমাত্র JSON ডাউনলোড (ছবি ছাড়া) ========================
+    async function downloadMetadataOnly() {
+      const total = TOTAL_NFTS;
       
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(getMetadataUrl(id), { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        
-        const normalized = {
-          tokenId: id,
-          name: data.name || `NFT #${id}`,
-          image: getImageUrl(data.image || `ipfs://${METADATA_BASE}${id}.png`),
-          attributes: Array.isArray(data.attributes) ? data.attributes : [],
-          raw: data
-        };
-        
-        metadataCache[id] = normalized;
-        return normalized;
-      } catch (err) {
-        console.warn(`Failed to load NFT #${id}:`, err);
-        return {
-          tokenId: id,
-          name: `#${id}`,
-          image: `https://placehold.co/600x600/1a1a2a/ff5a5f?text=${id}`,
-          attributes: [],
-          raw: null,
-          error: err.message
-        };
-      }
-    }
-    
-    // ================ ডাউনলোড: শুধুমাত্র JSON মেটাডাটা (ZIP) ================
-    async function downloadMetadataAsZip() {
-      const total = TOTAL_NFTS; // ১০,০০০
-      
-      if (!confirm(`📦 ডাউনলোড করুন ${total} টি পৃথক JSON ফাইল (1.json থেকে ${total}.json) ZIP আর্কাইভ আকারে?\n\nএতে প্রায় ১৫-২০ সেকেন্ড সময় লাগতে পারে।`)) {
+      if (!confirm(`📦 ${total} টি JSON মেটাডাটা ফাইল ডাউনলোড করুন?\n\nফাইলের নাম: 1.json থেকে ${total}.json\nসাইজ: ~১৫-২০ MB\nসময়: ~৫-১০ সেকেন্ড`)) {
         return;
       }
       
-      // প্রোগ্রেস ওভারলে তৈরি
-      const loadingOverlay = document.createElement('div');
-      loadingOverlay.id = 'metadata-download-progress';
-      loadingOverlay.className = 'fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center gap-4 backdrop-blur-md';
-      loadingOverlay.innerHTML = `
-        <div class="bg-[#16162a] rounded-2xl p-8 max-w-md w-full border-2 border-[#ff5a5f] shadow-2xl">
-          <div class="flex items-center justify-center mb-4">
-            <div class="relative">
-              <div class="w-16 h-16 border-4 border-[#ff5a5f]/30 border-t-[#ff5a5f] rounded-full animate-spin"></div>
-              <i data-lucide="archive" class="absolute inset-0 m-auto w-6 h-6 text-[#ff5a5f]"></i>
-            </div>
-          </div>
-          <p class="mono text-white font-bold text-lg text-center mb-2">📦 ZIP আর্কাইভ তৈরি হচ্ছে</p>
-          <p class="text-gray-400 text-sm text-center mb-4">${total} টি NFT-এর JSON মেটাডাটা সংগ্রহ করা হচ্ছে</p>
-          <div class="w-full bg-[#0a0a12] rounded-full h-3 overflow-hidden mb-3">
-            <div id="dl-progress-bar" class="bg-gradient-to-r from-[#ff5a5f] to-[#ff8a8f] h-3 transition-all duration-200 ease-out" style="width: 0%"></div>
-          </div>
-          <div class="flex justify-between text-xs mono">
-            <span id="dl-progress-current" class="text-[#ff5a5f] font-bold">0</span>
-            <span class="text-gray-500">/ ${total} ফাইল</span>
-            <span id="dl-speed" class="text-green-400">প্রস্তুত...</span>
-          </div>
-          <p class="text-[10px] text-gray-600 text-center mt-4">✨ ফাইলের নাম হবে: 1.json, 2.json, ... ${total}.json</p>
-        </div>
-      `;
-      document.body.appendChild(loadingOverlay);
+      // প্রগ্রেস ওভারলে
+      const statusArea = document.getElementById('status-area');
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      const speedText = document.getElementById('speed-text');
+      const statusText = document.getElementById('status-text');
       
-      setTimeout(() => {
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }, 10);
-      
-      const progressBar = document.getElementById('dl-progress-bar');
-      const progressSpan = document.getElementById('dl-progress-current');
-      const speedSpan = document.getElementById('dl-speed');
+      statusArea.classList.remove('hidden');
+      progressBar.style.width = '0%';
+      progressText.innerText = '০ / ১০,০০০';
+      speedText.innerText = 'শুরু হচ্ছে...';
+      statusText.innerText = '⏳ JSON ফাইল সংগ্রহ করা হচ্ছে...';
       
       let completed = 0;
       let failedIds = [];
@@ -313,326 +146,129 @@
       // JSZip ইনস্ট্যান্স
       const zip = new JSZip();
       
-      // ব্যাচ প্রক্রিয়াকরণ (কনকারেন্ট লিমিট সহ)
-      async function processBatch(ids) {
-        const promises = ids.map(async (id) => {
-          try {
-            const meta = await fetchNFT(id);
-            
-            // JSON ফাইলের জন্য ক্লিন মেটাডাটা অবজেক্ট
-            const cleanMetadata = {
-              tokenId: meta.tokenId,
-              name: meta.name,
-              image: meta.image,
-              attributes: meta.attributes,
-              fetchedAt: new Date().toISOString(),
-              rawMetadata: meta.raw
-            };
-            
-            // জিপে "id.json" নামে যোগ করুন
-            const jsonContent = JSON.stringify(cleanMetadata, null, 2);
-            zip.file(`${id}.json`, jsonContent);
-            
-            completed++;
-            if (progressSpan) progressSpan.innerText = completed;
-            if (progressBar) progressBar.style.width = `${(completed / total) * 100}%`;
-            
-            const elapsed = (Date.now() - startTime) / 1000;
-            const speed = (completed / elapsed).toFixed(1);
-            if (speedSpan && elapsed > 0) {
-              speedSpan.innerText = `${speed} ফাইল/সেকেন্ড`;
-            }
-          } catch (err) {
-            console.error(`ID ${id} লোড করতে ব্যর্থ:`, err);
-            failedIds.push(id);
-            
-            // ফেলব্যাক JSON যোগ করুন
-            const fallbackMetadata = {
-              tokenId: id,
-              name: `#${id}`,
-              error: err.message,
-              fetchedAt: new Date().toISOString()
-            };
-            zip.file(`${id}.json`, JSON.stringify(fallbackMetadata, null, 2));
-            
-            completed++;
-            if (progressSpan) progressSpan.innerText = completed;
-            if (progressBar) progressBar.style.width = `${(completed / total) * 100}%`;
+      // একটি JSON ফাইল ডাউনলোড করার ফাংশন
+      async function fetchSingleMetadata(id) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          
+          const response = await fetch(`${METADATA_BASE}${id}.json`, { 
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+          });
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const data = await response.json();
+          
+          // শুধুমাত্র JSON ডেটা সংরক্ষণ (ছবি ছাড়া)
+          zip.file(`${id}.json`, JSON.stringify(data, null, 2));
+          
+          completed++;
+          updateProgress(completed, total, startTime);
+          
+        } catch (err) {
+          console.warn(`ID ${id} ব্যর্থ:`, err);
+          failedIds.push(id);
+          
+          // ফেলব্যাক JSON
+          const fallback = {
+            tokenId: id,
+            error: err.message,
+            fetchedAt: new Date().toISOString()
+          };
+          zip.file(`${id}.json`, JSON.stringify(fallback, null, 2));
+          
+          completed++;
+          updateProgress(completed, total, startTime);
+        }
+      }
+      
+      // প্রগ্রেস আপডেট
+      function updateProgress(completed, total, startTime) {
+        const percent = (completed / total) * 100;
+        progressBar.style.width = `${percent}%`;
+        progressText.innerText = `${completed} / ${total}`;
+        
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed > 1 && completed > 0) {
+          const speed = (completed / elapsed).toFixed(1);
+          speedText.innerText = `${speed} ফাইল/সেকেন্ড`;
+          
+          const remaining = total - completed;
+          const eta = (remaining / parseFloat(speed)).toFixed(0);
+          statusText.innerText = `⏳ ডাউনলোড হচ্ছে... (বাকি ${remaining}, প্রায় ${eta}সে)`;
+        }
+      }
+      
+      // ব্যাচ প্রক্রিয়াকরণ (কনকারেন্ট)
+      async function processBatches() {
+        const batchSize = CONCURRENT_LIMIT;
+        const batches = [];
+        
+        for (let i = 1; i <= total; i += batchSize) {
+          const batch = [];
+          for (let j = i; j < Math.min(i + batchSize, total + 1); j++) {
+            batch.push(j);
           }
+          batches.push(batch);
+        }
+        
+        for (let i = 0; i < batches.length; i++) {
+          const batch = batches[i];
+          const promises = batch.map(id => fetchSingleMetadata(id));
+          await Promise.all(promises);
+        }
+      }
+      
+      try {
+        await processBatches();
+        
+        const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        statusText.innerText = '📦 ZIP আর্কাইভ তৈরি হচ্ছে...';
+        speedText.innerText = 'প্যাকেজিং...';
+        
+        // ZIP জেনারেট
+        const zipBlob = await zip.generateAsync({ 
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: { level: 6 }
         });
         
-        await Promise.all(promises);
-      }
-      
-      // ব্যাচ তৈরি
-      const batchSize = CONCURRENT_LIMIT;
-      const batches = [];
-      for (let i = 1; i <= total; i += batchSize) {
-        const batch = [];
-        for (let j = i; j < Math.min(i + batchSize, total + 1); j++) {
-          batch.push(j);
-        }
-        batches.push(batch);
-      }
-      
-      // ব্যাচ ক্রমান্বয়ে এক্সিকিউট
-      for (let i = 0; i < batches.length; i++) {
-        await processBatch(batches[i]);
-      }
-      
-      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      
-      // ZIP ফাইল জেনারেট
-      if (progressSpan) progressSpan.innerText = "ZIP তৈরি হচ্ছে...";
-      if (speedSpan) speedSpan.innerText = "প্যাকেজিং...";
-      
-      const zipBlob = await zip.generateAsync({ 
-        type: "blob",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 }
-      });
-      
-      // ZIP ডাউনলোড
-      const downloadUrl = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `risograph_nft_metadata_1_to_${total}_${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-      
-      // ওভারলে সরান
-      loadingOverlay.remove();
-      
-      // সাফল্যের বার্তা
-      if (failedIds.length > 0) {
-        alert(`✅ ZIP আর্কাইভ সফলভাবে তৈরি হয়েছে!\n\n📊 পরিসংখ্যান:\n• মোট ফাইল: ${total}\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সেকেন্ড\n• ব্যর্থ: ${failedIds.length}\n• ব্যর্থ ID: ${failedIds.slice(0, 10).join(', ')}${failedIds.length > 10 ? '...' : ''}\n\n📦 ZIP-এ রয়েছে: ${total} টি JSON ফাইল (1.json থেকে ${total}.json)`);
-      } else {
-        alert(`✅ ZIP আর্কাইভ সফলভাবে তৈরি হয়েছে!\n\n📊 পরিসংখ্যান:\n• মোট ফাইল: ${total}\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সেকেন্ড\n• সব ফাইল সফলভাবে ডাউনলোড হয়েছে!\n\n📦 ZIP-এ রয়েছে: ${total} টি JSON ফাইল (1.json থেকে ${total}.json)`);
-      }
-    }
-    
-    // ======================== রেন্ডার গ্রিড ========================
-    async function renderGrid(page) {
-      const grid = document.getElementById('grid');
-      const loading = document.getElementById('loading');
-      
-      if (!grid) return;
-      
-      grid.innerHTML = '';
-      loading.classList.remove('hidden');
-      
-      const startId = (page - 1) * PER_PAGE + 1;
-      const endId = Math.min(startId + PER_PAGE - 1, TOTAL_NFTS);
-      const ids = [];
-      for (let i = startId; i <= endId; i++) ids.push(i);
-      
-      let loadedCount = 0;
-      
-      for (let i = 0; i < ids.length; i++) {
-        const id = ids[i];
-        const metadata = await fetchNFT(id);
+        // ডাউনলোড
+        const downloadUrl = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `risograph_metadata_1_to_${total}_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
         
-        if (metadata) {
-          const risoPreview = await getRisoVersion(id, metadata.image);
-          
-          const card = document.createElement('div');
-          card.className = 'card cursor-pointer animate-in';
-          card.style.animationDelay = `${i * 30}ms`;
-          
-          card.innerHTML = `
-            <div class="relative rounded-xl overflow-hidden bg-[#16162a] border border-white/10 hover:border-[#ff5a5f]/50 transition-all duration-300">
-              <img 
-                src="${risoPreview}" 
-                alt="${metadata.name}"
-                class="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                <p class="mono text-sm font-bold text-white truncate">${escapeHtml(metadata.name)}</p>
-                <p class="text-[10px] text-[#ff8a8f] mono">#${id}</p>
-              </div>
-            </div>
-          `;
-          
-          card.addEventListener('click', () => openModal(id, metadata));
-          grid.appendChild(card);
-        }
+        // সাফল্য বার্তা
+        statusText.innerText = '✅ ডাউনলোড সম্পূর্ণ!';
+        progressBar.style.width = '100%';
         
-        loadedCount++;
-        if (loadedCount === ids.length) {
-          loading.classList.add('hidden');
-        }
+        setTimeout(() => {
+          if (failedIds.length > 0) {
+            alert(`✅ ডাউনলোড সম্পূর্ণ!\n\n📊 পরিসংখ্যান:\n• মোট: ${total} ফাইল\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সে\n• ব্যর্থ: ${failedIds.length} টি\n• ব্যর্থ ID: ${failedIds.slice(0, 15).join(', ')}${failedIds.length > 15 ? '...' : ''}`);
+          } else {
+            alert(`✅ ডাউনলোড সম্পূর্ণ!\n\n📊 পরিসংখ্যান:\n• মোট: ${total} ফাইল\n• সময়: ${totalTime} সেকেন্ড\n• গতি: ${(total/totalTime).toFixed(1)} ফাইল/সে\n• সব ফাইল সফলভাবে ডাউনলোড হয়েছে!`);
+          }
+        }, 500);
+        
+      } catch (err) {
+        console.error('ডাউনলোড ব্যর্থ:', err);
+        statusText.innerText = '❌ ডাউনলোড ব্যর্থ হয়েছে!';
+        alert(`❌ ডাউনলোড ব্যর্থ:\n${err.message}`);
       }
-    }
-    
-    // ======================== মোডাল ========================
-    async function openModal(id, metadata) {
-      const modal = document.getElementById('modal');
-      const modalImg = document.getElementById('modal-img');
-      const modalTitle = document.getElementById('modal-title');
-      const traitsContainer = document.getElementById('modal-traits');
-      const toggleText = document.getElementById('toggle-text');
-      const imgWrapper = document.getElementById('modal-img-wrapper');
-      
-      const originalUrl = metadata.image;
-      const risoUrl = await getRisoVersion(id, originalUrl);
-      
-      currentModalState = {
-        isRiso: true,
-        risoUrl: risoUrl,
-        originalUrl: originalUrl,
-        meta: metadata,
-        id: id
-      };
-      
-      modalImg.src = risoUrl;
-      modalImg.classList.add('riso-effect');
-      imgWrapper.classList.add('riso-effect');
-      toggleText.innerText = 'RISO MODE';
-      
-      modalTitle.innerText = `${metadata.name} — #${id}`;
-      
-      traitsContainer.innerHTML = '';
-      if (metadata.attributes && metadata.attributes.length > 0) {
-        metadata.attributes.slice(0, 6).forEach(attr => {
-          const traitDiv = document.createElement('div');
-          traitDiv.className = 'bg-[#1e1e32] rounded-lg p-2.5 border border-white/5';
-          traitDiv.innerHTML = `
-            <p class="text-[9px] uppercase tracking-wider text-gray-400">${escapeHtml(attr.trait_type || 'প্রপার্টি')}</p>
-            <p class="mono text-sm font-semibold text-[#ff8a8f] truncate">${escapeHtml(attr.value || '—')}</p>
-          `;
-          traitsContainer.appendChild(traitDiv);
-        });
-      } else {
-        traitsContainer.innerHTML = '<div class="col-span-2 text-center text-gray-400 text-sm">কোন ট্রেইট নেই</div>';
-      }
-      
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-    
-    function closeModal() {
-      const modal = document.getElementById('modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-    
-    function toggleImageMode() {
-      const modalImg = document.getElementById('modal-img');
-      const toggleText = document.getElementById('toggle-text');
-      const imgWrapper = document.getElementById('modal-img-wrapper');
-      
-      if (!currentModalState.risoUrl || !currentModalState.originalUrl) return;
-      
-      currentModalState.isRiso = !currentModalState.isRiso;
-      
-      if (currentModalState.isRiso) {
-        modalImg.src = currentModalState.risoUrl;
-        modalImg.classList.add('riso-effect');
-        imgWrapper.classList.add('riso-effect');
-        toggleText.innerText = 'RISO MODE';
-      } else {
-        modalImg.src = currentModalState.originalUrl;
-        modalImg.classList.remove('riso-effect');
-        imgWrapper.classList.remove('riso-effect');
-        toggleText.innerText = 'ORIGINAL';
-      }
-    }
-    
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
-    }
-    
-    // ======================== পেজিনেশন ========================
-    function updatePage() {
-      document.getElementById('page-input').value = currentPage;
-      renderGrid(currentPage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     // ======================== ইভেন্ট লিসেনার ========================
-    document.getElementById('prev-btn')?.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        updatePage();
-      }
-    });
+    document.getElementById('download-metadata-btn')?.addEventListener('click', downloadMetadataOnly);
+    document.getElementById('download-btn-main')?.addEventListener('click', downloadMetadataOnly);
     
-    document.getElementById('next-btn')?.addEventListener('click', () => {
-      if (currentPage < TOTAL_PAGES) {
-        currentPage++;
-        updatePage();
-      }
-    });
-    
-    document.getElementById('page-input')?.addEventListener('change', (e) => {
-      let val = parseInt(e.target.value);
-      if (val >= 1 && val <= TOTAL_PAGES) {
-        currentPage = val;
-        updatePage();
-      } else {
-        e.target.value = currentPage;
-      }
-    });
-    
-    document.getElementById('search-input')?.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter') {
-        const id = parseInt(e.target.value);
-        if (id >= 1 && id <= TOTAL_NFTS) {
-          const metadata = await fetchNFT(id);
-          if (metadata) {
-            await openModal(id, metadata);
-          }
-        } else {
-          alert(`ID অবশ্যই ১ থেকে ${TOTAL_NFTS} এর মধ্যে হতে হবে`);
-        }
-      }
-    });
-    
-    document.getElementById('modal-close')?.addEventListener('click', closeModal);
-    document.getElementById('modal-backdrop')?.addEventListener('click', closeModal);
-    document.getElementById('toggle-original')?.addEventListener('click', toggleImageMode);
-    document.getElementById('download-metadata-btn')?.addEventListener('click', downloadMetadataAsZip);
-    
-    // ======================== SDK ইনিশিয়ালাইজেশন ========================
-    if (window.elementSdk) {
-      window.elementSdk.init({
-        defaultConfig,
-        onConfigChange: (config) => {
-          document.getElementById('main-title').textContent = config.gallery_title || defaultConfig.gallery_title;
-          document.getElementById('subtitle').textContent = config.subtitle_text || defaultConfig.subtitle_text;
-          document.body.style.fontFamily = `${config.font_family || 'Inter'}, sans-serif`;
-        },
-        mapToCapabilities: (config) => ({
-          recolorables: [
-            { get: () => config.background_color || defaultConfig.background_color, set: (v) => { document.body.style.backgroundColor = v; }},
-            { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { document.documentElement.style.setProperty('--accent', v); }},
-            { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { }},
-            { get: () => config.text_color || defaultConfig.text_color, set: (v) => { }},
-            { get: () => config.muted_color || defaultConfig.muted_color, set: (v) => { }}
-          ],
-          fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { }},
-          fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { }}
-        }),
-        mapToEditPanelValues: (config) => new Map([
-          ['gallery_title', config.gallery_title || defaultConfig.gallery_title],
-          ['subtitle_text', config.subtitle_text || defaultConfig.subtitle_text]
-        ])
-      });
-    }
-    
-    // ======================== ইনিশিয়াল লোড ========================
-    document.getElementById('total-pages').innerText = TOTAL_PAGES;
-    renderGrid(1);
-    
+    // ======================== লুসিড আইকন ========================
     setTimeout(() => {
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }, 100);
