@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pixel Studio · NFT #d4ff00</title>
+  <title>Pixel Studio · NFT Grid</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
@@ -47,7 +47,6 @@
     .logo-add-form input[type=file] { padding:6px; max-width:200px; }
     .logo-preview-img { width:50px; height:50px; object-fit:contain; background:#fff; border-radius:6px; display:none; border:1px solid #444; image-rendering:pixelated; }
 
-    /* pixel grid gallery */
     .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:18px; margin-top:10px; }
     .nft-item { background:#1a1a2e; border-radius:12px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,.4);
                 transition:transform .25s ease; aspect-ratio:1; position:relative; cursor:pointer; }
@@ -68,7 +67,6 @@
     .nft-item .logo-tag { position:absolute; top:6px; left:38px; background:rgba(212,255,0,.9); color:#000; font-size:.6rem;
                            padding:2px 7px; border-radius:10px; font-weight:700; }
 
-    /* modal */
     .modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.92); align-items:center;
              justify-content:center; padding:20px; overflow-y:auto; }
     .modal.active { display:flex; }
@@ -107,6 +105,8 @@
     details.raw-json textarea { width:100%; min-height:160px; font-family:monospace; font-size:.72rem; background:#0f0f22;
                                  color:#9dff7a; border:1px solid #333; border-radius:8px; padding:10px; }
     .modal-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+    .zip-split { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+    .zip-split .btn { flex:1; min-width:120px; }
 
     @media (max-width:600px) {
       h1 { font-size:1.6rem; }
@@ -310,7 +310,6 @@
     });
   }
 
-  // Bake PNG logos onto the NFT (pixelated)
   async function bakeLogos(baseBlob, logos) {
     if (!logos || !logos.length) return baseBlob;
     const baseUrl = URL.createObjectURL(baseBlob);
@@ -318,7 +317,7 @@
     const canvas = document.createElement('canvas');
     canvas.width = baseImg.width; canvas.height = baseImg.height;
     const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false; // pixelated
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(baseImg, 0, 0);
     URL.revokeObjectURL(baseUrl);
 
@@ -514,7 +513,7 @@
     if (finalBlobs.size === 0) { downloadImgBtn.disabled = true; downloadMetaBtn.disabled = true; }
   }
 
-  // ---------- logo library UI (PNG) ----------
+  // ---------- logo library UI ----------
   function renderLogoLibraryUI() {
     logoLibGrid.innerHTML = '';
     if (logoLibrary.length === 0) {
@@ -581,7 +580,7 @@
     reader.readAsDataURL(file);
   });
 
-  // ---------- modal: open / build ----------
+  // ---------- modal ----------
   async function openModal(sourceIndex) {
     currentModalIndex = sourceIndex;
     const pos = order.indexOf(sourceIndex);
@@ -610,7 +609,6 @@
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('active')) closeModal(); });
 
-  // ---------- modal: logo placement / drag / resize ----------
   function renderPlacedLogos() {
     editStage.querySelectorAll('.logo-instance').forEach(n => n.remove());
     workingLogos.forEach((lg, i) => createLogoInstanceEl(lg, i));
@@ -701,7 +699,7 @@
     renderPlacedLogos();
   });
 
-  // ---------- modal: metadata form ----------
+  // ---------- metadata form ----------
   let metaFormState = null;
   function buildMetaForm(meta) {
     if (!meta) return;
@@ -739,7 +737,6 @@
     return meta;
   }
 
-  // ---------- modal: save / delete ----------
   el('saveModalBtn').addEventListener('click', async () => {
     const sourceIndex = currentModalIndex;
     if (sourceIndex == null) return;
@@ -769,54 +766,60 @@
     await deleteFromGallery(sourceIndex);
   });
 
-  // ---------- zip downloads ----------
-  async function downloadImagesZip() {
+  // ---------- zip downloads (split into 6 parts) ----------
+  async function downloadSplitZips(kind) {
     if (isDownloading) return;
-    if (finalBlobs.size === 0) { alert('No NFTs loaded yet.'); return; }
-    isDownloading = true; downloadImgBtn.disabled = true;
-    statusMsg.textContent = 'Building images ZIP…';
+    const map = kind === 'img' ? finalBlobs : metadataMap;
+    if (map.size === 0) { alert('No data loaded yet.'); return; }
+    isDownloading = true;
+    downloadImgBtn.disabled = true;
+    downloadMetaBtn.disabled = true;
+    statusMsg.textContent = `Building ${kind === 'img' ? 'images' : 'metadata'} ZIP parts…`;
+
     try {
-      const zip = new JSZip();
-      const folder = zip.folder('nft_images');
-      let count = 0, skipped = 0;
-      order.forEach((sourceIndex, i) => {
-        const blob = finalBlobs.get(sourceIndex);
-        if (!blob) { skipped++; return; }
-        folder.file(`${i + 1}.png`, blob);
-        count++;
-      });
-      statusMsg.textContent = `Zipping ${count} images…`;
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, `nft_images_1_to_${order.length}.zip`);
-      statusMsg.textContent = `✅ Images ZIP downloaded (${count} files${skipped ? ', ' + skipped + ' skipped (not loaded)' : ''}).`;
+      const total = order.length;
+      const parts = 6;
+      const chunkSize = Math.ceil(total / parts);
+      const partPromises = [];
+
+      for (let p = 0; p < parts; p++) {
+        const start = p * chunkSize;
+        const end = Math.min(start + chunkSize, total);
+        const chunk = order.slice(start, end);
+        if (chunk.length === 0) continue;
+
+        const zip = new JSZip();
+        const folder = kind === 'img' ? zip.folder('nft_images') : zip.folder('nft_metadata');
+        for (const idx of chunk) {
+          const data = kind === 'img' ? finalBlobs.get(idx) : metadataMap.get(idx);
+          if (!data) continue;
+          const ext = kind === 'img' ? '.png' : '.json';
+          const content = kind === 'img' ? data : JSON.stringify(data, null, 2);
+          folder.file(`${order.indexOf(idx) + 1}${ext}`, content);
+        }
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const name = `nft_${kind === 'img' ? 'images' : 'metadata'}_part${p + 1}_of_${parts}.zip`;
+        partPromises.push({ name, blob: zipBlob });
+      }
+
+      // download all parts sequentially
+      for (const part of partPromises) {
+        saveAs(part.blob, part.name);
+        await new Promise(r => setTimeout(r, 300));
+      }
+      statusMsg.textContent = `✅ Downloaded ${partPromises.length} ZIP parts (${kind === 'img' ? 'images' : 'metadata'}).`;
     } catch (e) {
-      statusMsg.textContent = 'Error building images ZIP: ' + e.message;
-    } finally { isDownloading = false; downloadImgBtn.disabled = false; }
+      statusMsg.textContent = 'Error creating ZIPs: ' + e.message;
+    } finally {
+      isDownloading = false;
+      downloadImgBtn.disabled = false;
+      downloadMetaBtn.disabled = false;
+    }
   }
 
-  async function downloadMetadataZip() {
-    if (isDownloading) return;
-    if (metadataMap.size === 0) { alert('No metadata loaded yet.'); return; }
-    isDownloading = true; downloadMetaBtn.disabled = true;
-    statusMsg.textContent = 'Building metadata ZIP…';
-    try {
-      const zip = new JSZip();
-      const folder = zip.folder('nft_metadata');
-      let count = 0, skipped = 0;
-      order.forEach((sourceIndex, i) => {
-        const meta = metadataMap.get(sourceIndex);
-        if (!meta) { skipped++; return; }
-        folder.file(`${i + 1}.json`, JSON.stringify(meta, null, 2));
-        count++;
-      });
-      statusMsg.textContent = `Zipping ${count} metadata files…`;
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, `nft_metadata_1_to_${order.length}.zip`);
-      statusMsg.textContent = `✅ Metadata ZIP downloaded (${count} files${skipped ? ', ' + skipped + ' skipped (not loaded)' : ''}).`;
-    } catch (e) {
-      statusMsg.textContent = 'Error building metadata ZIP: ' + e.message;
-    } finally { isDownloading = false; downloadMetaBtn.disabled = false; }
-  }
+  // override download buttons to use split
+  downloadImgBtn.addEventListener('click', () => downloadSplitZips('img'));
+  downloadMetaBtn.addEventListener('click', () => downloadSplitZips('meta'));
 
   // ---------- clear view ----------
   function clearView() {
@@ -831,8 +834,6 @@
 
   // ---------- wire up ----------
   loadBtn.addEventListener('click', loadAll);
-  downloadImgBtn.addEventListener('click', downloadImagesZip);
-  downloadMetaBtn.addEventListener('click', downloadMetadataZip);
   clearBtn.addEventListener('click', clearView);
   retryBtn.addEventListener('click', retryAllFailed);
 
