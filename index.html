@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFT Gallery · Color ASCII Art</title>
+    <title>NFT Color ASCII Art Generator</title>
     <style>
         body {
             margin: 0;
@@ -18,55 +18,54 @@
             gap: 30px;
         }
 
-        /* NFT Card exact styling */
+        /* NFT Card design */
         .nft-card {
             background-color: #d4ff00;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            padding: 35px;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 512px;
-            height: 512px;
+            width: auto;
+            max-width: 90vw;
             box-sizing: border-box;
             transition: transform 0.3s ease;
         }
 
         .nft-card:hover {
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
 
         #asciiContainer {
             background-color: transparent;
-            width: 100%;
-            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow: auto;
             box-sizing: border-box;
         }
 
         #asciiArt {
-            font-size: 10px;
-            line-height: 1.15;
+            font-size: 6px; /* High density character sizing */
+            line-height: 0.9;
+            letter-spacing: 0px;
             white-space: pre;
             font-family: 'Courier New', monospace;
+            font-weight: 900;
             text-align: center;
             margin: 0;
             padding: 0;
-            letter-spacing: 0.5px;
         }
 
         .nft-title {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
             color: #1a1a2e;
-            font-weight: bold;
-            font-size: 18px;
-            letter-spacing: 1px;
+            font-weight: 800;
+            font-size: 22px;
+            letter-spacing: 1.5px;
         }
 
         /* ===== CONTROLS ===== */
@@ -76,7 +75,7 @@
             align-items: center;
             gap: 16px;
             width: 100%;
-            max-width: 512px;
+            max-width: 550px;
         }
 
         .input-group {
@@ -160,7 +159,7 @@
         }
 
         .btn-download {
-            padding: 12px 28px;
+            padding: 14px 30px;
             font-size: 15px;
             font-weight: 700;
             border: none;
@@ -174,6 +173,7 @@
         .btn-download-png {
             background: linear-gradient(135deg, #7c3aed, #6d28d9);
             color: #ffffff;
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
         }
 
         #status-message {
@@ -191,7 +191,7 @@
 
     <div class="nft-card" id="nftCardElement">
         <div id="asciiContainer">
-            <pre id="asciiArt">⏳ Loading color ASCII art...</pre>
+            <pre id="asciiArt">⏳ High Quality Color ASCII Art তৈরি হচ্ছে...</pre>
         </div>
         <div class="nft-title" id="nftTitle">✨ NFT #2</div>
     </div>
@@ -214,7 +214,7 @@
 
         <div class="download-section">
             <button class="btn-download" id="downloadAsciiBtn">📋 Download ASCII (TXT)</button>
-            <button class="btn-download btn-download-png" id="downloadPngBtn">🖼️ Download as PNG Card</button>
+            <button class="btn-download btn-download-png" id="downloadPngBtn">🖼️ Download Full Card PNG</button>
         </div>
 
         <div id="status-message">Ready · Enter a number</div>
@@ -224,6 +224,8 @@
         const BASE_URL = "https://ipfs.io/ipfs/bafybeifh2kk6nv5osnwlh7qvjunuowb3vgxaoaqfufxiocozdqdpqqkvnu/";
         let currentNFTNumber = 2;
         let currentAsciiLines = [];
+        let originalImgWidth = 512;
+        let originalImgHeight = 512;
 
         const nftTitle = document.getElementById('nftTitle');
         const nftNumberInput = document.getElementById('nftNumber');
@@ -233,13 +235,14 @@
         const downloadAsciiBtn = document.getElementById('downloadAsciiBtn');
         const downloadPngBtn = document.getElementById('downloadPngBtn');
 
-        const ASCII_CHARS = '@%#*+=-:. ';
+        // ছবির সূক্ষ্ম ডিটেইলসের জন্য প্রসারিত ASCII characters র‍্যাম্প
+        const ASCII_CHARS = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrftj1ijlnfiI1!i~;-:::...   ';
 
         function isTransparent(r, g, b, a) {
             return a < 30;
         }
 
-        // GENERATE COLORED ASCII DATA
+        // GENERATE HIGH-DENSITY COLORED ASCII DATA
         function generateAsciiData(imageData, width, height) {
             const data = imageData.data;
             const lines = [];
@@ -257,7 +260,8 @@
                     if (isTransparent(r, g, b, a)) {
                         line.push({ char: ' ', color: 'transparent' });
                     } else {
-                        const gray = (r + g + b) / 3;
+                        // Luminance Calculation
+                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
                         const charIndex = Math.floor((gray / 255) * (chars.length - 1));
                         const char = chars[charIndex];
                         line.push({ char: char, color: `rgb(${r},${g},${b})` });
@@ -285,15 +289,15 @@
 
         function loadNFT(number) {
             if (!number || number < 1 || !Number.isInteger(number)) {
-                statusMsg.textContent = '⚠️ Please enter a valid positive integer';
+                statusMsg.textContent = '⚠️ সঠিক একটি সংখ্যা ইনপুট দিন';
                 statusMsg.className = 'error';
                 return;
             }
 
             currentNFTNumber = number;
-            statusMsg.textContent = `⏳ Loading #${number} ...`;
+            statusMsg.textContent = `⏳ লোড হচ্ছে #${number} ...`;
             statusMsg.className = 'loading';
-            asciiArt.innerHTML = '⏳ Generating color ASCII...';
+            asciiArt.innerHTML = '⏳ লোড হচ্ছে High Density ASCII...';
             nftTitle.textContent = `✨ NFT #${number}`;
 
             const imageUrl = `${BASE_URL}${number}.png`;
@@ -308,11 +312,16 @@
                     const objectUrl = URL.createObjectURL(blob);
 
                     img.onload = function() {
+                        originalImgWidth = img.width;
+                        originalImgHeight = img.height;
+
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        let displayWidth = 50; 
-                        let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.5);
+                        // হাই রেゾল্যুশন ডিটেইলস এর জন্য কলাম সংখ্যা ১০০-১২০ রাখা হয়েছে
+                        let displayWidth = 110; 
+                        // Monospace ফন্টের উচ্চতা মেলানোর জন্য ০.৫৫ দিয়ে গুণ
+                        let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.55);
 
                         canvas.width = displayWidth;
                         canvas.height = displayHeight;
@@ -325,7 +334,7 @@
                         
                         asciiArt.innerHTML = renderAsciiToHTML(currentAsciiLines);
 
-                        statusMsg.textContent = `✓ #${number} loaded successfully`;
+                        statusMsg.textContent = `✓ #${number} সফলভাবে প্রস্তুত করা হয়েছে!`;
                         statusMsg.className = 'success';
                         nftNumberInput.value = number;
 
@@ -333,25 +342,25 @@
                     };
 
                     img.onerror = function() {
-                        statusMsg.textContent = `✗ Error processing #${number}`;
+                        statusMsg.textContent = `✗ চিত্র প্রক্রিয়াকরণে ত্রুটি হয়েছে #${number}`;
                         statusMsg.className = 'error';
-                        asciiArt.innerHTML = '⚠️ Could not process image';
+                        asciiArt.innerHTML = '⚠️ Image conversion failed';
                         URL.revokeObjectURL(objectUrl);
                     };
 
                     img.src = objectUrl;
                 })
                 .catch(error => {
-                    statusMsg.textContent = `✗ #${number} not found on IPFS`;
+                    statusMsg.textContent = `✗ #${number} IPFS-এ পাওয়া যায়নি`;
                     statusMsg.className = 'error';
                     asciiArt.innerHTML = '⚠️ Image not found';
                 });
         }
 
-        // DOWNLOAD AS PERFECT CARD PNG
+        // DOWNLOAD FULL-CARD HIGH RESOLUTION PNG
         function downloadAsPNG() {
             if (!currentAsciiLines || currentAsciiLines.length === 0) {
-                statusMsg.textContent = '⚠️ Please load an NFT first';
+                statusMsg.textContent = '⚠️ প্রথমে একটি NFT লোড করুন';
                 statusMsg.className = 'error';
                 return;
             }
@@ -359,32 +368,36 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            const size = 600; // Perfect square card size
-            canvas.width = size;
-            canvas.height = size;
+            // অরিজিনাল আর্টের ইমেজের আকার অনুযায়ী ক্যানভাস সাইজ
+            const cardWidth = 800;
+            const cardHeight = Math.floor(cardWidth * (originalImgHeight / originalImgWidth)) + 120;
 
-            // 1. Draw Card Background (#d4ff00)
+            canvas.width = cardWidth;
+            canvas.height = cardHeight;
+
+            // ১. ব্যাকগ্রাউন্ড ব্রাইট কার্ড কালার (#d4ff00)
             ctx.fillStyle = '#d4ff00';
-            ctx.fillRect(0, 0, size, size);
+            ctx.fillRect(0, 0, cardWidth, cardHeight);
 
-            // 2. Setup Font Parameters for ASCII
+            // ২. ASCII টেক্সট প্যারামিটার সেটআপ
             const numRows = currentAsciiLines.length;
             const numCols = currentAsciiLines[0].length;
 
-            const fontSize = 11;
-            const charWidth = 6.5; 
-            const lineHeight = 12;
+            const fontSize = 8;
+            const charWidth = 5.2; 
+            const lineHeight = 7.2;
 
-            ctx.font = `${fontSize}px 'Courier New', monospace`;
+            ctx.font = `900 ${fontSize}px 'Courier New', monospace`;
             ctx.textBaseline = 'top';
 
-            const totalWidth = numCols * charWidth;
-            const totalHeight = numRows * lineHeight;
+            const totalAsciiWidth = numCols * charWidth;
+            const totalAsciiHeight = numRows * lineHeight;
 
-            const startX = (size - totalWidth) / 2;
-            const startY = (size - totalHeight) / 2 - 15;
+            // সেন্টার পজিশনিং লজিক
+            const startX = (cardWidth - totalAsciiWidth) / 2;
+            const startY = (cardHeight - totalAsciiHeight - 60) / 2;
 
-            // 3. Render ASCII Grid Line by Line
+            // ৩. টেক্সট গ্রিড ক্যানভাসে রেন্ডারিং
             currentAsciiLines.forEach((line, rowIndex) => {
                 const y = startY + (rowIndex * lineHeight);
                 line.forEach((item, colIndex) => {
@@ -396,21 +409,21 @@
                 });
             });
 
-            // 4. Draw Title at Bottom
+            // ৪. নিচে টাইটেল বসানো
             ctx.fillStyle = '#1a1a2e';
-            ctx.font = 'bold 20px "Courier New", monospace';
+            ctx.font = 'bold 28px "Courier New", monospace';
             ctx.textAlign = 'center';
-            ctx.fillText(`✨ NFT #${currentNFTNumber}`, size / 2, size - 45);
+            ctx.fillText(`✨ NFT #${currentNFTNumber}`, cardWidth / 2, cardHeight - 60);
 
-            // 5. Download PNG
+            // ৫. ফাইল ডাউনলোড
             const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_Card.png`;
+            link.download = `NFT_#${currentNFTNumber}_ASCII_Card.png`;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            statusMsg.textContent = `✓ Card Downloaded successfully!`;
+            statusMsg.textContent = `✓ বড় হাই-কোয়ালিটি কার্ড ডাউনলোড সম্পূর্ণ হয়েছে!`;
             statusMsg.className = 'success';
         }
 
