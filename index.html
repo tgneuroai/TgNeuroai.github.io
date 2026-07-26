@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute Multi-Animated ASCII NFT Generator</title>
+    <title>Retro Cyberpunk Dither ASCII NFT Generator</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +13,7 @@
             margin: 0;
             padding: 20px;
             min-height: 100vh;
-            background-color: #12121e;
+            background-color: #0b0c10;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,12 +22,12 @@
             gap: 25px;
         }
 
-        /* 512x512 Strict Fixed NFT Card Frame */
+        /* Fixed 512x512 Square NFT Frame */
         .nft-card {
-            background-color: #0d0e15;
+            background-color: #050508;
             padding: 0;
             border-radius: 16px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -39,7 +39,7 @@
             max-height: 512px;
             overflow: hidden;
             position: relative;
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.12);
         }
 
         #asciiContainer {
@@ -232,7 +232,7 @@
 
     <div class="nft-card" id="nftCardElement">
         <div id="asciiContainer">
-            <pre id="asciiArt">⏳ Loading Multi-Animated NFT...</pre>
+            <pre id="asciiArt">⏳ Loading Cyberpunk Dither NFT...</pre>
         </div>
     </div>
 
@@ -241,8 +241,8 @@
             <input type="number" id="nftNumber" value="2" min="1" step="1" placeholder="#">
             
             <div class="color-picker-wrapper">
-                <input type="color" id="bgColorPicker" value="#0d0e15">
-                <input type="text" id="bgColorInput" value="#0d0e15" placeholder="#0d0e15">
+                <input type="color" id="bgColorPicker" value="#050508">
+                <input type="text" id="bgColorInput" value="#050508" placeholder="#050508">
             </div>
 
             <button class="btn-load" id="loadBtn">⟳ Load NFT</button>
@@ -255,7 +255,7 @@
             <button onclick="loadNFT(4)">#4</button>
             <button onclick="loadNFT(5)">#5</button>
             <button onclick="loadNFT(6)">#6</button>
-            <button class="btn-random" onclick="loadRandom()">🎲 Random Style</button>
+            <button class="btn-random" onclick="loadRandom()">🎲 Random</button>
         </div>
 
         <div class="download-section">
@@ -269,11 +269,7 @@
     <script>
         const BASE_URL = "https://ipfs.io/ipfs/bafybeifh2kk6nv5osnwlh7qvjunuowb3vgxaoaqfufxiocozdqdpqqkvnu/";
         let currentNFTNumber = 2;
-        let baseImageData = null;
-        let animationFrameId = null;
-        let frameCount = 0;
-        let currentBgColor = "#0d0e15";
-        let currentAnimationMode = 0; // Randomly picked per NFT
+        let currentBgColor = "#050508";
 
         const nftNumberInput = document.getElementById('nftNumber');
         const loadBtn = document.getElementById('loadBtn');
@@ -285,13 +281,11 @@
         const bgColorPicker = document.getElementById('bgColorPicker');
         const bgColorInput = document.getElementById('bgColorInput');
 
-        // Symbol Sets & Character Map
-        const PATTERN_SET_1 = ['┼', '░', '▒', '▓', '║', '═', '╪', '┼', '╳', '•'];
-        const PATTERN_SET_2 = ['░', '▒', '▓', '█', '░', '▒', '▲', '▼', '◆', '✦'];
-        const PATTERN_SET_3 = ['·', ':', '─', '│', '┼', '╌', '╍', '░', '▒', '•'];
+        // CHARACTER GRID MAP FROM YOUR PROMPT: (+, x, |, -, ░, ▒, ▓, █)
+        const CYBERPUNK_GRID = [' ', '-', '|', '+', 'x', '░', '▒', '▓', '█'];
         
-        // Cute ASCII Characters for Subject Rendering
-        const ASCII_SUBJECT = '$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrftj1ijlnfiI1!i~;-:::... ';
+        // Background Grid Pattern Dithering
+        const BG_GRID_CHARS = ['┼', 'x', '+', '░', '▒', '░', '·', ' '];
 
         function updateBackgroundColor(color) {
             currentBgColor = color;
@@ -308,86 +302,37 @@
             }
         });
 
-        // MULTI-ANIMATION FRAME RENDERER
-        function renderCombinedFrame(imageData, width, height, frame, animMode) {
+        // HIGH CONTRAST RETRO DITHERING RENDERER
+        function renderCyberpunkStaticASCII(imageData, width, height) {
             const data = imageData.data;
             let html = '';
-            
-            const time = frame / 10; // Slow & smooth timeline
-            const centerX = width / 2;
-            const centerY = height / 2;
-
-            // Cute Character Breathing/Pulse Calculation
-            const characterPulse = Math.sin(time * 0.8) * 0.15 + 1.0; 
 
             for (let y = 0; y < height; y++) {
                 for (let x = 0; x < width; x++) {
                     const index = (y * width + x) * 4;
-                    let r = data[index];
-                    let g = data[index + 1];
-                    let b = data[index + 2];
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
                     const a = data[index + 3];
 
                     if (a < 30) {
-                        // BACKGROUND ANIMATION LOGIC (Randomly Chosen)
-                        let char = ' ';
-                        let colorStr = 'rgba(255,255,255,0.1)';
-
-                        if (animMode === 0) {
-                            // 1. Concentric Radial Wave (Reference Style)
-                            const dx = x - centerX;
-                            const dy = (y - centerY) * 1.5;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            const wave = Math.sin(dist * 0.3 - time);
-                            const idx = Math.floor(((wave + 1) / 2) * (PATTERN_SET_1.length - 1));
-                            char = PATTERN_SET_1[idx];
-                            const gold = Math.floor(190 + wave * 55);
-                            const teal = Math.floor(130 - wave * 40);
-                            colorStr = `rgba(${gold}, ${teal}, 80, 0.8)`;
-                        } else if (animMode === 1) {
-                            // 2. Diagonal Matrix Glitch Shift
-                            const wave = Math.sin((x + y) * 0.25 - time * 1.2);
-                            const idx = Math.floor(((wave + 1) / 2) * (PATTERN_SET_2.length - 1));
-                            char = PATTERN_SET_2[idx];
-                            colorStr = `rgba(100, 220, 255, ${0.3 + wave * 0.3})`;
-                        } else {
-                            // 3. Psychedelic Sparkle Flow
-                            const wave = Math.cos((x * 0.2) + (y * 0.2) + time);
-                            const idx = Math.floor(((wave + 1) / 2) * (PATTERN_SET_3.length - 1));
-                            char = PATTERN_SET_3[idx];
-                            colorStr = `rgba(255, 150, 200, ${0.4 + wave * 0.3})`;
-                        }
-
-                        html += `<span style="color: ${colorStr}">${char}</span>`;
+                        // Retro Grid Dithering Background (+, x, ┼, ░)
+                        const bgIdx = (x * 3 + y * 7) % BG_GRID_CHARS.length;
+                        const char = BG_GRID_CHARS[bgIdx];
+                        html += `<span style="color: rgba(255, 255, 255, 0.12)">${char}</span>`;
                     } else {
-                        // CUTE ANIMATED SUBJECT (Pulse & Brightness Shift)
-                        const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                        const charIdx = Math.floor((gray / 255) * (ASCII_SUBJECT.length - 1));
-                        const char = ASCII_SUBJECT[charIdx];
+                        // High Contrast 8-bit Character Grid Mapping
+                        const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                        const charIdx = Math.floor((brightness / 255) * (CYBERPUNK_GRID.length - 1));
+                        const char = CYBERPUNK_GRID[charIdx];
 
-                        // Mild cute brightness glow pulse
-                        const glowR = Math.min(255, Math.floor(r * characterPulse));
-                        const glowG = Math.min(255, Math.floor(g * characterPulse));
-                        const glowB = Math.min(255, Math.floor(b * characterPulse));
-
-                        html += `<span style="color: rgb(${glowR},${glowG},${glowB})">${char}</span>`;
+                        // Cyberpunk High-Contrast Color Pop
+                        html += `<span style="color: rgb(${r},${g},${b})">${char}</span>`;
                     }
                 }
                 html += '\n';
             }
             return html;
-        }
-
-        // ANIMATION LOOP
-        function startCuteMultiAnimation(imageData, width, height) {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-            function animate() {
-                frameCount++;
-                asciiArt.innerHTML = renderCombinedFrame(imageData, width, height, frameCount, currentAnimationMode);
-                animationFrameId = requestAnimationFrame(animate);
-            }
-            animate();
         }
 
         function loadNFT(number) {
@@ -398,13 +343,9 @@
             }
 
             currentNFTNumber = number;
-            // Pick a Random Animation Pattern (0, 1, or 2)
-            currentAnimationMode = Math.floor(Math.random() * 3);
-
-            statusMsg.textContent = `⏳ লোড হচ্ছে #${number} (Mode ${currentAnimationMode + 1})...`;
+            statusMsg.textContent = `⏳ লোড হচ্ছে #${number} ...`;
             statusMsg.className = 'loading';
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            asciiArt.innerHTML = '⏳ জেনারেট হচ্ছে এনিমেশন...';
+            asciiArt.innerHTML = '⏳ জেনারেট হচ্ছে Cyberpunk ASCII...';
 
             const imageUrl = `${BASE_URL}${number}.png`;
 
@@ -430,12 +371,12 @@
                         ctx.clearRect(0, 0, displayWidth, displayHeight);
                         ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-                        baseImageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
+                        const imageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
                         
-                        startCuteMultiAnimation(baseImageData, displayWidth, displayHeight);
+                        // Render Static High Quality ASCII
+                        asciiArt.innerHTML = renderCyberpunkStaticASCII(imageData, displayWidth, displayHeight);
 
-                        const modeNames = ["Concentric Wave", "Diagonal Shift", "Sparkle Flow"];
-                        statusMsg.textContent = `✓ #${number} · ${modeNames[currentAnimationMode]} চালু হয়েছে!`;
+                        statusMsg.textContent = `✓ #${number} সাইবারপাঙ্ক পিক্সেল আর্ট রেডি!`;
                         statusMsg.className = 'success';
                         nftNumberInput.value = number;
 
@@ -460,7 +401,7 @@
 
         // DOWNLOAD PNG
         function downloadAsPNG() {
-            if (!baseImageData) return;
+            if (!asciiArt.innerText) return;
 
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -472,7 +413,7 @@
             ctx.fillRect(0, 0, imageSize, imageSize);
 
             const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_Animated.png`;
+            link.download = `NFT_#${currentNFTNumber}_Cyberpunk.png`;
             link.href = canvas.toDataURL('image/png');
             document.body.appendChild(link);
             link.click();
@@ -485,7 +426,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `NFT_#${currentNFTNumber}.txt`;
+            link.download = `NFT_#${currentNFTNumber}_Cyberpunk.txt`;
             link.click();
             URL.revokeObjectURL(url);
         }
@@ -500,7 +441,7 @@
         downloadPngBtn.addEventListener('click', downloadAsPNG);
 
         window.addEventListener('load', () => {
-            updateBackgroundColor('#0d0e15');
+            updateBackgroundColor('#050508');
             loadNFT(2);
         });
     </script>
