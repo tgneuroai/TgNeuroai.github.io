@@ -285,56 +285,96 @@
       }
     }
 
-    // ============= PERFECT SVG CLEANER & DOWNLOADER =============
+    // ============= SVG EXTRACTOR & CLEANER =============
     function extractCleanSVG(rawImageString) {
       if (!rawImageString) return null;
 
       let svgContent = "";
 
-      // 1. Direct SVG Code
       if (rawImageString.trim().startsWith('<svg') || rawImageString.includes('<svg')) {
         svgContent = rawImageString;
       }
-      // 2. Base64 Encoded SVG
       else if (rawImageString.includes('base64,')) {
         try {
           const base64Part = rawImageString.split('base64,')[1];
           svgContent = atob(base64Part);
-        } catch(e) {
-          console.error("Base64 decode error", e);
-        }
+        } catch(e) {}
       }
-      // 3. Data-URI Encoded SVG (utf8/url encoded)
       else if (rawImageString.includes('data:image/svg+xml')) {
         try {
           const urlEncodedPart = rawImageString.split(',')[1];
           svgContent = decodeURIComponent(urlEncodedPart);
-        } catch(e) {
-          console.error("URI decode error", e);
-        }
+        } catch(e) {}
       }
 
-      // Final Cleanup: <svg> ট্যাগের আগে কোনো ডাটা থাকলে স্ট্রিপ করে ফেলে দেওয়া (Fixes SVGO Non-whitespace error)
       const svgStartIndex = svgContent.indexOf('<svg');
       if (svgStartIndex !== -1) {
-        svgContent = svgContent.substring(svgStartIndex).trim();
-        return svgContent;
+        return svgContent.substring(svgStartIndex).trim();
       }
 
       return null;
     }
 
-    async function getValidImageBlob(imgUrl) {
-      if (!imgUrl) return null;
+    // Helper for direct downloading via hidden anchor
+    function triggerDownload(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+    }
 
-      // Try SVG Extraction first
+    // ============= FIX SINGLE DOWNLOAD (WORKS DIRECTLY WITHOUT CRASH) =============
+    async function downloadSingleImage(tokenId) {
+      const nft = burnedNFTs.find(n => n.tokenId === tokenId);
+      if (!nft || !nft.image) {
+        alert(`NORMIES #${tokenId} এর ইমেজ ডাটা পাওয়া যায়নি!`);
+        return;
+      }
+
+      try {
+        // ১. যদি ইমেজটি ডাটা-ইউআরআই / এসভিজি কোড হয় (অন-চেইন)
+        const cleanSvg = extractCleanSVG(nft.image);
+        if (cleanSvg) {
+          const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
+          triggerDownload(blob, `NORMIES_${tokenId}.svg`);
+          return;
+        }
+
+        // ২. যদি এক্সটার্নাল URL হয় (যেমন HTTP / IPFS Gateway)
+        const response = await fetch(nft.image, { mode: 'cors' });
+        if (!response.ok) throw new Error("Network response was not ok");
+        const blob = await response.blob();
+        const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
+        triggerDownload(blob, `NORMIES_${tokenId}.${ext}`);
+
+      } catch (err) {
+        console.warn("Direct fetch blocked by CORS, trying fallback download link:", err);
+        // Fallback for CORS restricted images
+        const a = document.createElement('a');
+        a.href = nft.image;
+        a.target = '_blank';
+        a.download = `NORMIES_${tokenId}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
+
+    // ============= ZIP GENERATORS =============
+    async function getValidImageBlobForZip(imgUrl) {
       const cleanSvg = extractCleanSVG(imgUrl);
       if (cleanSvg) {
         const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
-        return { blob, ext: 'svg', content: cleanSvg };
+        return { blob, ext: 'svg' };
       }
 
-      // If it's a standard URL image (PNG/JPG)
       try {
         const res = await fetch(imgUrl);
         if (res.ok) {
@@ -342,35 +382,9 @@
           const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
           return { blob, ext };
         }
-      } catch (e) {
-        console.warn("Fetch image failed", e);
-      }
+      } catch (e) {}
 
       return null;
-    }
-
-    async function downloadSingleImage(tokenId) {
-      const nft = burnedNFTs.find(n => n.tokenId === tokenId);
-      if (!nft) return;
-
-      const statusBox = document.getElementById("statusBox");
-      const statusText = document.getElementById("statusText");
-      statusBox.classList.remove("hidden");
-      statusText.innerText = `Preparing NORMIES #${tokenId} for download...`;
-
-      try {
-        const imgData = await getValidImageBlob(nft.image);
-        if (imgData && imgData.blob) {
-          saveAs(imgData.blob, `NORMIES_${tokenId}.${imgData.ext}`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}.${imgData.ext}`;
-        } else {
-          statusText.innerText = `❌ Error preparing image #${tokenId}`;
-        }
-        setTimeout(() => statusBox.classList.add("hidden"), 2000);
-      } catch (err) {
-        console.error("Download error:", err);
-        statusText.innerText = `❌ Error downloading #${tokenId}`;
-      }
     }
 
     async function generateSequentialZip(items, type, statusText, progressBar) {
@@ -382,7 +396,7 @@
         const serialNum = i + 1;
 
         if (type === 'image') {
-          const imgData = await getValidImageBlob(nft.image);
+          const imgData = await getValidImageBlobForZip(nft.image);
           if (imgData && imgData.blob) {
             zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
           }
@@ -390,9 +404,9 @@
           zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
         }
 
-        if (i % 5 === 0 || i === total - 1) {
+        if (i % 10 === 0 || i === total - 1) {
           const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `Creating ZIP... ${serialNum}/${total}`;
+          statusText.innerText = `ZIP তৈরি হচ্ছে... ${serialNum}/${total}`;
           progressBar.style.width = pct + '%';
           await new Promise(r => setTimeout(r, 0));
         }
@@ -407,17 +421,17 @@
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Cleaning SVG files and preparing ZIP...";
+      statusText.innerText = "সব SVG ছবি প্রসেস করা হচ্ছে...";
       progressBar.style.width = "0%";
 
       try {
         const blob = await generateSequentialZip(burnedNFTs, 'image', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_SVG_Collection.zip`);
-        statusText.innerText = "✅ SVG Images ZIP downloaded!";
+        triggerDownload(blob, `NORMIES_Burned_SVG_Collection.zip`);
+        statusText.innerText = "✅ SVG Images ZIP ডাউনলোডে পাঠানো হয়েছে!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
       } catch (err) {
-        statusText.innerText = "❌ ZIP error: " + err.message;
+        statusText.innerText = "❌ ZIP এরর: " + err.message;
       }
     }
 
@@ -427,17 +441,17 @@
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing Metadata ZIP...";
+      statusText.innerText = "Metadata ZIP ফাইল বানানো হচ্ছে...";
       progressBar.style.width = "0%";
 
       try {
         const blob = await generateSequentialZip(burnedNFTs, 'metadata', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Metadata.zip`);
-        statusText.innerText = "✅ Metadata ZIP downloaded!";
+        triggerDownload(blob, `NORMIES_Burned_Metadata.zip`);
+        statusText.innerText = "✅ Metadata ZIP ডাউনলোডে পাঠানো হয়েছে!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
       } catch (err) {
-        statusText.innerText = "❌ ZIP error: " + err.message;
+        statusText.innerText = "❌ ZIP এরর: " + err.message;
       }
     }
 
