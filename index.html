@@ -132,7 +132,7 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract & ENS Resolver Reader | On-Chain SVG Support
+    Direct Smart Contract Reader | Fully On-Chain SVG Extraction
   </footer>
 
   <script>
@@ -143,14 +143,6 @@
 
     function encodeTokenURI(tokenId) {
       return "0xc87b56dd" + BigInt(tokenId).toString(16).padStart(64, '0');
-    }
-
-    function resolveIpfsUrl(url) {
-      if (!url) return '';
-      if (url.startsWith('ipfs://')) {
-        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
-      }
-      return url;
     }
 
     function decodeABIString(hexString) {
@@ -185,14 +177,41 @@
       return null;
     }
 
-    // Color Swapping Function for SVG
-    function applyColorTransformation(svgText) {
-      if (!svgText) return svgText;
-      return svgText
+    // Direct SVG string color swap
+    function transformSvgColors(svgString) {
+      if (!svgString) return svgString;
+      return svgString
         .replace(/#48494B/gi, '#000000')
         .replace(/48494B/gi, '000000')
         .replace(/#E3E5E4/gi, '#d4ff00')
         .replace(/E3E5E4/gi, 'd4ff00');
+    }
+
+    // Extract raw SVG text directly from image string
+    function extractSvgText(imageStr) {
+      if (!imageStr) return null;
+      let raw = imageStr.trim();
+      
+      if (raw.startsWith('<svg')) {
+        return transformSvgColors(raw);
+      }
+      if (raw.startsWith('data:image/svg+xml;utf8,')) {
+        return transformSvgColors(decodeURIComponent(raw.replace('data:image/svg+xml;utf8,', '')));
+      }
+      if (raw.startsWith('data:image/svg+xml;base64,')) {
+        try {
+          let decoded = atob(raw.replace('data:image/svg+xml;base64,', ''));
+          return transformSvgColors(decoded);
+        } catch(e) {}
+      }
+      if (raw.startsWith('data:image/svg+xml,')) {
+        return transformSvgColors(decodeURIComponent(raw.replace('data:image/svg+xml,', '')));
+      }
+      return null;
+    }
+
+    function svgToDataUrl(svgText) {
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
     }
 
     async function rpcCall(rpcUrl, payload) {
@@ -276,171 +295,131 @@
       return allTransfers;
     }
 
-    async function fetchNftMetadataAlchemy(apiKey, contract, tokenId) {
-      const url = `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=false`;
+    // Fetch Token URI directly from contract call (On-Chain)
+    async function fetchOnChainTokenURI(rpcUrl, contract, tokenId) {
       try {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        const data = await res.json();
-        
-        let imageUrl = data.image?.cachedUrl || data.image?.originalUrl || data.raw?.metadata?.image || '';
-        imageUrl = resolveIpfsUrl(imageUrl);
+        const res = await rpcCall(rpcUrl, {
+          jsonrpc: "2.0",
+          id: tokenId,
+          method: "eth_call",
+          params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
+        });
 
-        return {
-          image: imageUrl,
-          rawMetadata: data.raw?.metadata || data
-        };
+        if (res.result && res.result !== "0x") {
+          const rawUri = decodeABIString(res.result);
+          return parseMetadata(rawUri);
+        }
       } catch (e) {
-        return null;
+        console.error("Direct eth_call tokenURI failed for #" + tokenId, e);
       }
+      return null;
     }
 
-    // Process & Color Swapped SVG Image
-    async function fetchImageBlob(imgUrl) {
-      if (!imgUrl) return null;
-
-      try {
-        let svgContent = null;
-
-        if (imgUrl.trim().startsWith('<svg')) {
-          svgContent = imgUrl;
-        } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
-          svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
-        } else if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
-          svgContent = atob(imgUrl.replace('data:image/svg+xml;base64,', ''));
-        } else if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
-          const res = await fetch(imgUrl);
-          if (res.ok) {
-            const contentType = res.headers.get('content-type') || '';
-            if (contentType.includes('svg') || imgUrl.endsWith('.svg')) {
-              svgContent = await res.text();
-            } else {
-              let blob = await res.blob();
-              let ext = blob.type.includes('jpeg') ? 'jpg' : 'png';
-              return { blob, ext };
-            }
-          }
-        }
-
-        if (svgContent) {
-          svgContent = applyColorTransformation(svgContent);
-          let blob = new Blob([svgContent], { type: 'image/svg+xml' });
-          return { blob, ext: 'svg', dataUrl: 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgContent))) };
-        }
-
-        if (imgUrl.startsWith('data:')) {
-          let res = await fetch(imgUrl);
-          let blob = await res.blob();
-          let ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
-          return { blob, ext };
-        }
-
-        return null;
-      } catch (e) {
-        console.warn('fetchImageBlob error:', e);
-        return null;
-      }
-    }
-
-    async function downloadSingleImage(tokenId) {
+    // Single Manual SVG Download
+    function downloadSingleImage(tokenId) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
-      if (!nft) return;
-
-      const statusBox = document.getElementById("statusBox");
-      const statusText = document.getElementById("statusText");
-      statusBox.classList.remove("hidden");
-      statusText.innerText = `Downloading NORMIES #${tokenId}...`;
-
-      try {
-        const imgData = await fetchImageBlob(nft.image);
-        if (imgData && imgData.blob) {
-          saveAs(imgData.blob, `NORMIES_${tokenId}.${imgData.ext}`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}`;
-        } else {
-          statusText.innerText = `❌ Image download failed for #${tokenId}`;
-        }
-        setTimeout(() => statusBox.classList.add("hidden"), 2000);
-      } catch (err) {
-        console.error("Download error:", err);
-        statusText.innerText = `❌ Error downloading #${tokenId}`;
-      }
-    }
-
-    async function generateSequentialZip(items, type, statusText, progressBar) {
-      const zip = new JSZip();
-      const total = items.length;
-
-      for (let i = 0; i < total; i++) {
-        const nft = items[i];
-        const serialNum = i + 1;
-
-        if (type === 'image') {
-          let imgData = await fetchImageBlob(nft.image);
-          if (imgData && imgData.blob) {
-            zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
-          }
-        } else {
-          zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
-        }
-
-        if (i % 5 === 0 || i === total - 1) {
-          const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `ZIP: ${serialNum}/${total}`;
-          progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 0));
-        }
+      if (!nft || !nft.svgCode) {
+        alert("SVG code not found for #" + tokenId);
+        return;
       }
 
-      const blob = await zip.generateAsync({ 
-        type: "blob", 
-        compression: "DEFLATE",
-        mimeType: "application/zip"
-      });
-      return blob;
+      const blob = new Blob([nft.svgCode], { type: 'image/svg+xml;charset=utf-8' });
+      saveAs(blob, `NORMIES_${tokenId}.svg`);
     }
 
+    // ZIP Download for all transformed SVG images
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+      
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing image ZIP...";
+      statusText.innerText = "Creating SVG ZIP package...";
       progressBar.style.width = "0%";
 
       try {
-        const blob = await generateSequentialZip(burnedNFTs, 'image', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Images_Sequenced.zip`);
-        statusText.innerText = "✅ Images ZIP downloaded!";
+        const zip = new JSZip();
+        const total = burnedNFTs.length;
+
+        for (let i = 0; i < total; i++) {
+          const nft = burnedNFTs[i];
+          const serialNum = i + 1;
+
+          if (nft.svgCode) {
+            zip.file(`${serialNum}.svg`, nft.svgCode);
+          }
+
+          if (i % 10 === 0 || i === total - 1) {
+            const pct = Math.floor(((i + 1) / total) * 100);
+            statusText.innerText = `Zipping: ${serialNum}/${total}`;
+            progressBar.style.width = pct + '%';
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+
+        const blob = await zip.generateAsync({ 
+          type: "blob", 
+          compression: "DEFLATE",
+          mimeType: "application/zip"
+        });
+
+        saveAs(blob, `NORMIES_Burned_OnChain_SVGs.zip`);
+        statusText.innerText = "✅ Images ZIP Downloaded!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
       } catch (err) {
         console.error("ZIP Error:", err);
-        statusText.innerText = "❌ ZIP error: " + err.message;
+        statusText.innerText = "❌ ZIP Error: " + err.message;
       }
     }
 
+    // ZIP Download for enriched metadata JSON
     async function downloadMetadataZip() {
       if (burnedNFTs.length === 0) return;
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+      
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing metadata ZIP...";
+      statusText.innerText = "Creating Metadata ZIP package...";
       progressBar.style.width = "0%";
 
       try {
-        const blob = await generateSequentialZip(burnedNFTs, 'metadata', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Metadata_Sequenced.zip`);
-        statusText.innerText = "✅ Metadata ZIP downloaded!";
+        const zip = new JSZip();
+        const total = burnedNFTs.length;
+
+        for (let i = 0; i < total; i++) {
+          const nft = burnedNFTs[i];
+          const serialNum = i + 1;
+
+          zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+
+          if (i % 10 === 0 || i === total - 1) {
+            const pct = Math.floor(((i + 1) / total) * 100);
+            statusText.innerText = `Zipping JSON: ${serialNum}/${total}`;
+            progressBar.style.width = pct + '%';
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+
+        const blob = await zip.generateAsync({ 
+          type: "blob", 
+          compression: "DEFLATE",
+          mimeType: "application/zip"
+        });
+
+        saveAs(blob, `NORMIES_Burned_Metadata.zip`);
+        statusText.innerText = "✅ Metadata ZIP Downloaded!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
       } catch (err) {
         console.error("ZIP Error:", err);
-        statusText.innerText = "❌ ZIP error: " + err.message;
+        statusText.innerText = "❌ ZIP Error: " + err.message;
       }
     }
 
+    // MAIN SCAN
     async function startScan() {
       if (isFetching) return;
 
@@ -519,32 +498,15 @@
         async function fetchOneToken(tokenId) {
           let burnInfo = burnedTokenMap.get(tokenId);
           let finalBurnerIdentifier = await resolveENS(apiKey, burnInfo.rawBurner);
-          let meta = await fetchNftMetadataAlchemy(apiKey, contract, tokenId);
-
-          if (!meta || !meta.image) {
-            try {
-              const res = await rpcCall(rpcUrl, {
-                jsonrpc: "2.0",
-                id: tokenId,
-                method: "eth_call",
-                params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
-              });
-
-              if (res.result && res.result !== "0x") {
-                const rawUri = decodeABIString(res.result);
-                const parsed = parseMetadata(rawUri);
-                if (parsed) {
-                  meta = {
-                    image: parsed.image || '',
-                    rawMetadata: parsed
-                  };
-                }
-              }
-            } catch (e) {}
-          }
-
-          let originalMetadata = (meta && meta.rawMetadata) ? JSON.parse(JSON.stringify(meta.rawMetadata)) : {};
           
+          // Read metadata directly On-Chain from Smart Contract tokenURI
+          let parsedMeta = await fetchOnChainTokenURI(rpcUrl, contract, tokenId);
+          let rawImageStr = parsedMeta && parsedMeta.image ? parsedMeta.image : '';
+          
+          // Extract On-Chain SVG text & perform Color Transformation
+          let svgCode = extractSvgText(rawImageStr);
+
+          let originalMetadata = parsedMeta ? JSON.parse(JSON.stringify(parsedMeta)) : {};
           let existingAttributes = originalMetadata.attributes || [];
           if (!Array.isArray(existingAttributes)) existingAttributes = [];
 
@@ -561,21 +523,21 @@
             ...originalMetadata,
             name: `NORMIES #${tokenId}`,
             description: originalMetadata.description || `Burned NORMIES NFT #${tokenId}`,
-            image: meta ? meta.image : '',
+            image: rawImageStr,
             attributes: newAttributes
           };
 
           const nftData = {
             tokenId: tokenId,
             name: `NORMIES #${tokenId}`,
-            image: meta ? meta.image : '',
+            svgCode: svgCode,
             burner: finalBurnerIdentifier,
             burnDate: burnInfo.burnFullDate,
             rawMetadata: enrichedMetadata
           };
 
           burnedNFTs.push(nftData);
-          await renderSingleCard(nftData);
+          renderSingleCard(nftData);
         }
 
         let nextIndex = 0;
@@ -588,7 +550,7 @@
             let pct = 40 + Math.floor((processedCount / burnedTokenList.length) * 60);
             progressBar.style.width = pct + "%";
             loadedCount.innerText = burnedNFTs.length;
-            statusText.innerText = `Extracting: ${processedCount}/${burnedTokenList.length}`;
+            statusText.innerText = `Extracting On-Chain SVGs: ${processedCount}/${burnedTokenList.length}`;
           }
         }
 
@@ -598,7 +560,7 @@
 
         burnedNFTs.sort((a, b) => a.tokenId - b.tokenId);
 
-        statusText.innerText = `✅ Success! ${burnedNFTs.length} NORMIES NFTs ready.`;
+        statusText.innerText = `✅ Success! ${burnedNFTs.length} On-Chain NORMIES NFTs Extracted.`;
         progressBar.style.width = "100%";
         if (burnedNFTs.length > 0) enableDownloadButtons();
 
@@ -610,25 +572,17 @@
       }
     }
 
-    async function renderSingleCard(nft) {
+    function renderSingleCard(nft) {
       const grid = document.getElementById("nftGrid");
       const card = document.createElement("div");
       card.className = "nft-card glass-card rounded-2xl overflow-hidden flex flex-col p-3 border border-red-500/20 shadow-lg";
 
       const displayBurner = nft.burner.endsWith('.eth') ? nft.burner : `${nft.burner.substring(0,6)}...${nft.burner.substring(nft.burner.length-4)}`;
-
-      let displaySrc = nft.image;
-      let processedImg = await fetchImageBlob(nft.image);
-      if (processedImg && processedImg.dataUrl) {
-        displaySrc = processedImg.dataUrl;
-      }
+      const displaySrc = nft.svgCode ? svgToDataUrl(nft.svgCode) : '';
 
       card.innerHTML = `
         <div class="relative aspect-square rounded-xl overflow-hidden bg-black/60 border border-white/5 flex items-center justify-center">
-          <img src="${displaySrc}"
-               alt="${nft.name}"
-               loading="lazy"
-               class="w-full h-full object-contain" />
+          ${displaySrc ? `<img src="${displaySrc}" alt="${nft.name}" loading="lazy" class="w-full h-full object-contain" />` : '<div class="text-xs text-gray-500">No SVG</div>'}
           <div class="absolute top-2 left-2 bg-red-600/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md shadow-md">
             BURNED
           </div>
@@ -641,7 +595,7 @@
         <div class="mt-2 px-1">
           <button onclick="downloadSingleImage(${nft.tokenId})" 
                   class="w-full download-btn text-xs font-bold py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-download"></i> Download
+            <i class="fa-solid fa-download"></i> Download SVG
           </button>
         </div>
       `;
