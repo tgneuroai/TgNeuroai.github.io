@@ -29,7 +29,7 @@
       transition: all 0.2s;
     }
     .download-btn:hover {
-      transform: scale(1.05);
+      transform: scale(1.02);
     }
     .nft-card {
       transition: all 0.3s;
@@ -55,7 +55,7 @@
       <div class="flex items-center gap-3 flex-wrap">
         <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-file-zipper"></i>
-          <span>Download All ZIP</span>
+          <span>Download All SVG ZIP</span>
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
@@ -73,7 +73,7 @@
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
         <div class="md:col-span-5">
           <label class="block text-xs text-gray-400 mb-1 font-medium">Alchemy API Key</label>
-          <input type="text" id="apiKeyInput" value="azGUMoPxCx4XzlybaCSyc" placeholder="আপনার Alchemy API Key দিন" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition font-mono">
+          <input type="text" id="apiKeyInput" value="azGUMoPxCx4XzlybaCSyc" placeholder="Alchemy API Key" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition font-mono">
         </div>
         <div class="md:col-span-7">
           <label class="block text-xs text-gray-400 mb-1 font-medium">NFT Contract Address</label>
@@ -132,7 +132,7 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract & ENS Resolver Reader | On-Chain SVG Support
+    Direct Smart Contract Reader | Optimized Valid SVG Generator
   </footer>
 
   <script>
@@ -180,7 +180,7 @@
           return JSON.parse(uriString);
         }
       } catch (e) {
-        console.error("Metadata JSON Parse error", e);
+        console.error("Metadata Parse error", e);
       }
       return null;
     }
@@ -285,49 +285,68 @@
       }
     }
 
-    // ============= WORKING DOWNLOAD HELPER =============
-    async function fetchImageBlob(imgUrl) {
+    // ============= PERFECT SVG CLEANER & DOWNLOADER =============
+    function extractCleanSVG(rawImageString) {
+      if (!rawImageString) return null;
+
+      let svgContent = "";
+
+      // 1. Direct SVG Code
+      if (rawImageString.trim().startsWith('<svg') || rawImageString.includes('<svg')) {
+        svgContent = rawImageString;
+      }
+      // 2. Base64 Encoded SVG
+      else if (rawImageString.includes('base64,')) {
+        try {
+          const base64Part = rawImageString.split('base64,')[1];
+          svgContent = atob(base64Part);
+        } catch(e) {
+          console.error("Base64 decode error", e);
+        }
+      }
+      // 3. Data-URI Encoded SVG (utf8/url encoded)
+      else if (rawImageString.includes('data:image/svg+xml')) {
+        try {
+          const urlEncodedPart = rawImageString.split(',')[1];
+          svgContent = decodeURIComponent(urlEncodedPart);
+        } catch(e) {
+          console.error("URI decode error", e);
+        }
+      }
+
+      // Final Cleanup: <svg> ট্যাগের আগে কোনো ডাটা থাকলে স্ট্রিপ করে ফেলে দেওয়া (Fixes SVGO Non-whitespace error)
+      const svgStartIndex = svgContent.indexOf('<svg');
+      if (svgStartIndex !== -1) {
+        svgContent = svgContent.substring(svgStartIndex).trim();
+        return svgContent;
+      }
+
+      return null;
+    }
+
+    async function getValidImageBlob(imgUrl) {
       if (!imgUrl) return null;
 
+      // Try SVG Extraction first
+      const cleanSvg = extractCleanSVG(imgUrl);
+      if (cleanSvg) {
+        const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
+        return { blob, ext: 'svg', content: cleanSvg };
+      }
+
+      // If it's a standard URL image (PNG/JPG)
       try {
-        if (imgUrl.trim().startsWith('<svg')) {
-          let blob = new Blob([imgUrl], { type: 'image/svg+xml' });
-          return { blob, ext: 'svg' };
-        }
-
-        if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
-          let svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
-          let blob = new Blob([svgContent], { type: 'image/svg+xml' });
-          return { blob, ext: 'svg' };
-        }
-
-        if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
-          let svgContent = atob(imgUrl.replace('data:image/svg+xml;base64,', ''));
-          let blob = new Blob([svgContent], { type: 'image/svg+xml' });
-          return { blob, ext: 'svg' };
-        }
-
-        if (imgUrl.startsWith('data:')) {
-          let parts = imgUrl.split(',');
-          let mime = parts[0].match(/:(.*?);/)[1];
-          let bstr = atob(parts[1]);
-          let n = bstr.length;
-          let u8arr = new Uint8Array(n);
-          while(n--){ u8arr[n] = bstr.charCodeAt(n); }
-          let blob = new Blob([u8arr], {type:mime});
-          let ext = mime.includes('svg') ? 'svg' : (mime.includes('jpeg') ? 'jpg' : 'png');
+        const res = await fetch(imgUrl);
+        if (res.ok) {
+          const blob = await res.blob();
+          const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
           return { blob, ext };
         }
-
-        const res = await fetch(imgUrl);
-        if (!res.ok) return null;
-        let blob = await res.blob();
-        let ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
-        return { blob, ext };
       } catch (e) {
-        console.warn('fetchImageBlob fallback used', e);
-        return null;
+        console.warn("Fetch image failed", e);
       }
+
+      return null;
     }
 
     async function downloadSingleImage(tokenId) {
@@ -337,18 +356,15 @@
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       statusBox.classList.remove("hidden");
-      statusText.innerText = `Downloading NORMIES #${tokenId}...`;
+      statusText.innerText = `Preparing NORMIES #${tokenId} for download...`;
 
       try {
-        const imgData = await fetchImageBlob(nft.image);
+        const imgData = await getValidImageBlob(nft.image);
         if (imgData && imgData.blob) {
           saveAs(imgData.blob, `NORMIES_${tokenId}.${imgData.ext}`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}`;
+          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}.${imgData.ext}`;
         } else {
-          // Fallback direct creation if fetch fails
-          let blob = new Blob([nft.image], { type: 'image/svg+xml' });
-          saveAs(blob, `NORMIES_${tokenId}.svg`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}`;
+          statusText.innerText = `❌ Error preparing image #${tokenId}`;
         }
         setTimeout(() => statusBox.classList.add("hidden"), 2000);
       } catch (err) {
@@ -366,11 +382,9 @@
         const serialNum = i + 1;
 
         if (type === 'image') {
-          let imgData = await fetchImageBlob(nft.image);
+          const imgData = await getValidImageBlob(nft.image);
           if (imgData && imgData.blob) {
             zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
-          } else {
-            zip.file(`${serialNum}.svg`, nft.image);
           }
         } else {
           zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
@@ -378,7 +392,7 @@
 
         if (i % 5 === 0 || i === total - 1) {
           const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `ZIP Progress: ${serialNum}/${total}`;
+          statusText.innerText = `Creating ZIP... ${serialNum}/${total}`;
           progressBar.style.width = pct + '%';
           await new Promise(r => setTimeout(r, 0));
         }
@@ -393,13 +407,13 @@
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing image ZIP...";
+      statusText.innerText = "Cleaning SVG files and preparing ZIP...";
       progressBar.style.width = "0%";
 
       try {
         const blob = await generateSequentialZip(burnedNFTs, 'image', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Images_Sequenced.zip`);
-        statusText.innerText = "✅ Images ZIP downloaded!";
+        saveAs(blob, `NORMIES_Burned_SVG_Collection.zip`);
+        statusText.innerText = "✅ SVG Images ZIP downloaded!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
       } catch (err) {
@@ -413,12 +427,12 @@
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing metadata ZIP...";
+      statusText.innerText = "Preparing Metadata ZIP...";
       progressBar.style.width = "0%";
 
       try {
         const blob = await generateSequentialZip(burnedNFTs, 'metadata', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Metadata_Sequenced.zip`);
+        saveAs(blob, `NORMIES_Burned_Metadata.zip`);
         statusText.innerText = "✅ Metadata ZIP downloaded!";
         progressBar.style.width = "100%";
         setTimeout(() => statusBox.classList.add("hidden"), 3000);
@@ -622,7 +636,7 @@
         <div class="mt-2 px-1">
           <button onclick="downloadSingleImage(${nft.tokenId})" 
                   class="w-full download-btn text-xs font-bold py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-download"></i> Download
+            <i class="fa-solid fa-download"></i> Download SVG
           </button>
         </div>
       `;
