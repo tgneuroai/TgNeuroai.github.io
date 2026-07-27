@@ -42,7 +42,7 @@
       <div class="flex items-center gap-3">
         <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-file-zipper"></i>
-          <span>Download SVG/Image ZIP</span>
+          <span>Download Images ZIP</span>
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
@@ -185,7 +185,6 @@
       return res.json();
     }
 
-    // Function to Resolve ENS Name
     async function resolveENS(apiKey, address) {
       if (!address || address === NULL_ADDRESS) return address;
       if (ensCache.has(address)) return ensCache.get(address);
@@ -205,13 +204,11 @@
         const data = await res.json();
         if (data.result) {
           ensCache.set(address, data.result);
-          return data.result; // Returns vitalik.eth
+          return data.result;
         }
-      } catch (e) {
-        console.warn("ENS Lookup error:", e);
-      }
+      } catch (e) {}
       ensCache.set(address, address);
-      return address; // Fallback to full raw address
+      return address;
     }
 
     async function fetchBurnTransfersViaAssetTransfers(rpcUrl, contract, statusText, progressBar) {
@@ -324,7 +321,7 @@
             let d = blockTimestamp ? new Date(blockTimestamp) : new Date();
             let yearStr = d.getUTCFullYear().toString();
             let monthStr = d.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
-            let fullDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD format
+            let fullDateStr = d.toISOString().split('T')[0];
 
             burnedTokenMap.set(tokenId, {
               rawBurner: rawAddress,
@@ -337,7 +334,7 @@
 
         let burnedTokenList = Array.from(burnedTokenMap.keys()).sort((a, b) => a - b);
 
-        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens! Resolving ENS Names & Building Attributes...`;
+        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens! Resolving ENS & Building Attributes...`;
         progressCount.innerText = `${burnedTokenList.length} Burned Found`;
         progressBar.style.width = "40%";
 
@@ -352,10 +349,7 @@
 
         async function fetchOneToken(tokenId) {
           let burnInfo = burnedTokenMap.get(tokenId);
-          
-          // Resolve ENS for Burner Address
           let finalBurnerIdentifier = await resolveENS(apiKey, burnInfo.rawBurner);
-
           let meta = await fetchNftMetadataAlchemy(apiKey, contract, tokenId);
 
           if (!meta || !meta.image) {
@@ -382,11 +376,9 @@
 
           let originalMetadata = (meta && meta.rawMetadata) ? JSON.parse(JSON.stringify(meta.rawMetadata)) : {};
           
-          // Retain existing original attributes
           let existingAttributes = originalMetadata.attributes || [];
           if (!Array.isArray(existingAttributes)) existingAttributes = [];
 
-          // Exact requested 5 new attributes addition
           let newAttributes = [
             ...existingAttributes,
             { trait_type: "NORMIES", value: `#${tokenId}` },
@@ -427,13 +419,16 @@
             let pct = 40 + Math.floor((processedCount / burnedTokenList.length) * 60);
             progressBar.style.width = pct + "%";
             loadedCount.innerText = burnedNFTs.length;
-            statusText.innerText = `Enriching Metadata & ENS: ${processedCount}/${burnedTokenList.length}...`;
+            statusText.innerText = `Extracting Data: ${processedCount}/${burnedTokenList.length}...`;
           }
         }
 
         const workers = [];
         for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
         await Promise.all(workers);
+
+        // Sort Array strictly by Token ID order
+        burnedNFTs.sort((a, b) => a.tokenId - b.tokenId);
 
         statusText.innerText = `Success! Enriched Metadata for ${burnedNFTs.length} NORMIES NFTs.`;
         progressBar.style.width = "100%";
@@ -487,6 +482,37 @@
       jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-pink-600 text-white hover:bg-pink-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-pink-500/20";
     }
 
+    // Advanced Image Fetcher to support Base64 Data URI, Inline SVG, and Web URLs
+    async function fetchImageBlob(imgUrl) {
+      if (!imgUrl) return null;
+
+      try {
+        if (imgUrl.startsWith('data:')) {
+          const res = await fetch(imgUrl);
+          const blob = await res.blob();
+          let ext = 'png';
+          if (imgUrl.includes('image/svg+xml')) ext = 'svg';
+          else if (imgUrl.includes('image/jpeg')) ext = 'jpg';
+          else if (imgUrl.includes('image/gif')) ext = 'gif';
+          return { blob, ext };
+        } else if (imgUrl.startsWith('<svg')) {
+          const blob = new Blob([imgUrl], { type: 'image/svg+xml' });
+          return { blob, ext: 'svg' };
+        } else {
+          const res = await fetch(imgUrl);
+          if (!res.ok) return null;
+          const blob = await res.blob();
+          let ext = 'png';
+          if (blob.type.includes('svg')) ext = 'svg';
+          else if (blob.type.includes('jpeg')) ext = 'jpg';
+          return { blob, ext };
+        }
+      } catch (e) {
+        console.error("Error fetching image blob:", e);
+        return null;
+      }
+    }
+
     async function downloadImagesZip() {
       const zip = new JSZip();
       const statusBox = document.getElementById("statusBox");
@@ -494,55 +520,39 @@
       const progressBar = document.getElementById("progressBar");
 
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing images for ZIP download...";
+      statusText.innerText = "Preparing and converting images for ZIP...";
       progressBar.style.width = "0%";
 
       try {
         for (let i = 0; i < burnedNFTs.length; i++) {
           let nft = burnedNFTs[i];
-          let imgUrl = nft.image;
-          let filename = `NORMIES_${nft.tokenId}`;
+          let serialNum = i + 1; // Sequence: 1, 2, 3, 4...
 
-          if (!imgUrl) continue;
-
-          if (imgUrl.startsWith('data:image/')) {
-            const parts = imgUrl.split(',');
-            const header = parts[0];
-            const data = parts.slice(1).join(',');
-
-            let ext = 'png';
-            if (header.includes('svg')) ext = 'svg';
-            else if (header.includes('jpeg') || header.includes('jpg')) ext = 'jpg';
-            else if (header.includes('gif')) ext = 'gif';
-
-            if (header.includes('base64')) {
-              zip.file(`${filename}.${ext}`, data, { base64: true });
-            } else {
-              zip.file(`${filename}.${ext}`, decodeURIComponent(data));
-            }
-          } else if (imgUrl.startsWith('<svg')) {
-             zip.file(`${filename}.svg`, imgUrl);
+          let imgData = await fetchImageBlob(nft.image);
+          if (imgData && imgData.blob) {
+            zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
           }
 
-          if (i % 50 === 0) {
-            statusText.innerText = `Packing Image ${i} of ${burnedNFTs.length}...`;
-            progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
-            await new Promise(r => setTimeout(r, 10));
+          if (i % 5 === 0 || i === burnedNFTs.length - 1) {
+            statusText.innerText = `Processing Image ${serialNum} of ${burnedNFTs.length}...`;
+            progressBar.style.width = Math.floor((serialNum / burnedNFTs.length) * 70) + "%";
+            await new Promise(r => setTimeout(r, 5));
           }
         }
 
-        statusText.innerText = "Compressing Image ZIP...";
+        statusText.innerText = "Compressing Image ZIP File...";
         
         const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
-          let progress = 50 + (metadata.percent * 0.5);
+          let progress = 70 + (metadata.percent * 0.3);
           progressBar.style.width = progress + "%";
         });
 
-        saveAs(content, `NORMIES_Burned_Images.zip`);
+        saveAs(content, `NORMIES_Burned_Images_Sequenced.zip`);
         statusText.innerText = "Images ZIP Downloaded Successfully!";
         progressBar.style.width = "100%";
       } catch (err) {
         console.error("ZIP Error:", err);
+        statusText.innerText = "ZIP Generation Error: " + err.message;
       }
     }
 
@@ -553,33 +563,38 @@
       const progressBar = document.getElementById("progressBar");
 
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Generating Custom Metadata JSONs...";
+      statusText.innerText = "Generating Sequenced Metadata JSONs...";
       progressBar.style.width = "0%";
 
       try {
         for (let i = 0; i < burnedNFTs.length; i++) {
           let nft = burnedNFTs[i];
-          zip.file(`${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+          let serialNum = i + 1; // Sequence: 1, 2, 3, 4...
 
-          if (i % 100 === 0) {
-            statusText.innerText = `Packing JSON ${i} of ${burnedNFTs.length}...`;
-            progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
-            await new Promise(r => setTimeout(r, 10));
+          // Saves JSON file as 1.json, 2.json etc.
+          // Inside it keeps: "name": "NORMIES #14", "attributes": [{ "trait_type": "NORMIES", "value": "#14" }]
+          zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+
+          if (i % 50 === 0 || i === burnedNFTs.length - 1) {
+            statusText.innerText = `Packing JSON ${serialNum} of ${burnedNFTs.length}...`;
+            progressBar.style.width = Math.floor((serialNum / burnedNFTs.length) * 70) + "%";
+            await new Promise(r => setTimeout(r, 5));
           }
         }
 
-        statusText.innerText = "Compressing Custom Metadata ZIP...";
+        statusText.innerText = "Compressing Metadata ZIP...";
         
         const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
-          let progress = 50 + (metadata.percent * 0.5);
+          let progress = 70 + (metadata.percent * 0.3);
           progressBar.style.width = progress + "%";
         });
 
-        saveAs(content, `NORMIES_Burned_Custom_JSONs.zip`);
-        statusText.innerText = "Custom JSON Metadata ZIP Downloaded Successfully!";
+        saveAs(content, `NORMIES_Burned_Metadata_Sequenced.zip`);
+        statusText.innerText = "Metadata ZIP Downloaded Successfully!";
         progressBar.style.width = "100%";
       } catch(err) {
         console.error("JSON ZIP Error:", err);
+        statusText.innerText = "JSON ZIP Error: " + err.message;
       }
     }
   </script>
