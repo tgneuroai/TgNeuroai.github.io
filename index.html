@@ -55,7 +55,7 @@
       <div class="flex items-center gap-3 flex-wrap">
         <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-file-zipper"></i>
-          <span>Download SVG ZIP</span>
+          <span>Download PNG ZIP</span>
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
@@ -132,7 +132,7 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract & ENS Resolver Reader | On-Chain SVG Support
+    Direct Smart Contract & ENS Resolver Reader | PNG Download Support
   </footer>
 
   <script>
@@ -285,75 +285,80 @@
       }
     }
 
-    // ============= OnChain Vault STYLE DOWNLOAD SYSTEM =============
-    // ফুল অনচেইন SVG ডাউনলোডের জন্য - fetch() ব্যবহার না করে সরাসরি ডেটা পার্স করা হয়
-    async function fetchImageBlob(imgUrl) {
-      if (!imgUrl) return null;
+    // ============= PNG CONVERTER: SVG to PNG using Canvas =============
+    function svgToPng(svgContent, width = 400, height = 400) {
+      return new Promise((resolve, reject) => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          // White background (optional - remove if SVG has its own bg)
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(0, 0, width, height);
+          
+          const img = new Image();
+          const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(svgBlob);
+          
+          img.onload = function() {
+            ctx.drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+            const pngDataUrl = canvas.toDataURL('image/png');
+            resolve(pngDataUrl);
+          };
+          
+          img.onerror = function() {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load SVG'));
+          };
+          
+          img.src = url;
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
 
+    // ============= GET PNG BLOB =============
+    async function getPngBlob(imgUrl, tokenId) {
       try {
         let raw = imgUrl.trim();
+        let svgContent = null;
 
-        // 1️⃣ Direct raw SVG markup
+        // Extract SVG content from various formats
         if (raw.startsWith('<svg')) {
-          let blob = new Blob([raw], { type: 'image/svg+xml' });
-          return { blob, ext: 'svg' };
-        }
-
-        // 2️⃣ Any data: URI — parse manually, never fetch()
-        if (raw.startsWith('data:')) {
-          const commaIdx = raw.indexOf(',');
-          if (commaIdx === -1) return null;
-
-          const header = raw.substring(5, commaIdx);
-          const dataPart = raw.substring(commaIdx + 1);
-          const isBase64 = /;base64/i.test(header);
-          const mediaType = (header.split(';')[0] || 'image/svg+xml').trim() || 'image/svg+xml';
-
-          let bytes;
-          if (isBase64) {
-            const cleanB64 = dataPart.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
-            const binStr = atob(cleanB64);
-            bytes = new Uint8Array(binStr.length);
-            for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-          } else {
-            let decoded;
-            try {
-              decoded = decodeURIComponent(dataPart);
-            } catch (e) {
-              decoded = dataPart;
-            }
-            bytes = new TextEncoder().encode(decoded);
+          svgContent = raw;
+        } else if (raw.startsWith('data:image/svg+xml;base64,')) {
+          svgContent = atob(raw.replace('data:image/svg+xml;base64,', ''));
+        } else if (raw.startsWith('data:image/svg+xml;utf8,')) {
+          svgContent = decodeURIComponent(raw.replace('data:image/svg+xml;utf8,', ''));
+        } else if (raw.startsWith('data:image/svg+xml,')) {
+          svgContent = decodeURIComponent(raw.replace('data:image/svg+xml,', ''));
+        } else {
+          // Try to fetch from URL
+          const res = await fetch(raw);
+          const text = await res.text();
+          if (text.trim().startsWith('<svg')) {
+            svgContent = text;
           }
-
-          let ext = 'png';
-          if (mediaType.includes('svg')) ext = 'svg';
-          else if (mediaType.includes('jpeg') || mediaType.includes('jpg')) ext = 'jpg';
-          else if (mediaType.includes('gif')) ext = 'gif';
-          else if (mediaType.includes('webp')) ext = 'webp';
-          else if (mediaType.includes('png')) ext = 'png';
-
-          const blob = new Blob([bytes], { type: mediaType || 'application/octet-stream' });
-          return { blob, ext };
         }
 
-        // 3️⃣ ipfs:// 
-        if (raw.startsWith('ipfs://')) {
-          raw = resolveIpfsUrl(raw);
+        if (svgContent) {
+          const pngDataUrl = await svgToPng(svgContent);
+          const blob = await fetch(pngDataUrl).then(res => res.blob());
+          return { blob, ext: 'png' };
         }
 
-        // 4️⃣ Remote URL
-        const res = await fetch(raw, { mode: 'cors' });
-        if (!res.ok) return null;
-        let blob = await res.blob();
-        let ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
-        return { blob, ext };
+        return null;
       } catch (e) {
-        console.warn('fetchImageBlob error for:', imgUrl, e);
+        console.warn('PNG conversion failed for token', tokenId, e);
         return null;
       }
     }
 
-    // ============= MANUAL DOWNLOAD =============
+    // ============= MANUAL DOWNLOAD (PNG) =============
     async function downloadSingleImage(tokenId) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
       if (!nft) return;
@@ -361,21 +366,30 @@
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       statusBox.classList.remove("hidden");
-      statusText.innerText = `Downloading NORMIES #${tokenId}...`;
+      statusText.innerText = `Converting NORMIES #${tokenId} to PNG...`;
 
       try {
-        const imgData = await fetchImageBlob(nft.image);
-        if (imgData && imgData.blob) {
-          saveAs(imgData.blob, `NORMIES_${tokenId}.${imgData.ext}`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId}`;
+        const pngData = await getPngBlob(nft.image, tokenId);
+        if (pngData && pngData.blob) {
+          saveAs(pngData.blob, `NORMIES_${tokenId}.png`);
+          statusText.innerText = `✅ Downloaded NORMIES #${tokenId} (PNG)`;
         } else {
-          const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
-            <rect width="400" height="400" fill="#111827"/>
-            <text x="50%" y="50%" font-family="monospace" font-size="24" fill="#EF4444" text-anchor="middle" dominant-baseline="central">NORMIES #${tokenId}</text>
-          </svg>`;
-          const blob = new Blob([fallbackSvg], { type: 'image/svg+xml' });
-          saveAs(blob, `NORMIES_${tokenId}.svg`);
-          statusText.innerText = `✅ Downloaded NORMIES #${tokenId} (Fallback SVG)`;
+          // Fallback: create a simple PNG from text
+          const canvas = document.createElement('canvas');
+          canvas.width = 400;
+          canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(0, 0, 400, 400);
+          ctx.fillStyle = '#EF4444';
+          ctx.font = 'bold 24px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`NORMIES #${tokenId}`, 200, 200);
+          const pngDataUrl = canvas.toDataURL('image/png');
+          const blob = await fetch(pngDataUrl).then(res => res.blob());
+          saveAs(blob, `NORMIES_${tokenId}.png`);
+          statusText.innerText = `✅ Downloaded NORMIES #${tokenId} (Fallback PNG)`;
         }
         setTimeout(() => statusBox.classList.add("hidden"), 2000);
       } catch (err) {
@@ -384,7 +398,7 @@
       }
     }
 
-    // ============= ZIP DOWNLOAD (OnChain Vault Style) =============
+    // ============= ZIP DOWNLOAD (PNG) =============
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
       
@@ -394,7 +408,7 @@
       const progressBar = document.getElementById("progressBar");
       
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Extracting On-Chain SVG files into ZIP...";
+      statusText.innerText = "Converting SVGs to PNG...";
       progressBar.style.width = "0%";
 
       let total = burnedNFTs.length;
@@ -402,24 +416,27 @@
       for (let i = 0; i < total; i++) {
         const nft = burnedNFTs[i];
         const serialNumber = i + 1;
-        let imgUrl = nft.image;
 
         try {
-          // OnChain Vault style: data: URI parse manually
-          if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
-            const base64Data = imgUrl.replace('data:image/svg+xml;base64,', '');
-            zip.file(`${serialNumber}.svg`, base64Data, { base64: true });
-          } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
-            const svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
-            zip.file(`${serialNumber}.svg`, svgContent);
-          } else if (imgUrl.trim().startsWith('<svg')) {
-            zip.file(`${serialNumber}.svg`, imgUrl);
+          const pngData = await getPngBlob(nft.image, nft.tokenId);
+          if (pngData && pngData.blob) {
+            zip.file(`${serialNumber}.png`, pngData.blob);
           } else {
-            // Remote fetch
-            const res = await fetch(imgUrl);
-            const blob = await res.blob();
-            const ext = blob.type.includes('svg') ? 'svg' : 'png';
-            zip.file(`${serialNumber}.${ext}`, blob);
+            // Fallback PNG
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#111827';
+            ctx.fillRect(0, 0, 400, 400);
+            ctx.fillStyle = '#EF4444';
+            ctx.font = 'bold 24px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`NORMIES #${nft.tokenId}`, 200, 200);
+            const pngDataUrl = canvas.toDataURL('image/png');
+            const blob = await fetch(pngDataUrl).then(res => res.blob());
+            zip.file(`${serialNumber}.png`, blob);
           }
         } catch (e) {
           console.error(`Error adding item ${serialNumber}`, e);
@@ -427,18 +444,19 @@
 
         let pct = Math.floor(((i + 1) / total) * 100);
         progressBar.style.width = pct + "%";
-        statusText.innerText = `Packaging item ${serialNumber} of ${total}...`;
+        statusText.innerText = `Converting ${serialNumber} of ${total}...`;
+        await new Promise(r => setTimeout(r, 0));
       }
 
       statusText.innerText = "Generating ZIP File...";
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "NORMIES_Burned_SVGs_Sequenced.zip");
-      statusText.innerText = "✅ SVG ZIP Downloaded Successfully!";
+      const content = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+      saveAs(content, "NORMIES_Burned_PNGs_Sequenced.zip");
+      statusText.innerText = "✅ PNG ZIP Downloaded Successfully!";
       progressBar.style.width = "100%";
       setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
-    // ============= JSON ZIP DOWNLOAD (OnChain Vault Style) =============
+    // ============= JSON ZIP DOWNLOAD =============
     async function downloadMetadataZip() {
       if (burnedNFTs.length === 0) return;
       
@@ -465,14 +483,14 @@
       });
 
       statusText.innerText = "Generating Metadata ZIP File...";
-      const content = await zip.generateAsync({ type: "blob" });
+      const content = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
       saveAs(content, "NORMIES_Burned_Metadata_Sequenced.zip");
       statusText.innerText = "✅ JSON ZIP Downloaded Successfully!";
       progressBar.style.width = "100%";
       setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
-    // ============= MAIN SCAN (পুরনো সিস্টেম ঠিক আছে) =============
+    // ============= MAIN SCAN =============
     async function startScan() {
       if (isFetching) return;
 
@@ -668,7 +686,7 @@
         <div class="mt-2 px-1">
           <button onclick="downloadSingleImage(${nft.tokenId})" 
                   class="w-full download-btn text-xs font-bold py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-download"></i> Download
+            <i class="fa-solid fa-download"></i> Download PNG
           </button>
         </div>
       `;
