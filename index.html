@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     body {
@@ -132,7 +131,7 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract Reader | Optimized Valid SVG Generator
+    Direct Smart Contract Reader | Fixed Ultra Zip & Single Downloader
   </footer>
 
   <script>
@@ -179,9 +178,7 @@
         } else if (uriString.startsWith('{')) {
           return JSON.parse(uriString);
         }
-      } catch (e) {
-        console.error("Metadata Parse error", e);
-      }
+      } catch (e) {}
       return null;
     }
 
@@ -285,7 +282,7 @@
       }
     }
 
-    // ============= SVG EXTRACTOR & CLEANER =============
+    // ============= ULTRA-SAFE SVG CLEANER & PARSER =============
     function extractCleanSVG(rawImageString) {
       if (!rawImageString) return null;
 
@@ -315,8 +312,8 @@
       return null;
     }
 
-    // Helper for direct downloading via hidden anchor
-    function triggerDownload(blob, fileName) {
+    // Direct Browser Download Action
+    function directDownloadBlob(blob, fileName) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
@@ -327,132 +324,129 @@
       setTimeout(() => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      }, 1000);
+      }, 2000);
     }
 
-    // ============= FIX SINGLE DOWNLOAD (WORKS DIRECTLY WITHOUT CRASH) =============
+    // ============= SINGLE DOWNLOAD (INSTANT & NO GLITCH) =============
     async function downloadSingleImage(tokenId) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
       if (!nft || !nft.image) {
-        alert(`NORMIES #${tokenId} এর ইমেজ ডাটা পাওয়া যায়নি!`);
+        alert(`NORMIES #${tokenId} এর ইমেজ ডাটা পাওয়া যায়নি!`);
         return;
       }
 
-      try {
-        // ১. যদি ইমেজটি ডাটা-ইউআরআই / এসভিজি কোড হয় (অন-চেইন)
-        const cleanSvg = extractCleanSVG(nft.image);
-        if (cleanSvg) {
-          const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
-          triggerDownload(blob, `NORMIES_${tokenId}.svg`);
-          return;
-        }
-
-        // ২. যদি এক্সটার্নাল URL হয় (যেমন HTTP / IPFS Gateway)
-        const response = await fetch(nft.image, { mode: 'cors' });
-        if (!response.ok) throw new Error("Network response was not ok");
-        const blob = await response.blob();
-        const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
-        triggerDownload(blob, `NORMIES_${tokenId}.${ext}`);
-
-      } catch (err) {
-        console.warn("Direct fetch blocked by CORS, trying fallback download link:", err);
-        // Fallback for CORS restricted images
-        const a = document.createElement('a');
-        a.href = nft.image;
-        a.target = '_blank';
-        a.download = `NORMIES_${tokenId}.svg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    }
-
-    // ============= ZIP GENERATORS =============
-    async function getValidImageBlobForZip(imgUrl) {
-      const cleanSvg = extractCleanSVG(imgUrl);
+      const cleanSvg = extractCleanSVG(nft.image);
       if (cleanSvg) {
         const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
-        return { blob, ext: 'svg' };
+        directDownloadBlob(blob, `NORMIES_${tokenId}.svg`);
+        return;
       }
 
+      // HTTP / IPFS Url Fallback
       try {
-        const res = await fetch(imgUrl);
-        if (res.ok) {
-          const blob = await res.blob();
-          const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
-          return { blob, ext };
-        }
-      } catch (e) {}
-
-      return null;
-    }
-
-    async function generateSequentialZip(items, type, statusText, progressBar) {
-      const zip = new JSZip();
-      const total = items.length;
-
-      for (let i = 0; i < total; i++) {
-        const nft = items[i];
-        const serialNum = i + 1;
-
-        if (type === 'image') {
-          const imgData = await getValidImageBlobForZip(nft.image);
-          if (imgData && imgData.blob) {
-            zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
-          }
-        } else {
-          zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
-        }
-
-        if (i % 10 === 0 || i === total - 1) {
-          const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `ZIP তৈরি হচ্ছে... ${serialNum}/${total}`;
-          progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 0));
-        }
+        const response = await fetch(nft.image);
+        const blob = await response.blob();
+        const ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
+        directDownloadBlob(blob, `NORMIES_${tokenId}.${ext}`);
+      } catch (err) {
+        window.open(nft.image, '_blank');
       }
-
-      return await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
     }
 
+    // ============= ZIP GENERATOR (NO ZERO-BYTE FILES) =============
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
+
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+      
       statusBox.classList.remove("hidden");
-      statusText.innerText = "সব SVG ছবি প্রসেস করা হচ্ছে...";
+      statusText.innerText = "ZIP ফাইল তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।";
       progressBar.style.width = "0%";
 
-      try {
-        const blob = await generateSequentialZip(burnedNFTs, 'image', statusText, progressBar);
-        triggerDownload(blob, `NORMIES_Burned_SVG_Collection.zip`);
-        statusText.innerText = "✅ SVG Images ZIP ডাউনলোডে পাঠানো হয়েছে!";
-        progressBar.style.width = "100%";
-        setTimeout(() => statusBox.classList.add("hidden"), 3000);
-      } catch (err) {
-        statusText.innerText = "❌ ZIP এরর: " + err.message;
+      const zip = new JSZip();
+      const folder = zip.folder("NORMIES_SVG_Collection");
+      const total = burnedNFTs.length;
+      let addedCount = 0;
+
+      for (let i = 0; i < total; i++) {
+        const nft = burnedNFTs[i];
+        const serialNum = i + 1;
+
+        let cleanSvg = extractCleanSVG(nft.image);
+
+        if (!cleanSvg && nft.image.startsWith('http')) {
+          try {
+            const res = await fetch(nft.image);
+            if (res.ok) {
+              const textData = await res.text();
+              cleanSvg = extractCleanSVG(textData);
+            }
+          } catch(e) {}
+        }
+
+        if (cleanSvg) {
+          folder.file(`${serialNum}.svg`, cleanSvg);
+          addedCount++;
+        } else {
+          // Fallback minimal valid placeholder SVG if fetch completely failed
+          folder.file(`${serialNum}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#111827"/><text x="50%" y="50%" font-family="monospace" font-size="20" fill="#EF4444" text-anchor="middle">NORMIES #${nft.tokenId}</text></svg>`);
+        }
+
+        if (i % 5 === 0 || i === total - 1) {
+          const pct = Math.floor(((i + 1) / total) * 100);
+          statusText.innerText = `SVG জিপ তৈরি হচ্ছে: ${i + 1}/${total}`;
+          progressBar.style.width = pct + '%';
+          await new Promise(r => setTimeout(r, 10)); // Safe delay to keep browser smooth
+        }
       }
+
+      statusText.innerText = "জিপ ফাইল প্যাকেজিং করা হচ্ছে...";
+      const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+      
+      directDownloadBlob(zipBlob, `NORMIES_Burned_SVG_Collection.zip`);
+
+      statusText.innerText = `✅ ${addedCount} টি ফাইল সফলভাবে ডাউনলোডে পাঠানো হয়েছে!`;
+      progressBar.style.width = "100%";
+      setTimeout(() => statusBox.classList.add("hidden"), 4000);
     }
 
     async function downloadMetadataZip() {
       if (burnedNFTs.length === 0) return;
+
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Metadata ZIP ফাইল বানানো হচ্ছে...";
+      statusText.innerText = "Metadata JSON জিপ বানানো হচ্ছে...";
       progressBar.style.width = "0%";
 
-      try {
-        const blob = await generateSequentialZip(burnedNFTs, 'metadata', statusText, progressBar);
-        triggerDownload(blob, `NORMIES_Burned_Metadata.zip`);
-        statusText.innerText = "✅ Metadata ZIP ডাউনলোডে পাঠানো হয়েছে!";
-        progressBar.style.width = "100%";
-        setTimeout(() => statusBox.classList.add("hidden"), 3000);
-      } catch (err) {
-        statusText.innerText = "❌ ZIP এরর: " + err.message;
+      const zip = new JSZip();
+      const folder = zip.folder("NORMIES_JSON_Collection");
+      const total = burnedNFTs.length;
+
+      for (let i = 0; i < total; i++) {
+        const nft = burnedNFTs[i];
+        const serialNum = i + 1;
+
+        folder.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+
+        if (i % 20 === 0 || i === total - 1) {
+          const pct = Math.floor(((i + 1) / total) * 100);
+          statusText.innerText = `JSON প্যাকেজিং: ${i + 1}/${total}`;
+          progressBar.style.width = pct + '%';
+          await new Promise(r => setTimeout(r, 5));
+        }
       }
+
+      const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+      directDownloadBlob(zipBlob, `NORMIES_Burned_Metadata.zip`);
+
+      statusText.innerText = "✅ JSON ZIP ফাইল ডাউনলোডে পাঠানো হয়েছে!";
+      progressBar.style.width = "100%";
+      setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
     // ============= MAIN SCAN =============
