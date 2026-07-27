@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Burned Only NFT Extractor</title>
+  <title>Burned-Only NFT Extractor (Fixed)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -80,7 +80,7 @@
         </div>
 
         <div class="sm:col-span-4">
-          <button id="scanBtn" onclick="scanForBurnedNFTs()" class="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 text-sm">
+          <button id="scanBtn" onclick="startScan()" class="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 text-sm">
             <i class="fa-solid fa-magnifying-glass font-bold"></i> Find & Load Burned NFTs
           </button>
         </div>
@@ -93,7 +93,7 @@
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-3">
           <div class="w-3 h-3 rounded-full bg-red-500 animate-ping"></div>
-          <span id="statusText" class="text-sm font-semibold text-white">Checking Smart Contract...</span>
+          <span id="statusText" class="text-sm font-semibold text-white">Scanning Contract for Burned Tokens...</span>
         </div>
         <span id="progressCount" class="text-xs font-mono text-red-400 font-bold">0 Burned Found</span>
       </div>
@@ -106,7 +106,7 @@
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white flex items-center gap-2">
         <i class="fa-solid fa-fire text-red-500"></i>
-        Burned NFTs Only (Null Address)
+        Burned NFTs Only
       </h2>
       <div class="text-xs text-gray-400 font-mono">
         Total Burned Loaded: <span id="loadedCount" class="text-red-400 font-bold">0</span>
@@ -119,21 +119,14 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    On-Chain Burn Detector • Filters Out Active Tokens
+    Direct Smart Contract RPC Reader • Burned Token Extractor
   </footer>
 
   <script>
     let burnedNFTs = [];
     let isFetching = false;
 
-    // ABI Signature Encoding
-    function encodeOwnerOf(tokenId) {
-      // ownerOf(uint256) method signature is 0x6352211e
-      return "0x6352211e" + Number(tokenId).toString(16).padStart(64, '0');
-    }
-
     function encodeTokenURI(tokenId) {
-      // tokenURI(uint256) method signature is 0xc87b56dd
       return "0xc87b56dd" + Number(tokenId).toString(16).padStart(64, '0');
     }
 
@@ -161,23 +154,18 @@
           return JSON.parse(uriString);
         }
       } catch (e) {
-        console.error("Parse Error", e);
+        console.error("Metadata JSON Parse error", e);
       }
       return null;
     }
 
-    async function scanForBurnedNFTs() {
+    async function startScan() {
       if (isFetching) return;
 
       const apiKey = document.getElementById("apiKeyInput").value.trim();
       const contract = document.getElementById("contractInput").value.trim();
       const startNum = parseInt(document.getElementById("rangeStart").value) || 1;
       const endNum = parseInt(document.getElementById("rangeEnd").value) || 10000;
-
-      if (startNum > endNum) {
-        alert("Start Token ID must be smaller than End Token ID!");
-        return;
-      }
 
       isFetching = true;
 
@@ -191,67 +179,96 @@
       grid.innerHTML = "";
       burnedNFTs = [];
       statusBox.classList.remove("hidden");
+      progressBar.style.width = "20%";
 
       const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
-      let totalToScan = (endNum - startNum) + 1;
-      let currentId = startNum;
 
-      while (currentId <= endNum) {
-        statusText.innerText = `Checking Status for Token #${currentId}...`;
+      try {
+        statusText.innerText = "Querying Blockchain Logs for Burned Tokens...";
 
-        try {
-          // 1. Check ownerOf(tokenId)
-          const ownerRes = await fetch(rpcUrl, {
+        // ERC721 Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
+        // Topic 0: Transfer Event Signature: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        // Topic 2: Null Address (0x0000000000000000000000000000000000000000)
+        const transferLogsPayload = {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_getLogs",
+          params: [{
+            address: contract,
+            fromBlock: "0x0",
+            toBlock: "latest",
+            topics: [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              null,
+              "0x0000000000000000000000000000000000000000000000000000000000000000" // To Zero Address
+            ]
+          }]
+        };
+
+        const logsRes = await fetch(rpcUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(transferLogsPayload)
+        });
+
+        const logsData = await logsRes.json();
+        let burnedTokenSet = new Set();
+
+        if (logsData.result && Array.isArray(logsData.result)) {
+          logsData.result.forEach(log => {
+            if (log.topics && log.topics[3]) {
+              let tokenId = parseInt(log.topics[3], 16);
+              if (tokenId >= startNum && tokenId <= endNum) {
+                burnedTokenSet.add(tokenId);
+              }
+            }
+          });
+        }
+
+        let burnedTokenList = Array.from(burnedTokenSet).sort((a, b) => a - b);
+        
+        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens! Fetching On-Chain Metadata...`;
+        progressCount.innerText = `${burnedTokenList.length} Burned Found`;
+        progressBar.style.width = "50%";
+
+        if (burnedTokenList.length === 0) {
+          statusText.innerText = "No Burned tokens found in this range or contract logs!";
+          isFetching = false;
+          return;
+        }
+
+        // Chunk request in batches of 15 to avoid RPC Rate Limit
+        let chunkSize = 15;
+        let processedCount = 0;
+
+        for (let i = 0; i < burnedTokenList.length; i += chunkSize) {
+          let chunk = burnedTokenList.slice(i, i + chunkSize);
+          
+          let batchPayload = chunk.map(id => ({
+            jsonrpc: "2.0",
+            id: id,
+            method: "eth_call",
+            params: [{ to: contract, data: encodeTokenURI(id) }, "latest"]
+          }));
+
+          const batchRes = await fetch(rpcUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jsonrpc: "2.0",
-              id: currentId,
-              method: "eth_call",
-              params: [{ to: contract, data: encodeOwnerOf(currentId) }, "latest"]
-            })
+            body: JSON.stringify(batchPayload)
           });
 
-          const ownerData = await ownerRes.json();
-          let isBurned = false;
+          const batchData = await batchRes.json();
+          let responses = Array.isArray(batchData) ? batchData : [batchData];
 
-          // If execution reverts, error occurs, or returns zero address = Token is BURNED!
-          if (ownerData.error || !ownerData.result || ownerData.result === "0x") {
-            isBurned = true;
-          } else {
-            // Check if returned owner is 0x0000000000000000000000000000000000000000
-            let rawAddress = ownerData.result.replace("0x000000000000000000000000", "0x");
-            if (rawAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
-              isBurned = true;
-            }
-          }
-
-          // 2. Load Metadata ONLY IF IT IS BURNED!
-          if (isBurned) {
-            statusText.innerText = `Token #${currentId} is BURNED! Fetching On-Chain Metadata...`;
-
-            const uriRes = await fetch(rpcUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                jsonrpc: "2.0",
-                id: currentId,
-                method: "eth_call",
-                params: [{ to: contract, data: encodeTokenURI(currentId) }, "latest"]
-              })
-            });
-
-            const uriData = await uriRes.json();
-
-            if (uriData.result && uriData.result !== "0x") {
-              const rawUri = decodeABIString(uriData.result);
+          responses.forEach(res => {
+            if (res.result && res.result !== "0x") {
+              const rawUri = decodeABIString(res.result);
               const metadata = parseMetadata(rawUri);
 
               if (metadata) {
                 const nftData = {
-                  tokenId: currentId,
-                  name: metadata.name || `#${currentId}`,
-                  description: metadata.description || '',
+                  tokenId: res.id,
+                  name: metadata.name || `#${res.id}`,
                   image: metadata.image || '',
                   rawMetadata: metadata
                 };
@@ -260,26 +277,24 @@
                 renderSingleCard(nftData);
               }
             }
-          }
+          });
 
-        } catch (err) {
-          console.warn(`Error checking token #${currentId}`, err);
+          processedCount += chunk.length;
+          let pct = 50 + Math.floor((processedCount / burnedTokenList.length) * 50);
+          progressBar.style.width = pct + "%";
+          loadedCount.innerText = burnedNFTs.length;
         }
 
-        // Update Progress
-        let completed = (currentId - startNum) + 1;
-        let pct = Math.floor((completed / totalToScan) * 100);
-        progressBar.style.width = pct + "%";
-        progressCount.innerText = `${burnedNFTs.length} Burned Found`;
-        loadedCount.innerText = burnedNFTs.length;
+        statusText.innerText = `Success! Loaded ${burnedNFTs.length} Burned NFTs directly from On-Chain Contract.`;
+        progressBar.style.width = "100%";
+        if (burnedNFTs.length > 0) enableDownloadButtons();
 
-        currentId++;
+      } catch (err) {
+        console.error(err);
+        statusText.innerText = "Error: " + err.message;
+      } finally {
+        isFetching = false;
       }
-
-      statusText.innerText = `Scan Finished! Total ${burnedNFTs.length} Burned NFTs Loaded.`;
-      progressBar.style.width = "100%";
-      if(burnedNFTs.length > 0) enableDownloadButtons();
-      isFetching = false;
     }
 
     function renderSingleCard(nft) {
