@@ -55,7 +55,7 @@
       <div class="flex items-center gap-3 flex-wrap">
         <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-file-zipper"></i>
-          <span>Download All ZIP</span>
+          <span>Download SVG ZIP</span>
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
@@ -285,48 +285,37 @@
       }
     }
 
-    // ============= FIXED: On-Chain SVG + All Image Types =============
-    // ROOT CAUSE OF THE BUG: onchain "data:" URIs (especially raw, non-base64
-    // SVG data URIs used by fully onchain collections) were being passed
-    // straight into fetch(imgUrl). Browsers render such data URIs fine inside
-    // an <img> tag, but fetch() throws on them when they contain raw/unescaped
-    // characters (quotes, #, spaces, etc). That threw an exception every time,
-    // fetchImageBlob() returned null, and the code silently fell back to the
-    // placeholder "NORMIES #ID" text SVG for every single token — which is why
-    // 100% of the downloaded files were placeholders instead of real art.
-    // FIX: never call fetch() on a data: URI. Parse it manually instead.
+    // ============= OnChain Vault STYLE DOWNLOAD SYSTEM =============
+    // ফুল অনচেইন SVG ডাউনলোডের জন্য - fetch() ব্যবহার না করে সরাসরি ডেটা পার্স করা হয়
     async function fetchImageBlob(imgUrl) {
       if (!imgUrl) return null;
 
       try {
         let raw = imgUrl.trim();
 
-        // 1️⃣ Direct raw SVG markup (no data: prefix at all)
+        // 1️⃣ Direct raw SVG markup
         if (raw.startsWith('<svg')) {
           let blob = new Blob([raw], { type: 'image/svg+xml' });
           return { blob, ext: 'svg' };
         }
 
-        // 2️⃣ Any data: URI — parse manually, never fetch() it
+        // 2️⃣ Any data: URI — parse manually, never fetch()
         if (raw.startsWith('data:')) {
           const commaIdx = raw.indexOf(',');
           if (commaIdx === -1) return null;
 
-          const header = raw.substring(5, commaIdx); // everything between "data:" and the comma
+          const header = raw.substring(5, commaIdx);
           const dataPart = raw.substring(commaIdx + 1);
           const isBase64 = /;base64/i.test(header);
           const mediaType = (header.split(';')[0] || 'image/svg+xml').trim() || 'image/svg+xml';
 
           let bytes;
           if (isBase64) {
-            // atob can choke on url-safe base64 or stray whitespace/newlines from some contracts
             const cleanB64 = dataPart.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
             const binStr = atob(cleanB64);
             bytes = new Uint8Array(binStr.length);
             for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
           } else {
-            // Percent-decode if possible; if the payload is raw/unencoded
-            // (very common for onchain SVG), fall back to using it as-is.
             let decoded;
             try {
               decoded = decodeURIComponent(dataPart);
@@ -347,75 +336,21 @@
           return { blob, ext };
         }
 
-        // 3️⃣ ipfs:// just in case it slipped through unresolved
+        // 3️⃣ ipfs:// 
         if (raw.startsWith('ipfs://')) {
           raw = resolveIpfsUrl(raw);
         }
 
-        // 4️⃣ Remote URL (http/https)
+        // 4️⃣ Remote URL
         const res = await fetch(raw, { mode: 'cors' });
         if (!res.ok) return null;
         let blob = await res.blob();
-        let ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : (blob.type.includes('png') ? 'png' : (blob.type.includes('gif') ? 'gif' : 'png')));
+        let ext = blob.type.includes('svg') ? 'svg' : (blob.type.includes('jpeg') ? 'jpg' : 'png');
         return { blob, ext };
       } catch (e) {
         console.warn('fetchImageBlob error for:', imgUrl, e);
         return null;
       }
-    }
-
-    // ============= NEW: DIRECT-FROM-CONTRACT IMAGE FETCH (bypasses CORS) =============
-    // The <img> tag on the page can display an image from ANY url without CORS.
-    // But fetch() — which is required to build a downloadable file — needs the
-    // server to send CORS headers, and most image CDNs (Alchemy's cachedUrl,
-    // IPFS gateways, etc.) don't. That's why the page shows the art fine but
-    // downloading it silently failed and fell back to the placeholder.
-    // Fix: for downloads, go straight to the smart contract's tokenURI() via a
-    // JSON-RPC eth_call (not an image request, so CORS doesn't apply) and pull
-    // the real onchain SVG directly out of the returned JSON.
-    async function fetchOnChainTokenImage(apiKey, contract, tokenId) {
-      try {
-        const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
-        const res = await rpcCall(rpcUrl, {
-          jsonrpc: "2.0",
-          id: tokenId,
-          method: "eth_call",
-          params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
-        });
-        if (!res.result || res.result === "0x") return null;
-        const rawUri = decodeABIString(res.result);
-        const parsed = parseMetadata(rawUri);
-        if (!parsed) return null;
-        // Some fully-onchain contracts use "image", others use "image_data"
-        // for the raw inline SVG — check both.
-        return parsed.image || parsed.image_data || null;
-      } catch (e) {
-        console.warn('fetchOnChainTokenImage failed for token', tokenId, e);
-        return null;
-      }
-    }
-
-    // Tries, in order: 1) a previously-cached onchain image, 2) a fresh pull
-    // straight from the contract, 3) whatever image URL is used for on-page
-    // display (last resort, may fail if it's a CORS-blocked CDN link).
-    async function getDownloadableImageBlob(nft) {
-      if (nft.onchainImage) {
-        const cached = await fetchImageBlob(nft.onchainImage);
-        if (cached && cached.blob) return cached;
-      }
-
-      const apiKey = document.getElementById("apiKeyInput").value.trim();
-      const contract = document.getElementById("contractInput").value.trim();
-      if (apiKey && contract) {
-        const onchainImg = await fetchOnChainTokenImage(apiKey, contract, nft.tokenId);
-        if (onchainImg) {
-          nft.onchainImage = onchainImg; // cache so repeat downloads (single + ZIP) skip the RPC call
-          const blobData = await fetchImageBlob(onchainImg);
-          if (blobData && blobData.blob) return blobData;
-        }
-      }
-
-      return await fetchImageBlob(nft.image);
     }
 
     // ============= MANUAL DOWNLOAD =============
@@ -434,7 +369,6 @@
           saveAs(imgData.blob, `NORMIES_${tokenId}.${imgData.ext}`);
           statusText.innerText = `✅ Downloaded NORMIES #${tokenId}`;
         } else {
-          // Fallback SVG
           const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
             <rect width="400" height="400" fill="#111827"/>
             <text x="50%" y="50%" font-family="monospace" font-size="24" fill="#EF4444" text-anchor="middle" dominant-baseline="central">NORMIES #${tokenId}</text>
@@ -450,91 +384,95 @@
       }
     }
 
-    // ============= FAST ZIP GENERATOR =============
-    async function generateSequentialZip(items, type, statusText, progressBar) {
-      const zip = new JSZip();
-      const total = items.length;
-
-      for (let i = 0; i < total; i++) {
-        const nft = items[i];
-        const serialNum = i + 1;
-
-        if (type === 'image') {
-          let imgData = await fetchImageBlob(nft.image);
-          if (imgData && imgData.blob) {
-            zip.file(`${serialNum}.${imgData.ext}`, imgData.blob);
-          } else {
-            // Fallback SVG if image fetch fails
-            const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
-              <rect width="400" height="400" fill="#111827"/>
-              <text x="50%" y="50%" font-family="monospace" font-size="24" fill="#EF4444" text-anchor="middle" dominant-baseline="central">NORMIES #${nft.tokenId}</text>
-            </svg>`;
-            zip.file(`${serialNum}.svg`, fallbackSvg);
-          }
-        } else {
-          zip.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
-        }
-
-        if (i % 5 === 0 || i === total - 1) {
-          const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `ZIP: ${serialNum}/${total}`;
-          progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 0));
-        }
-      }
-
-      const blob = await zip.generateAsync({ 
-        type: "blob", 
-        compression: "DEFLATE",
-        mimeType: "application/zip"
-      });
-      return blob;
-    }
-
-    // ============= DOWNLOAD FUNCTIONS =============
+    // ============= ZIP DOWNLOAD (OnChain Vault Style) =============
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
+      
+      const zip = new JSZip();
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+      
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing image ZIP...";
+      statusText.innerText = "Extracting On-Chain SVG files into ZIP...";
       progressBar.style.width = "0%";
 
-      try {
-        const blob = await generateSequentialZip(burnedNFTs, 'image', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Images_Sequenced.zip`);
-        statusText.innerText = "✅ Images ZIP downloaded!";
-        progressBar.style.width = "100%";
-        setTimeout(() => statusBox.classList.add("hidden"), 3000);
-      } catch (err) {
-        console.error("ZIP Error:", err);
-        statusText.innerText = "❌ ZIP error: " + err.message;
+      let total = burnedNFTs.length;
+
+      for (let i = 0; i < total; i++) {
+        const nft = burnedNFTs[i];
+        const serialNumber = i + 1;
+        let imgUrl = nft.image;
+
+        try {
+          // OnChain Vault style: data: URI parse manually
+          if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
+            const base64Data = imgUrl.replace('data:image/svg+xml;base64,', '');
+            zip.file(`${serialNumber}.svg`, base64Data, { base64: true });
+          } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
+            const svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
+            zip.file(`${serialNumber}.svg`, svgContent);
+          } else if (imgUrl.trim().startsWith('<svg')) {
+            zip.file(`${serialNumber}.svg`, imgUrl);
+          } else {
+            // Remote fetch
+            const res = await fetch(imgUrl);
+            const blob = await res.blob();
+            const ext = blob.type.includes('svg') ? 'svg' : 'png';
+            zip.file(`${serialNumber}.${ext}`, blob);
+          }
+        } catch (e) {
+          console.error(`Error adding item ${serialNumber}`, e);
+        }
+
+        let pct = Math.floor(((i + 1) / total) * 100);
+        progressBar.style.width = pct + "%";
+        statusText.innerText = `Packaging item ${serialNumber} of ${total}...`;
       }
+
+      statusText.innerText = "Generating ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "NORMIES_Burned_SVGs_Sequenced.zip");
+      statusText.innerText = "✅ SVG ZIP Downloaded Successfully!";
+      progressBar.style.width = "100%";
+      setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
+    // ============= JSON ZIP DOWNLOAD (OnChain Vault Style) =============
     async function downloadMetadataZip() {
       if (burnedNFTs.length === 0) return;
+      
+      const zip = new JSZip();
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
       const progressBar = document.getElementById("progressBar");
+      
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Preparing metadata ZIP...";
+      statusText.innerText = "Packaging JSON Metadata into ZIP...";
       progressBar.style.width = "0%";
 
-      try {
-        const blob = await generateSequentialZip(burnedNFTs, 'metadata', statusText, progressBar);
-        saveAs(blob, `NORMIES_Burned_Metadata_Sequenced.zip`);
-        statusText.innerText = "✅ Metadata ZIP downloaded!";
-        progressBar.style.width = "100%";
-        setTimeout(() => statusBox.classList.add("hidden"), 3000);
-      } catch (err) {
-        console.error("ZIP Error:", err);
-        statusText.innerText = "❌ ZIP error: " + err.message;
-      }
+      let total = burnedNFTs.length;
+
+      burnedNFTs.forEach((nft, index) => {
+        const serialNumber = index + 1;
+        const metadata = nft.rawMetadata;
+        const jsonContent = JSON.stringify(metadata, null, 2);
+        zip.file(`${serialNumber}.json`, jsonContent);
+        
+        let pct = Math.floor(((index + 1) / total) * 100);
+        progressBar.style.width = pct + "%";
+        statusText.innerText = `Packaging JSON ${serialNumber} of ${total}...`;
+      });
+
+      statusText.innerText = "Generating Metadata ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "NORMIES_Burned_Metadata_Sequenced.zip");
+      statusText.innerText = "✅ JSON ZIP Downloaded Successfully!";
+      progressBar.style.width = "100%";
+      setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
-    // ============= MAIN SCAN =============
+    // ============= MAIN SCAN (পুরনো সিস্টেম ঠিক আছে) =============
     async function startScan() {
       if (isFetching) return;
 
