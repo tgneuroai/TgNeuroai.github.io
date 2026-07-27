@@ -364,6 +364,60 @@
       }
     }
 
+    // ============= NEW: DIRECT-FROM-CONTRACT IMAGE FETCH (bypasses CORS) =============
+    // The <img> tag on the page can display an image from ANY url without CORS.
+    // But fetch() — which is required to build a downloadable file — needs the
+    // server to send CORS headers, and most image CDNs (Alchemy's cachedUrl,
+    // IPFS gateways, etc.) don't. That's why the page shows the art fine but
+    // downloading it silently failed and fell back to the placeholder.
+    // Fix: for downloads, go straight to the smart contract's tokenURI() via a
+    // JSON-RPC eth_call (not an image request, so CORS doesn't apply) and pull
+    // the real onchain SVG directly out of the returned JSON.
+    async function fetchOnChainTokenImage(apiKey, contract, tokenId) {
+      try {
+        const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
+        const res = await rpcCall(rpcUrl, {
+          jsonrpc: "2.0",
+          id: tokenId,
+          method: "eth_call",
+          params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
+        });
+        if (!res.result || res.result === "0x") return null;
+        const rawUri = decodeABIString(res.result);
+        const parsed = parseMetadata(rawUri);
+        if (!parsed) return null;
+        // Some fully-onchain contracts use "image", others use "image_data"
+        // for the raw inline SVG — check both.
+        return parsed.image || parsed.image_data || null;
+      } catch (e) {
+        console.warn('fetchOnChainTokenImage failed for token', tokenId, e);
+        return null;
+      }
+    }
+
+    // Tries, in order: 1) a previously-cached onchain image, 2) a fresh pull
+    // straight from the contract, 3) whatever image URL is used for on-page
+    // display (last resort, may fail if it's a CORS-blocked CDN link).
+    async function getDownloadableImageBlob(nft) {
+      if (nft.onchainImage) {
+        const cached = await fetchImageBlob(nft.onchainImage);
+        if (cached && cached.blob) return cached;
+      }
+
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const contract = document.getElementById("contractInput").value.trim();
+      if (apiKey && contract) {
+        const onchainImg = await fetchOnChainTokenImage(apiKey, contract, nft.tokenId);
+        if (onchainImg) {
+          nft.onchainImage = onchainImg; // cache so repeat downloads (single + ZIP) skip the RPC call
+          const blobData = await fetchImageBlob(onchainImg);
+          if (blobData && blobData.blob) return blobData;
+        }
+      }
+
+      return await fetchImageBlob(nft.image);
+    }
+
     // ============= MANUAL DOWNLOAD =============
     async function downloadSingleImage(tokenId) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
