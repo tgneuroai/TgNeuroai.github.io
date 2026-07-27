@@ -301,58 +301,78 @@
           return;
         }
 
-        // Chunk request in batches of 15 to avoid RPC Rate Limit
-        let chunkSize = 15;
+        // Fetch each token's metadata individually (not as a JSON-RPC batch array,
+        // which free-tier Alchemy tends to rate-limit / drop the connection on).
+        // Use limited concurrency plus retry-with-backoff so transient
+        // "Failed to fetch" network errors don't silently drop tokens.
+        const CONCURRENCY = 5;
+        const MAX_RETRIES = 4;
         let processedCount = 0;
+        let failedTokens = [];
 
-        for (let i = 0; i < burnedTokenList.length; i += chunkSize) {
-          let chunk = burnedTokenList.slice(i, i + chunkSize);
+        async function fetchOneToken(tokenId) {
+          let lastErr = null;
+          for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              const res = await rpcCall(rpcUrl, {
+                jsonrpc: "2.0",
+                id: tokenId,
+                method: "eth_call",
+                params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
+              });
 
-          let batchPayload = chunk.map(id => ({
-            jsonrpc: "2.0",
-            id: id,
-            method: "eth_call",
-            params: [{ to: contract, data: encodeTokenURI(id) }, "latest"]
-          }));
-
-          let batchData;
-          try {
-            batchData = await rpcCall(rpcUrl, batchPayload);
-          } catch (e) {
-            showError(`Batch fetch failed for tokens ${chunk[0]}-${chunk[chunk.length - 1]}: ${e.message}`);
-            processedCount += chunk.length;
-            continue;
-          }
-
-          let responses = Array.isArray(batchData) ? batchData : [batchData];
-
-          responses.forEach(res => {
-            if (res.error) {
-              console.warn(`Token ${res.id} eth_call error:`, res.error.message);
-              return;
-            }
-            if (res.result && res.result !== "0x") {
-              const rawUri = decodeABIString(res.result);
-              const metadata = parseMetadata(rawUri);
-
-              if (metadata) {
-                const nftData = {
-                  tokenId: res.id,
-                  name: metadata.name || `#${res.id}`,
-                  image: metadata.image || '',
-                  rawMetadata: metadata
-                };
-
-                burnedNFTs.push(nftData);
-                renderSingleCard(nftData);
+              if (res.error) {
+                console.warn(`Token ${tokenId} eth_call error:`, res.error.message);
+                return; // contract-level error, not worth retrying
               }
-            }
-          });
 
-          processedCount += chunk.length;
-          let pct = 50 + Math.floor((processedCount / burnedTokenList.length) * 50);
-          progressBar.style.width = pct + "%";
-          loadedCount.innerText = burnedNFTs.length;
+              if (res.result && res.result !== "0x") {
+                const rawUri = decodeABIString(res.result);
+                const metadata = parseMetadata(rawUri);
+
+                if (metadata) {
+                  const nftData = {
+                    tokenId: tokenId,
+                    name: metadata.name || `#${tokenId}`,
+                    image: metadata.image || '',
+                    rawMetadata: metadata
+                  };
+                  burnedNFTs.push(nftData);
+                  renderSingleCard(nftData);
+                }
+              }
+              return; // success, stop retrying
+            } catch (e) {
+              lastErr = e;
+              // exponential backoff before retry: 300ms, 600ms, 1200ms, 2400ms...
+              await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt)));
+            }
+          }
+          failedTokens.push(tokenId);
+          console.error(`Token ${tokenId} failed after ${MAX_RETRIES + 1} attempts:`, lastErr && lastErr.message);
+        }
+
+        // Simple concurrency-limited pool
+        let nextIndex = 0;
+        async function worker() {
+          while (nextIndex < burnedTokenList.length) {
+            const idx = nextIndex++;
+            const tokenId = burnedTokenList[idx];
+            await fetchOneToken(tokenId);
+            processedCount++;
+            let pct = 50 + Math.floor((processedCount / burnedTokenList.length) * 50);
+            progressBar.style.width = pct + "%";
+            loadedCount.innerText = burnedNFTs.length;
+            statusText.innerText = `Loading metadata: ${processedCount}/${burnedTokenList.length} (found ${burnedNFTs.length})...`;
+          }
+        }
+
+        const workers = [];
+        for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
+        await Promise.all(workers);
+
+        if (failedTokens.length > 0) {
+          showError(`${failedTokens.length} token(s) failed after retries: ${failedTokens.slice(0, 20).join(', ')}${failedTokens.length > 20 ? '...' : ''}`);
         }
 
         statusText.innerText = `Success! Loaded ${burnedNFTs.length} Burned NFTs directly from On-Chain Contract.`;
