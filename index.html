@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Burned-Only NFT Extractor (Fully Fixed)</title>
+  <title>NORMIES Burned NFT Extractor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -36,7 +36,7 @@
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-500/20">
           <i class="fa-solid fa-fire"></i>
         </div>
-        <span class="text-xl font-bold tracking-tight text-white">Burned-Only <span class="gradient-text">NFT Extractor</span></span>
+        <span class="text-xl font-bold tracking-tight text-white">NORMIES <span class="gradient-text">Burned Extractor</span></span>
       </div>
 
       <div class="flex items-center gap-3">
@@ -46,7 +46,7 @@
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
-          <span>Download JSON ZIP</span>
+          <span>Download Custom JSON ZIP</span>
         </button>
       </div>
     </div>
@@ -81,7 +81,7 @@
 
         <div class="sm:col-span-4">
           <button id="scanBtn" onclick="startScan()" class="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 text-sm">
-            <i class="fa-solid fa-magnifying-glass font-bold"></i> Find & Load Burned NFTs
+            <i class="fa-solid fa-magnifying-glass font-bold"></i> Extract Burned NORMIES
           </button>
         </div>
       </div>
@@ -100,17 +100,16 @@
       <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden border border-white/5">
         <div id="progressBar" class="bg-red-500 h-full w-0 transition-all duration-150"></div>
       </div>
-      <div id="errorBox" class="mt-3 text-xs text-red-400 font-mono hidden"></div>
     </div>
 
     <!-- Gallery Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white flex items-center gap-2">
         <i class="fa-solid fa-fire text-red-500"></i>
-        Burned NFTs Only
+        Burned NORMIES Collection
       </h2>
       <div class="text-xs text-gray-400 font-mono">
-        Total Burned Loaded: <span id="loadedCount" class="text-red-400 font-bold">0</span>
+        Total Loaded: <span id="loadedCount" class="text-red-400 font-bold">0</span>
       </div>
     </div>
 
@@ -120,12 +119,13 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract & Alchemy Indexer Reader • Burned Token Extractor
+    Direct Smart Contract & ENS Resolver Reader
   </footer>
 
   <script>
     let burnedNFTs = [];
     let isFetching = false;
+    const ensCache = new Map();
     const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
     function encodeTokenURI(tokenId) {
@@ -185,6 +185,35 @@
       return res.json();
     }
 
+    // Function to Resolve ENS Name
+    async function resolveENS(apiKey, address) {
+      if (!address || address === NULL_ADDRESS) return address;
+      if (ensCache.has(address)) return ensCache.get(address);
+
+      try {
+        const url = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'alchemy_lookupAddress',
+            params: [address]
+          })
+        });
+        const data = await res.json();
+        if (data.result) {
+          ensCache.set(address, data.result);
+          return data.result; // Returns vitalik.eth
+        }
+      } catch (e) {
+        console.warn("ENS Lookup error:", e);
+      }
+      ensCache.set(address, address);
+      return address; // Fallback to full raw address
+    }
+
     async function fetchBurnTransfersViaAssetTransfers(rpcUrl, contract, statusText, progressBar) {
       const allTransfers = [];
       let pageKey = undefined;
@@ -198,7 +227,7 @@
           toAddress: NULL_ADDRESS,
           contractAddresses: [contract],
           category: ["erc721", "erc1155"],
-          withMetadata: false,
+          withMetadata: true,
           excludeZeroValue: false,
           maxCount: "0x3e8"
         };
@@ -237,10 +266,7 @@
         let imageUrl = data.image?.cachedUrl || data.image?.originalUrl || data.raw?.metadata?.image || '';
         imageUrl = resolveIpfsUrl(imageUrl);
 
-        let name = data.name || data.raw?.metadata?.name || `#${tokenId}`;
-
         return {
-          name: name,
           image: imageUrl,
           rawMetadata: data.raw?.metadata || data
         };
@@ -281,22 +307,37 @@
       const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
 
       try {
-        statusText.innerText = "Querying Burned Transfers via Alchemy Enhanced API...";
+        statusText.innerText = "Querying Burn Logs & Block Timestamps...";
         const transfers = await fetchBurnTransfersViaAssetTransfers(rpcUrl, contract, statusText, progressBar);
 
-        let burnedTokenSet = new Set();
+        let burnedTokenMap = new Map();
+        
         transfers.forEach(t => {
           let tokenIdHex = t.erc721TokenId || (t.erc1155Metadata && t.erc1155Metadata[0] && t.erc1155Metadata[0].tokenId);
           if (!tokenIdHex) return;
           let tokenId = parseInt(tokenIdHex, 16);
+
           if (tokenId >= startNum && tokenId <= endNum) {
-            burnedTokenSet.add(tokenId);
+            let rawAddress = t.from || NULL_ADDRESS;
+            let blockTimestamp = t.metadata && t.metadata.blockTimestamp ? t.metadata.blockTimestamp : null;
+            
+            let d = blockTimestamp ? new Date(blockTimestamp) : new Date();
+            let yearStr = d.getUTCFullYear().toString();
+            let monthStr = d.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+            let fullDateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+            burnedTokenMap.set(tokenId, {
+              rawBurner: rawAddress,
+              burnYear: yearStr,
+              burnMonth: monthStr,
+              burnFullDate: fullDateStr
+            });
           }
         });
 
-        let burnedTokenList = Array.from(burnedTokenSet).sort((a, b) => a - b);
+        let burnedTokenList = Array.from(burnedTokenMap.keys()).sort((a, b) => a - b);
 
-        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens! Fetching Metadata...`;
+        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens! Resolving ENS Names & Building Attributes...`;
         progressCount.innerText = `${burnedTokenList.length} Burned Found`;
         progressBar.style.width = "40%";
 
@@ -310,10 +351,13 @@
         let processedCount = 0;
 
         async function fetchOneToken(tokenId) {
-          // 1. First attempt via Alchemy NFT API
+          let burnInfo = burnedTokenMap.get(tokenId);
+          
+          // Resolve ENS for Burner Address
+          let finalBurnerIdentifier = await resolveENS(apiKey, burnInfo.rawBurner);
+
           let meta = await fetchNftMetadataAlchemy(apiKey, contract, tokenId);
 
-          // 2. Fallback via On-Chain RPC
           if (!meta || !meta.image) {
             try {
               const res = await rpcCall(rpcUrl, {
@@ -328,27 +372,49 @@
                 const parsed = parseMetadata(rawUri);
                 if (parsed) {
                   meta = {
-                    name: parsed.name || `#${tokenId}`,
                     image: resolveIpfsUrl(parsed.image || ''),
                     rawMetadata: parsed
                   };
                 }
               }
-            } catch (e) {
-              // TokenURI revert fallback
-            }
+            } catch (e) {}
           }
 
-          if (meta) {
-            const nftData = {
-              tokenId: tokenId,
-              name: meta.name,
-              image: meta.image,
-              rawMetadata: meta.rawMetadata
-            };
-            burnedNFTs.push(nftData);
-            renderSingleCard(nftData);
-          }
+          let originalMetadata = (meta && meta.rawMetadata) ? JSON.parse(JSON.stringify(meta.rawMetadata)) : {};
+          
+          // Retain existing original attributes
+          let existingAttributes = originalMetadata.attributes || [];
+          if (!Array.isArray(existingAttributes)) existingAttributes = [];
+
+          // Exact requested 5 new attributes addition
+          let newAttributes = [
+            ...existingAttributes,
+            { trait_type: "NORMIES", value: `#${tokenId}` },
+            { trait_type: "Burned By", value: finalBurnerIdentifier },
+            { trait_type: "Burn Year", value: burnInfo.burnYear },
+            { trait_type: "Burn Month", value: burnInfo.burnMonth },
+            { trait_type: "Burn Date", value: burnInfo.burnFullDate }
+          ];
+
+          let enrichedMetadata = {
+            ...originalMetadata,
+            name: `NORMIES #${tokenId}`,
+            description: originalMetadata.description || `Burned NORMIES NFT #${tokenId}`,
+            image: meta ? meta.image : '',
+            attributes: newAttributes
+          };
+
+          const nftData = {
+            tokenId: tokenId,
+            name: `NORMIES #${tokenId}`,
+            image: meta ? meta.image : '',
+            burner: finalBurnerIdentifier,
+            burnDate: burnInfo.burnFullDate,
+            rawMetadata: enrichedMetadata
+          };
+
+          burnedNFTs.push(nftData);
+          renderSingleCard(nftData);
         }
 
         let nextIndex = 0;
@@ -361,7 +427,7 @@
             let pct = 40 + Math.floor((processedCount / burnedTokenList.length) * 60);
             progressBar.style.width = pct + "%";
             loadedCount.innerText = burnedNFTs.length;
-            statusText.innerText = `Loading metadata: ${processedCount}/${burnedTokenList.length} (Rendered: ${burnedNFTs.length})...`;
+            statusText.innerText = `Enriching Metadata & ENS: ${processedCount}/${burnedTokenList.length}...`;
           }
         }
 
@@ -369,7 +435,7 @@
         for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
         await Promise.all(workers);
 
-        statusText.innerText = `Success! Loaded ${burnedNFTs.length} Burned NFTs with metadata and images.`;
+        statusText.innerText = `Success! Enriched Metadata for ${burnedNFTs.length} NORMIES NFTs.`;
         progressBar.style.width = "100%";
         if (burnedNFTs.length > 0) enableDownloadButtons();
 
@@ -383,25 +449,27 @@
 
     function renderSingleCard(nft) {
       const grid = document.getElementById("nftGrid");
-      const title = nft.name || `#${nft.tokenId}`;
 
       const card = document.createElement("div");
       card.className = "glass-card rounded-2xl overflow-hidden flex flex-col justify-between p-3 border border-red-500/20 shadow-lg";
 
+      const displayBurner = nft.burner.endsWith('.eth') ? nft.burner : `${nft.burner.substring(0,6)}...${nft.burner.substring(nft.burner.length-4)}`;
+
       card.innerHTML = `
         <div class="relative aspect-square rounded-xl overflow-hidden bg-black/60 border border-white/5 flex items-center justify-center">
           <img src="${nft.image}"
-               alt="${title}"
+               alt="${nft.name}"
                loading="lazy"
                class="w-full h-full object-contain"
-               onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/111827/EF4444?text=Burned+NFT+${nft.tokenId}';" />
+               onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/111827/EF4444?text=NORMIES+${nft.tokenId}';" />
           <div class="absolute top-2 left-2 bg-red-600/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md shadow-md">
-            BURNED #${nft.tokenId}
+            BURNED
           </div>
         </div>
         <div class="mt-3 px-1">
-          <h3 class="font-bold text-white text-sm truncate">${title}</h3>
-          <p class="text-[11px] text-red-400 font-mono mt-0.5"><i class="fa-solid fa-circle-check text-[9px]"></i> Loaded from On-Chain History</p>
+          <h3 class="font-bold text-white text-sm truncate">${nft.name}</h3>
+          <p class="text-[10px] text-gray-400 font-mono truncate mt-1">Burner: <span class="text-red-400 font-bold">${displayBurner}</span></p>
+          <p class="text-[9px] text-gray-500 font-mono truncate">Date: ${nft.burnDate}</p>
         </div>
       `;
 
@@ -419,7 +487,6 @@
       jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-pink-600 text-white hover:bg-pink-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-pink-500/20";
     }
 
-    // NEW FIXED DOWNLOAD IMAGE FUNCTION
     async function downloadImagesZip() {
       const zip = new JSZip();
       const statusBox = document.getElementById("statusBox");
@@ -429,23 +496,20 @@
       statusBox.classList.remove("hidden");
       statusText.innerText = "Preparing images for ZIP download...";
       progressBar.style.width = "0%";
-      document.getElementById("statusDot").classList.add("animate-ping");
 
       try {
         for (let i = 0; i < burnedNFTs.length; i++) {
           let nft = burnedNFTs[i];
           let imgUrl = nft.image;
-          let filename = `Burned_${nft.tokenId}`;
+          let filename = `NORMIES_${nft.tokenId}`;
 
           if (!imgUrl) continue;
 
           if (imgUrl.startsWith('data:image/')) {
-            // Split base64 header and data
             const parts = imgUrl.split(',');
             const header = parts[0];
             const data = parts.slice(1).join(',');
 
-            // Detect format
             let ext = 'png';
             if (header.includes('svg')) ext = 'svg';
             else if (header.includes('jpeg') || header.includes('jpg')) ext = 'jpg';
@@ -454,48 +518,34 @@
             if (header.includes('base64')) {
               zip.file(`${filename}.${ext}`, data, { base64: true });
             } else {
-              // Standard encoded SVG without base64
               zip.file(`${filename}.${ext}`, decodeURIComponent(data));
             }
           } else if (imgUrl.startsWith('<svg')) {
              zip.file(`${filename}.svg`, imgUrl);
           }
 
-          // UI Update (Yielding to main thread so browser doesn't freeze)
           if (i % 50 === 0) {
             statusText.innerText = `Packing Image ${i} of ${burnedNFTs.length}...`;
             progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
-            await new Promise(r => setTimeout(r, 10)); // 10ms break
+            await new Promise(r => setTimeout(r, 10));
           }
         }
 
-        statusText.innerText = "Compressing ZIP file (Please wait, this takes time)...";
-        progressBar.style.width = "60%";
-
-        const content = await zip.generateAsync({ 
-          type: "blob",
-          compression: "DEFLATE",
-          compressionOptions: { level: 5 }
-        }, function updateCallback(metadata) {
-          // JSZip provides live percentage!
-          let progress = 60 + (metadata.percent * 0.4);
+        statusText.innerText = "Compressing Image ZIP...";
+        
+        const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
+          let progress = 50 + (metadata.percent * 0.5);
           progressBar.style.width = progress + "%";
-          statusText.innerText = `Compressing File... ${metadata.percent.toFixed(1)}%`;
         });
 
-        saveAs(content, `Burned_NFT_Images.zip`);
-        
+        saveAs(content, `NORMIES_Burned_Images.zip`);
         statusText.innerText = "Images ZIP Downloaded Successfully!";
         progressBar.style.width = "100%";
-        document.getElementById("statusDot").classList.remove("animate-ping");
-
       } catch (err) {
         console.error("ZIP Error:", err);
-        statusText.innerText = "Error creating ZIP file!";
       }
     }
 
-    // NEW FIXED DOWNLOAD METADATA FUNCTION
     async function downloadMetadataZip() {
       const zip = new JSZip();
       const statusBox = document.getElementById("statusBox");
@@ -503,37 +553,33 @@
       const progressBar = document.getElementById("progressBar");
 
       statusBox.classList.remove("hidden");
-      statusText.innerText = "Generating JSON Metadata files...";
+      statusText.innerText = "Generating Custom Metadata JSONs...";
       progressBar.style.width = "0%";
-      document.getElementById("statusDot").classList.add("animate-ping");
 
       try {
         for (let i = 0; i < burnedNFTs.length; i++) {
           let nft = burnedNFTs[i];
-          zip.file(`Burned_${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+          zip.file(`${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
 
           if (i % 100 === 0) {
             statusText.innerText = `Packing JSON ${i} of ${burnedNFTs.length}...`;
             progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
-            await new Promise(r => setTimeout(r, 10)); // Yield to main thread
+            await new Promise(r => setTimeout(r, 10));
           }
         }
 
-        statusText.innerText = "Compressing Metadata ZIP...";
+        statusText.innerText = "Compressing Custom Metadata ZIP...";
         
         const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
           let progress = 50 + (metadata.percent * 0.5);
           progressBar.style.width = progress + "%";
         });
 
-        saveAs(content, `Burned_NFT_JSONs.zip`);
-        
-        statusText.innerText = "JSON Metadata ZIP Downloaded Successfully!";
+        saveAs(content, `NORMIES_Burned_Custom_JSONs.zip`);
+        statusText.innerText = "Custom JSON Metadata ZIP Downloaded Successfully!";
         progressBar.style.width = "100%";
-        document.getElementById("statusDot").classList.remove("animate-ping");
       } catch(err) {
         console.error("JSON ZIP Error:", err);
-        statusText.innerText = "Error creating JSON ZIP file!";
       }
     }
   </script>
