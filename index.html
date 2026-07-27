@@ -419,52 +419,122 @@
       jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-pink-600 text-white hover:bg-pink-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-pink-500/20";
     }
 
+    // NEW FIXED DOWNLOAD IMAGE FUNCTION
     async function downloadImagesZip() {
       const zip = new JSZip();
+      const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
+      const progressBar = document.getElementById("progressBar");
 
-      statusText.innerText = "Extracting images for ZIP download...";
+      statusBox.classList.remove("hidden");
+      statusText.innerText = "Preparing images for ZIP download...";
+      progressBar.style.width = "0%";
+      document.getElementById("statusDot").classList.add("animate-ping");
 
-      for (let i = 0; i < burnedNFTs.length; i++) {
-        let nft = burnedNFTs[i];
-        let imgUrl = nft.image;
+      try {
+        for (let i = 0; i < burnedNFTs.length; i++) {
+          let nft = burnedNFTs[i];
+          let imgUrl = nft.image;
+          let filename = `Burned_${nft.tokenId}`;
 
-        if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
-          zip.file(`${nft.tokenId}.svg`, imgUrl.replace('data:image/svg+xml;base64,', ''), { base64: true });
-        } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
-          zip.file(`${nft.tokenId}.svg`, decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', '')));
-        } else if (imgUrl.startsWith('<svg')) {
-          zip.file(`${nft.tokenId}.svg`, imgUrl);
-        } else if (imgUrl.startsWith('http')) {
-          try {
-            const resp = await fetch(imgUrl);
-            const blob = await resp.blob();
-            const ext = blob.type.includes('png') ? 'png' : blob.type.includes('jpeg') ? 'jpg' : 'svg';
-            zip.file(`${nft.tokenId}.${ext}`, blob);
-          } catch(e) {
-            console.warn(`Failed to fetch image binary for token ${nft.tokenId}`);
+          if (!imgUrl) continue;
+
+          if (imgUrl.startsWith('data:image/')) {
+            // Split base64 header and data
+            const parts = imgUrl.split(',');
+            const header = parts[0];
+            const data = parts.slice(1).join(',');
+
+            // Detect format
+            let ext = 'png';
+            if (header.includes('svg')) ext = 'svg';
+            else if (header.includes('jpeg') || header.includes('jpg')) ext = 'jpg';
+            else if (header.includes('gif')) ext = 'gif';
+
+            if (header.includes('base64')) {
+              zip.file(`${filename}.${ext}`, data, { base64: true });
+            } else {
+              // Standard encoded SVG without base64
+              zip.file(`${filename}.${ext}`, decodeURIComponent(data));
+            }
+          } else if (imgUrl.startsWith('<svg')) {
+             zip.file(`${filename}.svg`, imgUrl);
+          }
+
+          // UI Update (Yielding to main thread so browser doesn't freeze)
+          if (i % 50 === 0) {
+            statusText.innerText = `Packing Image ${i} of ${burnedNFTs.length}...`;
+            progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
+            await new Promise(r => setTimeout(r, 10)); // 10ms break
           }
         }
-      }
 
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `Burned_NFT_Images.zip`);
-      statusText.innerText = "Images ZIP Downloaded Successfully!";
+        statusText.innerText = "Compressing ZIP file (Please wait, this takes time)...";
+        progressBar.style.width = "60%";
+
+        const content = await zip.generateAsync({ 
+          type: "blob",
+          compression: "DEFLATE",
+          compressionOptions: { level: 5 }
+        }, function updateCallback(metadata) {
+          // JSZip provides live percentage!
+          let progress = 60 + (metadata.percent * 0.4);
+          progressBar.style.width = progress + "%";
+          statusText.innerText = `Compressing File... ${metadata.percent.toFixed(1)}%`;
+        });
+
+        saveAs(content, `Burned_NFT_Images.zip`);
+        
+        statusText.innerText = "Images ZIP Downloaded Successfully!";
+        progressBar.style.width = "100%";
+        document.getElementById("statusDot").classList.remove("animate-ping");
+
+      } catch (err) {
+        console.error("ZIP Error:", err);
+        statusText.innerText = "Error creating ZIP file!";
+      }
     }
 
+    // NEW FIXED DOWNLOAD METADATA FUNCTION
     async function downloadMetadataZip() {
       const zip = new JSZip();
+      const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
+      const progressBar = document.getElementById("progressBar");
 
-      statusText.innerText = "Generating JSON Metadata ZIP...";
+      statusBox.classList.remove("hidden");
+      statusText.innerText = "Generating JSON Metadata files...";
+      progressBar.style.width = "0%";
+      document.getElementById("statusDot").classList.add("animate-ping");
 
-      burnedNFTs.forEach((nft) => {
-        zip.file(`${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
-      });
+      try {
+        for (let i = 0; i < burnedNFTs.length; i++) {
+          let nft = burnedNFTs[i];
+          zip.file(`Burned_${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
 
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `Burned_NFT_JSONs.zip`);
-      statusText.innerText = "JSON Metadata ZIP Downloaded Successfully!";
+          if (i % 100 === 0) {
+            statusText.innerText = `Packing JSON ${i} of ${burnedNFTs.length}...`;
+            progressBar.style.width = Math.floor((i / burnedNFTs.length) * 50) + "%";
+            await new Promise(r => setTimeout(r, 10)); // Yield to main thread
+          }
+        }
+
+        statusText.innerText = "Compressing Metadata ZIP...";
+        
+        const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
+          let progress = 50 + (metadata.percent * 0.5);
+          progressBar.style.width = progress + "%";
+        });
+
+        saveAs(content, `Burned_NFT_JSONs.zip`);
+        
+        statusText.innerText = "JSON Metadata ZIP Downloaded Successfully!";
+        progressBar.style.width = "100%";
+        document.getElementById("statusDot").classList.remove("animate-ping");
+      } catch(err) {
+        console.error("JSON ZIP Error:", err);
+        statusText.innerText = "Error creating JSON ZIP file!";
+      }
     }
   </script>
 </body>
