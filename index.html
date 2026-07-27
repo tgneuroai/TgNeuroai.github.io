@@ -274,19 +274,16 @@
     function extractOnChainSVG(metadata) {
       if (!metadata) return null;
       
-      // Check both standard metadata keys
       const rawField = metadata.image || metadata.image_data || "";
       if (!rawField) return null;
 
       let str = rawField.trim();
 
-      // Case 1: Plain SVG text
       if (str.startsWith('<svg') || str.includes('<svg')) {
         const svgStart = str.indexOf('<svg');
         return str.substring(svgStart).trim();
       }
 
-      // Case 2: Base64 Encoded SVG Data URI (data:image/svg+xml;base64,...)
       if (str.includes('base64,')) {
         try {
           const base64Content = str.split('base64,')[1];
@@ -297,7 +294,6 @@
         } catch (e) {}
       }
 
-      // Case 3: Percent / UTF8 Encoded SVG Data URI (data:image/svg+xml;utf8,...)
       if (str.startsWith('data:image/svg+xml')) {
         try {
           const commaIndex = str.indexOf(',');
@@ -314,7 +310,6 @@
       return null;
     }
 
-    // Direct Blob Helper (Zero Network Call, Browser Internal Download)
     function directDownloadBlob(blob, fileName) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -329,26 +324,27 @@
       }, 2000);
     }
 
-    // ============= SINGLE DOWNLOAD (PURE ON-CHAIN ONLY) =============
-    function downloadSingleImage(tokenId) {
+    // ============= SINGLE DOWNLOAD (NUMERIC FILENAME: 1.svg, 2.svg...) =============
+    function downloadSingleImage(tokenId, serialNum) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
       if (!nft || !nft.rawMetadata) {
-        alert(`NORMIES #${tokenId} এর মেটাডাটা পাওয়া যায়নি!`);
+        alert(`NFT #${tokenId} এর মেটাডাটা পাওয়া যায়নি!`);
         return;
       }
 
       const svgContent = extractOnChainSVG(nft.rawMetadata);
 
       if (!svgContent) {
-        alert(`NORMIES #${tokenId} এর মেটাডাটাতে অন-চেইন SVG পাওয়া যায়নি!`);
+        alert(`NFT #${tokenId} এর মেটাডাটাতে অন-চেইন SVG পাওয়া যায়নি!`);
         return;
       }
 
       const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-      directDownloadBlob(blob, `NORMIES_${tokenId}.svg`);
+      // সেভ হবে সংখ্যা দিয়ে: ১.svg, ২.svg এভাবে (অথবা sequential serialNum ব্যবহার করে)
+      directDownloadBlob(blob, `${serialNum}.svg`);
     }
 
-    // ============= ZIP GENERATOR (PURE LOCAL - ZERO FETCH) =============
+    // ============= ZIP GENERATOR (SVG - 1.svg, 2.svg...) =============
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
 
@@ -367,10 +363,11 @@
 
       for (let i = 0; i < total; i++) {
         const nft = burnedNFTs[i];
+        const serialNum = i + 1; // সংখ্যা হিসেবে ১, ২, ৩ ...
         const svgContent = extractOnChainSVG(nft.rawMetadata);
 
         if (svgContent) {
-          folder.file(`NORMIES_${nft.tokenId}.svg`, svgContent);
+          folder.file(`${serialNum}.svg`, svgContent);
           addedCount++;
         }
 
@@ -392,6 +389,7 @@
       setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
+    // ============= ZIP GENERATOR (JSON - 1.json, 2.json...) =============
     async function downloadMetadataZip() {
       if (burnedNFTs.length === 0) return;
 
@@ -409,7 +407,9 @@
 
       for (let i = 0; i < total; i++) {
         const nft = burnedNFTs[i];
-        folder.file(`${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+        const serialNum = i + 1; // সংখ্যা হিসেবে ১, ২, ৩ ...
+
+        folder.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
 
         if (i % 20 === 0 || i === total - 1) {
           const pct = Math.floor(((i + 1) / total) * 100);
@@ -561,7 +561,6 @@
           };
 
           burnedNFTs.push(nftData);
-          renderSingleCard(nftData);
         }
 
         let nextIndex = 0;
@@ -582,7 +581,13 @@
         for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
         await Promise.all(workers);
 
+        // সম্পূর্ণ ডেটা রেন্ডার করার পূর্বে Token ID অনুযায়ী সর্টিং
         burnedNFTs.sort((a, b) => a.tokenId - b.tokenId);
+
+        // কার্ডস রেন্ডার (ক্রম অনুযায়ী Serial Number সহ)
+        burnedNFTs.forEach((nft, index) => {
+          renderSingleCard(nft, index + 1);
+        });
 
         statusText.innerText = `✅ Success! ${burnedNFTs.length} NORMIES NFTs ready.`;
         progressBar.style.width = "100%";
@@ -596,7 +601,7 @@
       }
     }
 
-    function renderSingleCard(nft) {
+    function renderSingleCard(nft, serialNum) {
       const grid = document.getElementById("nftGrid");
       const card = document.createElement("div");
       card.className = "nft-card glass-card rounded-2xl overflow-hidden flex flex-col p-3 border border-red-500/20 shadow-lg";
@@ -619,9 +624,9 @@
           <p class="text-[9px] text-gray-500 font-mono truncate">Date: ${nft.burnDate}</p>
         </div>
         <div class="mt-2 px-1">
-          <button onclick="downloadSingleImage(${nft.tokenId})" 
+          <button onclick="downloadSingleImage(${nft.tokenId}, ${serialNum})" 
                   class="w-full download-btn text-xs font-bold py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-download"></i> Download SVG
+            <i class="fa-solid fa-download"></i> Download SVG (${serialNum}.svg)
           </button>
         </div>
       `;
