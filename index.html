@@ -1,545 +1,369 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVG কালার পরিবর্তনকারী 🎨</title>
-    <!-- JSZip এবং FileSaver লাইব্রেরি -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            min-height: 100vh;
-            background: linear-gradient(145deg, #f6f9fc 0%, #e9f1f7 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .card {
-            max-width: 780px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 48px;
-            padding: 40px 35px;
-            box-shadow: 0 25px 50px -8px rgba(0, 20, 30, 0.25), 0 8px 20px rgba(0,0,0,0.05);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.2s ease;
-        }
-        h1 {
-            font-size: 2.1rem;
-            font-weight: 600;
-            color: #1e2b32;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-        .subhead {
-            color: #3a4e5a;
-            font-size: 0.98rem;
-            margin-bottom: 28px;
-            padding-bottom: 18px;
-            border-bottom: 2px dashed #d0dee9;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .color-badge {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
-            background: #eef4f9;
-            padding: 8px 18px 8px 18px;
-            border-radius: 60px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .color-swatch {
-            display: inline-block;
-            width: 22px;
-            height: 22px;
-            border-radius: 8px;
-            margin-right: 6px;
-            vertical-align: middle;
-            border: 1px solid rgba(0,0,0,0.08);
-        }
-        .upload-area {
-            background: #f0f6fd;
-            border: 2px dashed #b8cfde;
-            border-radius: 30px;
-            padding: 40px 20px;
-            text-align: center;
-            transition: 0.2s;
-            margin-bottom: 28px;
-            cursor: pointer;
-        }
-        .upload-area:hover {
-            background: #e8f0f9;
-            border-color: #7fa5bb;
-        }
-        .upload-area svg {
-            opacity: 0.6;
-        }
-        .upload-area p {
-            color: #2b4455;
-            font-weight: 500;
-            margin-top: 12px;
-        }
-        .file-input {
-            display: none;
-        }
-        .file-list {
-            margin: 18px 0 22px 0;
-            background: #f5faff;
-            border-radius: 28px;
-            padding: 10px 20px;
-            min-height: 60px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 8px 16px;
-            border: 1px solid #d5e3ee;
-        }
-        .file-tag {
-            background: white;
-            border-radius: 40px;
-            padding: 6px 16px 6px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #1a3340;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            border: 1px solid #cbdde9;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .file-tag .remove {
-            cursor: pointer;
-            color: #9aafbd;
-            font-weight: 600;
-            transition: 0.1s;
-        }
-        .file-tag .remove:hover {
-            color: #c74b4b;
-        }
-        .action-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            justify-content: space-between;
-            align-items: center;
-            margin: 20px 0 8px 0;
-        }
-        .btn {
-            background: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: #1c3747;
-            box-shadow: 0 6px 14px rgba(0, 20, 30, 0.08);
-            border: 1px solid #d0e0eb;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.15s;
-            cursor: pointer;
-            background: #f5faff;
-        }
-        .btn-primary {
-            background: #1e2f3b;
-            border: 1px solid #1e2f3b;
-            color: white;
-            box-shadow: 0 8px 18px rgba(20, 40, 55, 0.25);
-        }
-        .btn-primary:hover {
-            background: #0f1f2a;
-            transform: scale(0.97);
-        }
-        .btn-primary:disabled {
-            opacity: 0.4;
-            pointer-events: none;
-            filter: grayscale(0.5);
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #b8cfde;
-        }
-        .btn-outline:hover {
-            background: #e5eff7;
-        }
-        .btn-success {
-            background: #1f8b5b;
-            border-color: #1f8b5b;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #14734b;
-        }
-        .status {
-            margin-top: 18px;
-            padding: 12px 18px;
-            border-radius: 40px;
-            background: #e3eef8;
-            font-size: 0.95rem;
-            color: #124052;
-            border-left: 6px solid #3a8bb0;
-            transition: 0.2s;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .status .info {
-            font-weight: 450;
-        }
-        .status .badge {
-            background: #2b5a73;
-            color: white;
-            padding: 4px 18px;
-            border-radius: 60px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
-        .footer-note {
-            text-align: center;
-            margin-top: 22px;
-            font-size: 0.8rem;
-            color: #607d8e;
-        }
-        .hidden {
-            display: none;
-        }
-        .spinner {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Burned On-Chain NFT Extractor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- JSZip and FileSaver for Zip Exports -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f17;
+      color: #f3f4f6;
+    }
+
+    .glass-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #f43f5e 0%, #a855f7 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
 </head>
-<body>
-    <div class="card">
-        <h1>
-            <span>🖌️ SVG রঙ বদল</span>
-        </h1>
-        <div class="subhead">
-            <span>📁 জিপ আপলোড করুন · SVG ছবি</span>
-            <span class="color-badge">
-                <span><span class="color-swatch" style="background:#48494B;"></span> #48494B → কালো</span>
-                <span><span class="color-swatch" style="background:#E3E5E4;"></span> #E3E5E4 → <span style="color:#b5d400; font-weight:700;">#d4ff00</span></span>
-            </span>
+<body class="min-h-screen flex flex-col justify-between selection:bg-rose-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0f17]/90 border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-rose-500/20">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <span class="text-xl font-bold tracking-tight text-white">Burned NFT <span class="gradient-text">OnChain Extractor</span></span>
+      </div>
+
+      <!-- Export Controls -->
+      <div class="flex items-center gap-3">
+        <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
+          <i class="fa-solid fa-file-zipper"></i>
+          <span>Download SVG ZIP</span>
+        </button>
+        <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
+          <i class="fa-solid fa-code"></i>
+          <span>Download JSON ZIP</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+    
+    <!-- Direct Smart Contract Config Bar -->
+    <div class="glass-card p-6 rounded-2xl mb-8 border border-white/10">
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6 border-b border-white/10 pb-6">
+        <div class="md:col-span-5">
+          <label class="block text-xs text-gray-400 mb-1 font-medium">Alchemy API Key / RPC Key</label>
+          <input type="text" id="apiKeyInput" value="Sgfq6KI6igqQuemutQiHy" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition font-mono">
+        </div>
+        <div class="md:col-span-7">
+          <label class="block text-xs text-gray-400 mb-1 font-medium">NFT Contract Address</label>
+          <input type="text" id="contractInput" value="0x9eb6e2025b64f340691e424b7fe7022ffde12438" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 transition font-mono">
+        </div>
+      </div>
+
+      <!-- Burned Token Range Selector -->
+      <h2 class="text-xs font-bold uppercase tracking-wider text-rose-400 mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-fire"></i> Select Burned NFT Range To Read From Contract
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+        <div class="sm:col-span-4">
+          <label class="block text-xs text-gray-400 mb-1 font-medium">Start Token ID (e.g. 7336)</label>
+          <input type="number" id="rangeStart" value="7336" min="1" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 font-mono">
         </div>
 
-        <!-- আপলোড এরিয়া -->
-        <div class="upload-area" id="uploadArea">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#2b5a73" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <p><strong>জিপ ফোল্ডার</strong> টেনে আনুন বা ক্লিক করুন</p>
-            <span style="font-size:0.8rem; color:#4c7188;">(শুধু .zip, ভিতরে SVG ফাইল)</span>
-        </div>
-        <input type="file" id="fileInput" class="file-input" accept=".zip">
-
-        <!-- ফাইল লিস্ট -->
-        <div class="file-list" id="fileList">
-            <span style="color:#6f8fa3; font-size:0.9rem;">📂 কোনো জিপ ফাইল নির্বাচন করা হয়নি</span>
+        <div class="sm:col-span-4">
+          <label class="block text-xs text-gray-400 mb-1 font-medium">End Token ID (e.g. 10000)</label>
+          <input type="number" id="rangeEnd" value="7500" min="1" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500 font-mono">
         </div>
 
-        <!-- অ্যাকশন বাটন -->
-        <div class="action-bar">
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button class="btn btn-outline" id="clearBtn" disabled>🗑️ সাফ করুন</button>
-                <button class="btn btn-primary" id="processBtn" disabled>⚡ প্রসেস & ডাউনলোড</button>
-            </div>
-            <span style="font-weight:400; color:#1c445b; background:#e1edf6; padding:6px 20px; border-radius:40px; font-size:0.85rem;">
-                <span id="fileCount">0</span> টি SVG
-            </span>
+        <div class="sm:col-span-4">
+          <button onclick="startBurnedFetch()" class="w-full bg-gradient-to-r from-rose-600 to-purple-600 text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-[#fa4d56] fa-bolt"></i> Fetch Burned NFTs
+          </button>
         </div>
+      </div>
 
-        <!-- স্ট্যাটাস বার -->
-        <div class="status" id="statusBar">
-            <span class="info">⏳ অপেক্ষা করুন ...</span>
-            <span class="badge" id="statusBadge">প্রস্তুত</span>
-        </div>
-        <div class="footer-note">
-            ⚡ প্রতি SVG তে #48494B → #000000 (কালো) & #E3E5E4 → #d4ff00
-        </div>
     </div>
 
-    <script>
-        (function() {
-            "use strict";
+    <!-- Live Status -->
+    <div id="statusBox" class="glass-card p-6 rounded-2xl mb-8 border border-white/10 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></div>
+          <span id="statusText" class="text-sm font-semibold text-white">Connecting to Contract RPC...</span>
+        </div>
+        <span id="progressCount" class="text-xs font-mono text-rose-400 font-bold">0 Loaded</span>
+      </div>
+      <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden border border-white/5">
+        <div id="progressBar" class="bg-rose-500 h-full w-0 transition-all duration-150"></div>
+      </div>
+    </div>
 
-            // DOM রেফারেন্স
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-            const fileList = document.getElementById('fileList');
-            const clearBtn = document.getElementById('clearBtn');
-            const processBtn = document.getElementById('processBtn');
-            const fileCountSpan = document.getElementById('fileCount');
-            const statusBar = document.getElementById('statusBar');
-            const statusBadge = document.getElementById('statusBadge');
+    <!-- Gallery Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-border-all text-rose-400"></i>
+        Burned / Contract NFTs
+      </h2>
+      <div class="text-xs text-gray-400 font-mono">
+        Extracted NFTs: <span id="loadedCount" class="text-white font-bold">0</span>
+      </div>
+    </div>
 
-            // স্টোরেজ
-            let currentZipFile = null;          // ফাইল অবজেক্ট
-            let svgFilenames = [];              // শুধু .svg ফাইলের নাম
-            let processedBlob = null;           // শেষ প্রক্রিয়াজাত জিপ ব্লব
+    <!-- NFT Grid -->
+    <div id="nftGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
 
-            // হেল্পার: স্ট্যাটাস আপডেট
-            function setStatus(message, badgeText, isGood = true) {
-                const infoEl = statusBar.querySelector('.info');
-                if (infoEl) infoEl.textContent = message;
-                if (badgeText) {
-                    statusBadge.textContent = badgeText;
-                    statusBadge.style.background = isGood ? '#1f6f4b' : '#a14747';
-                }
+  </main>
+
+  <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
+    Direct Smart Contract RPC Reader • Full On-Chain Extractor
+  </footer>
+
+  <script>
+    let activeNFTs = [];
+    let isFetching = false;
+
+    // Convert Token ID to 32-byte HEX for tokenURI(uint256) function
+    function encodeTokenIdForTokenURI(tokenId) {
+      // Function signature hash for tokenURI(uint256) is 0xc87b56dd
+      const methodSig = "0xc87b56dd";
+      const hexTokenId = Number(tokenId).toString(16).padStart(64, '0');
+      return methodSig + hexTokenId;
+    }
+
+    // Decode ABI Encoded String response from Contract
+    function decodeABIString(hexString) {
+      if (!hexString || hexString === "0x") return null;
+      let cleanHex = hexString.replace(/^0x/, '');
+      
+      // ABI String format has offset, length, and content
+      if (cleanHex.length >= 128) {
+        let lengthHex = cleanHex.substring(64, 128);
+        let strLen = parseInt(lengthHex, 16);
+        let dataHex = cleanHex.substring(128, 128 + (strLen * 2));
+        
+        let bytes = new Uint8Array(dataHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        return new TextDecoder().decode(bytes);
+      }
+      return null;
+    }
+
+    // Parse Data URI Metadata (Base64 JSON / Base64 SVG)
+    function parseOnChainMetadata(uriString) {
+      if (!uriString) return null;
+
+      try {
+        if (uriString.startsWith('data:application/json;base64,')) {
+          const jsonStr = atob(uriString.replace('data:application/json;base64,', ''));
+          return JSON.parse(jsonStr);
+        } else if (uriString.startsWith('data:application/json;utf8,')) {
+          return JSON.parse(uriString.replace('data:application/json;utf8,', ''));
+        } else if (uriString.startsWith('{')) {
+          return JSON.parse(uriString);
+        }
+      } catch (e) {
+        console.error("Metadata JSON Parse error", e);
+      }
+      return null;
+    }
+
+    async function startBurnedFetch() {
+      if (isFetching) return;
+
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      const contract = document.getElementById("contractInput").value.trim();
+      const startNum = parseInt(document.getElementById("rangeStart").value) || 7336;
+      const endNum = parseInt(document.getElementById("rangeEnd").value) || 7500;
+
+      if (startNum > endNum) {
+        alert("Start Token ID must be smaller than End Token ID!");
+        return;
+      }
+
+      isFetching = true;
+
+      const grid = document.getElementById("nftGrid");
+      const statusBox = document.getElementById("statusBox");
+      const statusText = document.getElementById("statusText");
+      const progressBar = document.getElementById("progressBar");
+      const progressCount = document.getElementById("progressCount");
+      const loadedCount = document.getElementById("loadedCount");
+
+      grid.innerHTML = "";
+      activeNFTs = [];
+      statusBox.classList.remove("hidden");
+
+      const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
+      let totalToFetch = (endNum - startNum) + 1;
+      let currentId = startNum;
+
+      try {
+        while (currentId <= endNum) {
+          statusText.innerText = `Reading On-Chain Contract for Token #${currentId}...`;
+
+          // Direct eth_call to RPC to get tokenURI(tokenId)
+          const rpcPayload = {
+            jsonrpc: "2.0",
+            id: currentId,
+            method: "eth_call",
+            params: [{
+              to: contract,
+              data: encodeTokenIdForTokenURI(currentId)
+            }, "latest"]
+          };
+
+          const res = await fetch(rpcUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rpcPayload)
+          });
+
+          const resData = await res.json();
+
+          if (resData.result && resData.result !== "0x") {
+            const rawUri = decodeABIString(resData.result);
+            const metadata = parseOnChainMetadata(rawUri);
+
+            if (metadata) {
+              const nftData = {
+                tokenId: currentId,
+                name: metadata.name || `#${currentId}`,
+                description: metadata.description || '',
+                image: metadata.image || '',
+                rawMetadata: metadata
+              };
+
+              activeNFTs.push(nftData);
+              renderSingleCard(nftData);
             }
+          } else {
+            console.warn(`Token #${currentId} URI not returned from contract.`);
+          }
 
-            // রিসেট UI (ফাইল ক্লিয়ার)
-            function resetFileUI() {
-                currentZipFile = null;
-                svgFilenames = [];
-                processedBlob = null;
-                fileList.innerHTML = `<span style="color:#6f8fa3; font-size:0.9rem;">📂 কোনো জিপ ফাইল নির্বাচন করা হয়নি</span>`;
-                fileCountSpan.textContent = '0';
-                clearBtn.disabled = true;
-                processBtn.disabled = true;
-                setStatus('⏳ নতুন জিপ আপলোড করুন', 'প্রস্তুত', true);
-            }
+          // Progress update
+          let completed = (currentId - startNum) + 1;
+          let pct = Math.floor((completed / totalToFetch) * 100);
+          progressBar.style.width = pct + "%";
+          progressCount.innerText = `${activeNFTs.length} Extracted`;
+          loadedCount.innerText = activeNFTs.length;
 
-            // ফাইল লিস্ট রেন্ডার
-            function renderFileList() {
-                if (!currentZipFile) {
-                    resetFileUI();
-                    return;
-                }
-                if (svgFilenames.length === 0) {
-                    fileList.innerHTML = `<span style="color:#b1654b;">⚠️ জিপে কোনো .svg ফাইল নেই</span>`;
-                    fileCountSpan.textContent = '0';
-                    clearBtn.disabled = false;
-                    processBtn.disabled = true;
-                    setStatus('⛔ জিপে SVG নেই', 'ত্রুটি', false);
-                    return;
-                }
-                // ফাইল ট্যাগ তৈরি
-                let html = '';
-                svgFilenames.forEach((name, idx) => {
-                    html += `<span class="file-tag">📄 ${name} <span class="remove" data-idx="${idx}">✕</span></span>`;
-                });
-                fileList.innerHTML = html;
-                fileCountSpan.textContent = svgFilenames.length;
-                clearBtn.disabled = false;
-                processBtn.disabled = false;
-                setStatus(`✅ ${svgFilenames.length} টি SVG পাওয়া গেছে`, 'প্রস্তুত', true);
+          currentId++;
+        }
 
-                // প্রতিটি ফাইলের "✕" এ ক্লিক করলে সেটি বাদ দিতে (শুধু UI থেকে, কিন্তু জিপ থেকে রিমুভ না)
-                // বাস্তবে জিপ থেকে রিমুভ করা জটিল, তাই শুধু UI তে দেখাবো না, কিন্তু প্রক্রিয়ায় আবার সবাই আসবে।
-                // আমরা "সাফ" বাটনে পুরো রিসেট করবো।
-                document.querySelectorAll('.file-tag .remove').forEach(el => {
-                    el.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const idx = parseInt(this.dataset.idx);
-                        if (!isNaN(idx) && svgFilenames.length > idx) {
-                            svgFilenames.splice(idx, 1);
-                            renderFileList(); // রি-রেন্ডার
-                        }
-                    });
-                });
-            }
+        statusText.innerText = `Finished Extracting Range #${startNum} to #${endNum}!`;
+        progressBar.style.width = "100%";
+        enableDownloadButtons();
 
-            // জিপ পার্স ও SVG নাম বের করা
-            async function parseZipAndExtractSVGNames(zipFile) {
-                try {
-                    const arrayBuffer = await zipFile.arrayBuffer();
-                    const zip = await JSZip.loadAsync(arrayBuffer);
-                    const svgFiles = [];
-                    zip.forEach((relativePath, zipEntry) => {
-                        if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.svg')) {
-                            svgFiles.push(relativePath);
-                        }
-                    });
-                    return { zip, svgFiles };
-                } catch (error) {
-                    console.error('জিপ পার্স করতে সমস্যা:', error);
-                    return null;
-                }
-            }
+      } catch (err) {
+        console.error(err);
+        statusText.innerText = "RPC Error: " + err.message;
+      } finally {
+        isFetching = false;
+      }
+    }
 
-            // জিপ ফাইল হ্যান্ডেল
-            async function handleZipFile(file) {
-                resetFileUI();
-                if (!file || file.type !== 'application/zip' && !file.name.toLowerCase().endsWith('.zip')) {
-                    setStatus('❌ শুধু .zip ফাইল সাপোর্টেড', 'ত্রুটি', false);
-                    return;
-                }
-                currentZipFile = file;
-                const result = await parseZipAndExtractSVGNames(file);
-                if (!result) {
-                    setStatus('❌ জিপ পড়া সম্ভব হয়নি', 'ত্রুটি', false);
-                    currentZipFile = null;
-                    return;
-                }
-                const { svgFiles } = result;
-                svgFilenames = svgFiles;
-                renderFileList();
-                if (svgFilenames.length === 0) {
-                    setStatus('⚠️ জিপে কোনো .svg ফাইল নেই', 'সতর্কতা', false);
-                } else {
-                    setStatus(`✅ ${svgFilenames.length} টি SVG পাওয়া গেছে`, 'প্রস্তুত', true);
-                }
-            }
+    function renderSingleCard(nft) {
+      const grid = document.getElementById("nftGrid");
+      const title = nft.name || `#${nft.tokenId}`;
+      let imgUrl = nft.image;
 
-            // ---------- মূল প্রসেস: কালার রিপ্লেস করে নতুন জিপ ----------
-            async function processAndDownload() {
-                if (!currentZipFile) {
-                    setStatus('❌ আগে একটি জিপ আপলোড করুন', 'ত্রুটি', false);
-                    return;
-                }
-                if (svgFilenames.length === 0) {
-                    setStatus('❌ কোন SVG ফাইল নেই', 'ত্রুটি', false);
-                    return;
-                }
+      const card = document.createElement("div");
+      card.className = "glass-card rounded-2xl overflow-hidden flex flex-col justify-between p-3 transition duration-300";
 
-                // বাটন ডিজেবল ও স্পিনার
-                processBtn.disabled = true;
-                processBtn.innerHTML = `<span class="spinner"></span> প্রক্রিয়াকরণ...`;
-                setStatus('⏳ SVG প্রসেস করা হচ্ছে ...', 'রূপান্তর', true);
+      card.innerHTML = `
+        <div class="relative aspect-square rounded-xl overflow-hidden bg-black/40 border border-white/5 flex items-center justify-center">
+          <img src="${imgUrl}" 
+               alt="${title}"
+               loading="lazy"
+               class="w-full h-full object-contain" 
+               onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/111827/6B7280?text=Load+Error';" />
+          <div class="absolute top-2 left-2 bg-rose-600/90 text-white backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono font-bold">
+            #${nft.tokenId}
+          </div>
+        </div>
+        <div class="mt-3 px-1">
+          <h3 class="font-bold text-white text-sm truncate">${title}</h3>
+          <p class="text-[11px] text-rose-400 font-mono mt-0.5">Burned / On-Chain Token</p>
+        </div>
+      `;
 
-                try {
-                    const arrayBuffer = await currentZipFile.arrayBuffer();
-                    const zip = await JSZip.loadAsync(arrayBuffer);
+      grid.appendChild(card);
+    }
 
-                    // নতুন জিপ অবজেক্ট
-                    const newZip = new JSZip();
+    function enableDownloadButtons() {
+      const imgBtn = document.getElementById("downloadImagesBtn");
+      const jsonBtn = document.getElementById("downloadJsonBtn");
 
-                    // প্রতিটি SVG ফাইলের জন্য
-                    const svgEntries = [];
-                    zip.forEach((relativePath, zipEntry) => {
-                        if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.svg')) {
-                            svgEntries.push({ path: relativePath, entry: zipEntry });
-                        } else {
-                            // অন্যান্য ফাইল কপি (যেমন folder structure)
-                            if (!zipEntry.dir) {
-                                newZip.file(relativePath, zipEntry._data?.blob || zipEntry._data?.nodeBuffer || zipEntry._data, { binary: true });
-                            } else {
-                                newZip.folder(relativePath);
-                            }
-                        }
-                    });
+      imgBtn.disabled = false;
+      imgBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-rose-600 text-white hover:bg-rose-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-rose-500/20";
 
-                    // প্রতিটি SVG প্রসেস
-                    for (const { path, entry } of svgEntries) {
-                        let content;
-                        try {
-                            content = await entry.async('string');
-                        } catch (e) {
-                            console.warn('পড়া সম্ভব হয়নি:', path, e);
-                            // ফাইলটি বাদ না দিয়ে কপি করি
-                            const blob = await entry.async('blob');
-                            newZip.file(path, blob);
-                            continue;
-                        }
+      jsonBtn.disabled = false;
+      jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-purple-500/20";
+    }
 
-                        // ১. #48494B → #000000 (কালো) , কেস ইনসেন্সিটিভ
-                        let newContent = content.replace(/#48494B/gi, '#000000');
-                        // ২. #E3E5E4 → #d4ff00 (কেস ইনসেন্সিটিভ)
-                        newContent = newContent.replace(/#E3E5E4/gi, '#d4ff00');
+    // SVG ZIP Export
+    async function downloadImagesZip() {
+      const zip = new JSZip();
+      const statusText = document.getElementById("statusText");
 
-                        // নতুন SVG ফাইল যোগ
-                        newZip.file(path, newContent);
-                    }
+      statusText.innerText = "Extracting On-Chain SVG files into ZIP...";
+      let total = activeNFTs.length;
 
-                    // জিপ তৈরি
-                    const zipBlob = await newZip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-                    processedBlob = zipBlob;
+      activeNFTs.forEach((nft) => {
+        const tokenId = nft.tokenId;
+        let imgUrl = nft.image;
 
-                    // ডাউনলোড
-                    const downloadName = currentZipFile.name.replace(/\.zip$/i, '') + '_color_changed.zip';
-                    saveAs(zipBlob, downloadName);
+        if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
+          const base64Data = imgUrl.replace('data:image/svg+xml;base64,', '');
+          zip.file(`${tokenId}.svg`, base64Data, { base64: true });
+        } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
+          const svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
+          zip.file(`${tokenId}.svg`, svgContent);
+        } else if (imgUrl.startsWith('<svg')) {
+          zip.file(`${tokenId}.svg`, imgUrl);
+        }
+      });
 
-                    setStatus(`✅ ডাউনলোড শুরু! ${svgFilenames.length} টি SVG পরিবর্তিত`, 'সম্পন্ন', true);
-                } catch (error) {
-                    console.error('প্রক্রিয়াকরণে ত্রুটি:', error);
-                    setStatus(`❌ ত্রুটি: ${error.message || 'অজানা'}`, 'ব্যর্থ', false);
-                } finally {
-                    processBtn.innerHTML = `⚡ প্রসেস & ডাউনলোড`;
-                    processBtn.disabled = (svgFilenames.length === 0 || !currentZipFile);
-                }
-            }
+      statusText.innerText = "Generating SVG ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      const startVal = document.getElementById("rangeStart").value;
+      const endVal = document.getElementById("rangeEnd").value;
+      saveAs(content, `Burned_NFT_SVG_${startVal}_to_${endVal}.zip`);
+      statusText.innerText = "SVG ZIP Download Complete!";
+    }
 
-            // ---------- ইভেন্ট লিসেনার ----------
-            // আপলোড এলাকায় ক্লিক
-            uploadArea.addEventListener('click', () => fileInput.click());
+    // Metadata JSON ZIP Export
+    async function downloadMetadataZip() {
+      const zip = new JSZip();
+      const statusText = document.getElementById("statusText");
 
-            // ফাইল ইনপুট পরিবর্তন
-            fileInput.addEventListener('change', async (e) => {
-                if (e.target.files.length > 0) {
-                    const file = e.target.files[0];
-                    await handleZipFile(file);
-                }
-                fileInput.value = ''; // রিসেট
-            });
+      statusText.innerText = "Generating JSON Metadata ZIP...";
 
-            // ড্র্যাগ ও ড্রপ
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.background = '#dde9f5';
-                uploadArea.style.borderColor = '#5f8aa5';
-            });
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.background = '#f0f6fd';
-                uploadArea.style.borderColor = '#b8cfde';
-            });
-            uploadArea.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                uploadArea.style.background = '#f0f6fd';
-                uploadArea.style.borderColor = '#b8cfde';
-                const files = e.dataTransfer.files;
-                if (files.length > 0 && files[0].name.toLowerCase().endsWith('.zip')) {
-                    await handleZipFile(files[0]);
-                } else {
-                    setStatus('❌ শুধু .zip ফাইল ড্রপ করুন', 'ত্রুটি', false);
-                }
-            });
+      activeNFTs.forEach((nft) => {
+        const jsonContent = JSON.stringify(nft.rawMetadata, null, 2);
+        zip.file(`${nft.tokenId}.json`, jsonContent);
+      });
 
-            // ক্লিয়ার বাটন
-            clearBtn.addEventListener('click', () => {
-                resetFileUI();
-                fileInput.value = '';
-                setStatus('🗑️ সবকিছু সাফ করা হয়েছে', 'প্রস্তুত', true);
-            });
-
-            // প্রসেস বাটন
-            processBtn.addEventListener('click', processAndDownload);
-
-            // রিসেট
-            resetFileUI();
-
-            // অতিরিক্ত: window এ saveAs আছে (FileSaver)
-            if (typeof window.saveAs === 'undefined') {
-                console.warn('FileSaver পাওয়া যায়নি');
-            }
-        })();
-    </script>
+      statusText.innerText = "Generating JSON ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      const startVal = document.getElementById("rangeStart").value;
+      const endVal = document.getElementById("rangeEnd").value;
+      saveAs(content, `Burned_NFT_JSON_${startVal}_to_${endVal}.zip`);
+      statusText.innerText = "JSON ZIP Download Complete!";
+    }
+  </script>
 </body>
 </html>
