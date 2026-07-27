@@ -1,450 +1,344 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Cyberpunk Dither ASCII NFT Generator</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFT Collection Showcase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f17;
+      color: #f3f4f6;
+    }
 
-        body {
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            background-color: #0b0c10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Courier New', monospace;
-            flex-direction: column;
-            gap: 25px;
-        }
+    .glass-card {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
-        /* Fixed 512x512 Square NFT Frame */
-        .nft-card {
-            background-color: #050508;
-            padding: 0;
-            border-radius: 16px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 512px;
-            height: 512px;
-            min-width: 512px;
-            min-height: 512px;
-            max-width: 512px;
-            max-height: 512px;
-            overflow: hidden;
-            position: relative;
-            border: 2px solid rgba(255, 255, 255, 0.12);
-        }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
+    }
 
-        #asciiContainer {
-            background-color: transparent;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-        #asciiArt {
-            font-size: 8px;
-            line-height: 0.85;
-            letter-spacing: -0.5px;
-            white-space: pre;
-            font-family: 'Courier New', monospace;
-            font-weight: 900;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
+    .gradient-border {
+      position: relative;
+      border-radius: 1rem;
+    }
 
-        /* ===== CONTROLS ===== */
-        .controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            width: 100%;
-            max-width: 512px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        .input-group input[type="number"], .input-group input[type="text"] {
-            padding: 12px 18px;
-            font-size: 16px;
-            font-weight: 600;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50px;
-            background: rgba(255, 255, 255, 0.06);
-            color: #ffffff;
-            text-align: center;
-            outline: none;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .input-group input[type="number"] {
-            width: 110px;
-        }
-
-        .input-group input[type="text"] {
-            width: 130px;
-        }
-
-        .color-picker-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50px;
-            padding: 4px 12px;
-        }
-
-        .color-picker-wrapper input[type="color"] {
-            -webkit-appearance: none;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            background: none;
-        }
-
-        .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
-
-        .color-picker-wrapper input[type="color"]::-webkit-color-swatch {
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-        }
-
-        .btn-load {
-            padding: 12px 28px;
-            font-size: 16px;
-            font-weight: 700;
-            border: none;
-            border-radius: 50px;
-            background: #d4ff00;
-            color: #1a1a2e;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(212, 255, 0, 0.2);
-        }
-
-        .btn-load:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(212, 255, 0, 0.35);
-        }
-
-        .quick-links {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .quick-links button {
-            padding: 8px 18px;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 50px;
-            background: rgba(255, 255, 255, 0.04);
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .quick-links button:hover {
-            background: rgba(212, 255, 0, 0.12);
-            border-color: rgba(212, 255, 0, 0.3);
-            color: #d4ff00;
-        }
-
-        .download-section {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-            margin-top: 5px;
-        }
-
-        .btn-download {
-            padding: 14px 30px;
-            font-size: 15px;
-            font-weight: 700;
-            border: none;
-            border-radius: 50px;
-            background: linear-gradient(135deg, #d4ff00, #b3db00);
-            color: #1a1a2e;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-download-png {
-            background: linear-gradient(135deg, #7c3aed, #6d28d9);
-            color: #ffffff;
-            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
-        }
-
-        #status-message {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            text-align: center;
-        }
-
-        #status-message.success { color: #69db7c; }
-        #status-message.error { color: #ff6b6b; }
-        #status-message.loading { color: #d4ff00; }
-
-        @media (max-width: 550px) {
-            .nft-card {
-                width: 320px;
-                height: 320px;
-                min-width: 320px;
-                min-height: 320px;
-            }
-            #asciiArt {
-                font-size: 5px;
-            }
-        }
-    </style>
+    .gradient-border::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 1.05rem;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(236, 72, 153, 0.2));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
-    <div class="nft-card" id="nftCardElement">
-        <div id="asciiContainer">
-            <pre id="asciiArt">⏳ Loading Cyberpunk Dither NFT...</pre>
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0f17]/80 border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-cubes"></i>
         </div>
+        <span class="text-xl font-bold tracking-tight text-white">NFT <span class="gradient-text">Vault</span></span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <a id="etherscanLink" target="_blank" class="text-xs sm:text-sm font-medium px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center gap-2 text-gray-300 hover:text-white">
+          <i class="fa-solid fa-arrow-up-right-from-square text-indigo-400"></i>
+          <span class="hidden sm:inline">View on Etherscan</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-grow">
+    
+    <!-- Hero / Stats Banner -->
+    <div class="gradient-border bg-gradient-to-b from-gray-900/80 to-gray-900/40 p-6 sm:p-8 mb-10 backdrop-blur-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div>
+          <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-3">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+            Ethereum Mainnet
+          </span>
+          <h1 id="collectionTitle" class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
+            Live Collection Showcase
+          </h1>
+          <p class="text-gray-400 text-sm max-w-2xl font-mono break-all" id="contractAddressDisplay">
+            Contract: 0x9eb6e2025b64f340691e424b7fe7022ffde12438
+          </p>
+        </div>
+
+        <div class="flex items-center gap-4 bg-black/30 p-4 rounded-xl border border-white/5 self-start lg:self-auto">
+          <div class="pr-6 border-r border-white/10">
+            <p class="text-xs text-gray-400 font-medium">Total Items</p>
+            <p id="totalCount" class="text-2xl font-bold text-white">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium">Network</p>
+            <p class="text-sm font-semibold text-emerald-400 flex items-center gap-1.5 mt-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live API
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="controls">
-        <div class="input-group">
-            <input type="number" id="nftNumber" value="2" min="1" step="1" placeholder="#">
-            
-            <div class="color-picker-wrapper">
-                <input type="color" id="bgColorPicker" value="#050508">
-                <input type="text" id="bgColorInput" value="#050508" placeholder="#050508">
+    <!-- Gallery Section Header -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-border-all text-indigo-400"></i>
+        Collection Items
+      </h2>
+      <button onclick="fetchNFTs()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition flex items-center gap-1.5">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh
+      </button>
+    </div>
+
+    <!-- Skeleton Loader -->
+    <div id="skeletonLoader" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- 8 Skeleton items -->
+      <script>
+        for (let i = 0; i < 8; i++) {
+          document.write(`
+            <div class="glass-card rounded-2xl overflow-hidden animate-pulse">
+              <div class="w-full h-64 bg-gray-800/60"></div>
+              <div class="p-5 space-y-3">
+                <div class="h-4 bg-gray-800/80 rounded w-1/3"></div>
+                <div class="h-5 bg-gray-800 rounded w-3/4"></div>
+                <div class="h-3 bg-gray-800/60 rounded w-full"></div>
+              </div>
+            </div>
+          `);
+        }
+      </script>
+    </div>
+
+    <!-- NFT Grid -->
+    <div id="nftGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden"></div>
+
+    <!-- Empty / Error State -->
+    <div id="errorState" class="hidden text-center py-20 glass-card rounded-2xl">
+      <i class="fa-solid fa-circle-exclamation text-4xl text-rose-500 mb-3"></i>
+      <h3 class="text-lg font-bold text-white mb-1">Failed to Load NFTs</h3>
+      <p class="text-gray-400 text-sm max-w-md mx-auto" id="errorMessage">
+        Could not connect to the Alchemy API endpoint.
+      </p>
+    </div>
+  </main>
+
+  <!-- Modal for Metadata Attributes -->
+  <div id="nftModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-300">
+    <div class="glass-card bg-gray-900/90 rounded-2xl max-w-xl w-full p-6 relative border border-white/10 shadow-2xl overflow-hidden">
+      <button onclick="closeModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      
+      <div class="flex flex-col sm:flex-row gap-6 items-start">
+        <img id="modalImage" src="" alt="" class="w-full sm:w-48 h-48 object-cover rounded-xl bg-gray-800 border border-white/10">
+        <div class="flex-1 w-full">
+          <span id="modalTokenId" class="text-xs font-mono font-semibold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">#--</span>
+          <h3 id="modalTitle" class="text-xl font-bold text-white mt-2 mb-1">NFT Name</h3>
+          <p id="modalDescription" class="text-xs text-gray-400 mb-4 max-h-24 overflow-y-auto">No description provided.</p>
+        </div>
+      </div>
+
+      <div class="mt-6 border-t border-white/10 pt-4">
+        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Attributes</h4>
+        <div id="modalAttributes" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 py-6 bg-black/40 mt-16">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-gray-500">
+      Powered by Alchemy API • Ethereum Mainnet
+    </div>
+  </footer>
+
+  <!-- Script -->
+  <script>
+    const API_KEY = "Sgfq6KI6igqQuemutQiHy";
+    const CONTRACT_ADDRESS = "0x9eb6e2025b64f340691e424b7fe7022ffde12438";
+    
+    // Alchemy NFT API v3 Endpoint
+    const API_URL = `https://eth-mainnet.g.alchemy.com/nft/v3/${API_KEY}/getNFTsForContract?contractAddress=${CONTRACT_ADDRESS}&withMetadata=true`;
+
+    document.getElementById("etherscanLink").href = `https://etherscan.io/address/${CONTRACT_ADDRESS}`;
+
+    // Helper to fix IPFS image URIs
+    function resolveIpfsUrl(url) {
+      if (!url) return 'https://via.placeholder.com/400x400/111827/6B7280?text=No+Image';
+      if (url.startsWith('ipfs://')) {
+        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+      }
+      return url;
+    }
+
+    async function fetchNFTs() {
+      const skeleton = document.getElementById("skeletonLoader");
+      const grid = document.getElementById("nftGrid");
+      const errorState = document.getElementById("errorState");
+
+      skeleton.classList.remove("hidden");
+      grid.classList.add("hidden");
+      errorState.classList.add("hidden");
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const nfts = data.nfts || [];
+
+        document.getElementById("totalCount").innerText = nfts.length;
+
+        if (nfts.length === 0) {
+          throw new Error("No NFTs found for this contract address.");
+        }
+
+        renderNFTs(nfts);
+        skeleton.classList.add("hidden");
+        grid.classList.remove("hidden");
+
+      } catch (err) {
+        console.error(err);
+        skeleton.classList.add("hidden");
+        errorState.classList.remove("hidden");
+        document.getElementById("errorMessage").innerText = err.message;
+      }
+    }
+
+    function renderNFTs(nfts) {
+      const grid = document.getElementById("nftGrid");
+      grid.innerHTML = "";
+
+      nfts.forEach((nft) => {
+        const tokenId = nft.tokenId || "0";
+        const title = nft.name || nft.title || `#${tokenId}`;
+        const description = nft.description || "No description available.";
+        
+        // Extract Image URL
+        let imageUrl = nft.image?.cachedUrl || nft.image?.originalUrl || nft.raw?.metadata?.image;
+        imageUrl = resolveIpfsUrl(imageUrl);
+
+        // Raw Metadata for Modal
+        const rawNFT = encodeURIComponent(JSON.stringify(nft));
+
+        const card = document.createElement("div");
+        card.className = "glass-card rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between group cursor-pointer";
+        card.onclick = () => openModal(decodeURIComponent(rawNFT));
+
+        card.innerHTML = `
+          <div class="relative overflow-hidden aspect-square bg-gray-800/50">
+            <img src="${imageUrl}" alt="${title}" 
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+              onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/111827/6B7280?text=Image+Load+Error';"
+            />
+            <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[11px] font-mono font-semibold text-gray-200">
+              #${tokenId}
+            </div>
+          </div>
+          
+          <div class="p-5 flex-1 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-white text-base truncate group-hover:text-indigo-400 transition-colors">
+                ${title}
+              </h3>
+              <p class="text-gray-400 text-xs mt-1 line-clamp-2 leading-relaxed">
+                ${description}
+              </p>
             </div>
 
-            <button class="btn-load" id="loadBtn">⟳ Load NFT</button>
-        </div>
+            <div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-indigo-400 font-medium">
+              <span>View Details</span>
+              <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+            </div>
+          </div>
+        `;
 
-        <div class="quick-links">
-            <button onclick="loadNFT(1)">#1</button>
-            <button onclick="loadNFT(2)">#2</button>
-            <button onclick="loadNFT(3)">#3</button>
-            <button onclick="loadNFT(4)">#4</button>
-            <button onclick="loadNFT(5)">#5</button>
-            <button onclick="loadNFT(6)">#6</button>
-            <button class="btn-random" onclick="loadRandom()">🎲 Random</button>
-        </div>
+        grid.appendChild(card);
+      });
+    }
 
-        <div class="download-section">
-            <button class="btn-download" id="downloadAsciiBtn">📋 Download ASCII (TXT)</button>
-            <button class="btn-download btn-download-png" id="downloadPngBtn">🖼️ Download PNG Image</button>
-        </div>
+    function openModal(rawNftData) {
+      const nft = JSON.parse(rawNftData);
+      const modal = document.getElementById("nftModal");
 
-        <div id="status-message">Ready · Enter a number</div>
-    </div>
+      const title = nft.name || nft.title || `#${nft.tokenId}`;
+      const description = nft.description || "No description available for this item.";
+      let imageUrl = nft.image?.cachedUrl || nft.image?.originalUrl || nft.raw?.metadata?.image;
+      imageUrl = resolveIpfsUrl(imageUrl);
 
-    <script>
-        const BASE_URL = "https://ipfs.io/ipfs/bafybeifh2kk6nv5osnwlh7qvjunuowb3vgxaoaqfufxiocozdqdpqqkvnu/";
-        let currentNFTNumber = 2;
-        let currentBgColor = "#050508";
+      document.getElementById("modalTitle").innerText = title;
+      document.getElementById("modalTokenId").innerText = `#${nft.tokenId}`;
+      document.getElementById("modalDescription").innerText = description;
+      document.getElementById("modalImage").src = imageUrl;
 
-        const nftNumberInput = document.getElementById('nftNumber');
-        const loadBtn = document.getElementById('loadBtn');
-        const statusMsg = document.getElementById('status-message');
-        const asciiArt = document.getElementById('asciiArt');
-        const downloadAsciiBtn = document.getElementById('downloadAsciiBtn');
-        const downloadPngBtn = document.getElementById('downloadPngBtn');
-        const nftCardElement = document.getElementById('nftCardElement');
-        const bgColorPicker = document.getElementById('bgColorPicker');
-        const bgColorInput = document.getElementById('bgColorInput');
+      // Render Attributes/Traits
+      const attrContainer = document.getElementById("modalAttributes");
+      attrContainer.innerHTML = "";
 
-        // CHARACTER GRID MAP FROM YOUR PROMPT: (+, x, |, -, ░, ▒, ▓, █)
-        const CYBERPUNK_GRID = [' ', '-', '|', '+', 'x', '░', '▒', '▓', '█'];
-        
-        // Background Grid Pattern Dithering
-        const BG_GRID_CHARS = ['┼', 'x', '+', '░', '▒', '░', '·', ' '];
+      const attributes = nft.raw?.metadata?.attributes || nft.attributes || [];
 
-        function updateBackgroundColor(color) {
-            currentBgColor = color;
-            nftCardElement.style.backgroundColor = color;
-            bgColorPicker.value = color;
-            bgColorInput.value = color;
-        }
-
-        bgColorPicker.addEventListener('input', (e) => updateBackgroundColor(e.target.value));
-        bgColorInput.addEventListener('input', (e) => {
-            let val = e.target.value.trim();
-            if (/^#[0-9A-F]{6}$/i.test(val) || /^#[0-9A-F]{3}$/i.test(val)) {
-                updateBackgroundColor(val);
-            }
+      if (Array.isArray(attributes) && attributes.length > 0) {
+        attributes.forEach(attr => {
+          const traitBox = document.createElement("div");
+          traitBox.className = "bg-white/5 border border-white/5 p-2 rounded-xl text-left";
+          traitBox.innerHTML = `
+            <p class="text-[10px] text-indigo-400 uppercase font-semibold tracking-wider truncate">${attr.trait_type || 'Attribute'}</p>
+            <p class="text-xs font-bold text-white truncate mt-0.5">${attr.value}</p>
+          `;
+          attrContainer.appendChild(traitBox);
         });
+      } else {
+        attrContainer.innerHTML = `<p class="text-xs text-gray-500 col-span-3">No traits available.</p>`;
+      }
 
-        // HIGH CONTRAST RETRO DITHERING RENDERER
-        function renderCyberpunkStaticASCII(imageData, width, height) {
-            const data = imageData.data;
-            let html = '';
+      modal.classList.remove("hidden");
+      setTimeout(() => modal.classList.remove("opacity-0"), 10);
+    }
 
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const index = (y * width + x) * 4;
-                    const r = data[index];
-                    const g = data[index + 1];
-                    const b = data[index + 2];
-                    const a = data[index + 3];
+    function closeModal() {
+      const modal = document.getElementById("nftModal");
+      modal.classList.add("opacity-0");
+      setTimeout(() => modal.classList.add("hidden"), 300);
+    }
 
-                    if (a < 30) {
-                        // Retro Grid Dithering Background (+, x, ┼, ░)
-                        const bgIdx = (x * 3 + y * 7) % BG_GRID_CHARS.length;
-                        const char = BG_GRID_CHARS[bgIdx];
-                        html += `<span style="color: rgba(255, 255, 255, 0.12)">${char}</span>`;
-                    } else {
-                        // High Contrast 8-bit Character Grid Mapping
-                        const brightness = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                        const charIdx = Math.floor((brightness / 255) * (CYBERPUNK_GRID.length - 1));
-                        const char = CYBERPUNK_GRID[charIdx];
+    // Close modal on click outside
+    document.getElementById("nftModal").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("nftModal")) {
+        closeModal();
+      }
+    });
 
-                        // Cyberpunk High-Contrast Color Pop
-                        html += `<span style="color: rgb(${r},${g},${b})">${char}</span>`;
-                    }
-                }
-                html += '\n';
-            }
-            return html;
-        }
-
-        function loadNFT(number) {
-            if (!number || number < 1 || !Number.isInteger(number)) {
-                statusMsg.textContent = '⚠️ সঠিক একটি সংখ্যা দিন';
-                statusMsg.className = 'error';
-                return;
-            }
-
-            currentNFTNumber = number;
-            statusMsg.textContent = `⏳ লোড হচ্ছে #${number} ...`;
-            statusMsg.className = 'loading';
-            asciiArt.innerHTML = '⏳ জেনারেট হচ্ছে Cyberpunk ASCII...';
-
-            const imageUrl = `${BASE_URL}${number}.png`;
-
-            fetch(imageUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error('Image not found');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const img = new Image();
-                    const objectUrl = URL.createObjectURL(blob);
-
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        let displayWidth = 82; 
-                        let displayHeight = Math.floor(displayWidth * (img.height / img.width) * 0.58);
-
-                        canvas.width = displayWidth;
-                        canvas.height = displayHeight;
-
-                        ctx.clearRect(0, 0, displayWidth, displayHeight);
-                        ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
-
-                        const imageData = ctx.getImageData(0, 0, displayWidth, displayHeight);
-                        
-                        // Render Static High Quality ASCII
-                        asciiArt.innerHTML = renderCyberpunkStaticASCII(imageData, displayWidth, displayHeight);
-
-                        statusMsg.textContent = `✓ #${number} সাইবারপাঙ্ক পিক্সেল আর্ট রেডি!`;
-                        statusMsg.className = 'success';
-                        nftNumberInput.value = number;
-
-                        URL.revokeObjectURL(objectUrl);
-                    };
-
-                    img.onerror = function() {
-                        statusMsg.textContent = `✗ ইমেজ পেতে সমস্যা হয়েছে #${number}`;
-                        statusMsg.className = 'error';
-                        asciiArt.innerHTML = '⚠️ Image error';
-                        URL.revokeObjectURL(objectUrl);
-                    };
-
-                    img.src = objectUrl;
-                })
-                .catch(error => {
-                    statusMsg.textContent = `✗ #${number} IPFS-এ পাওয়া যায়নি`;
-                    statusMsg.className = 'error';
-                    asciiArt.innerHTML = '⚠️ Image not found';
-                });
-        }
-
-        // DOWNLOAD PNG
-        function downloadAsPNG() {
-            if (!asciiArt.innerText) return;
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const imageSize = 512;
-            canvas.width = imageSize;
-            canvas.height = imageSize;
-
-            ctx.fillStyle = currentBgColor;
-            ctx.fillRect(0, 0, imageSize, imageSize);
-
-            const link = document.createElement('a');
-            link.download = `NFT_#${currentNFTNumber}_Cyberpunk.png`;
-            link.href = canvas.toDataURL('image/png');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function downloadAsciiTXT() {
-            if (!asciiArt.innerText) return;
-            const blob = new Blob([asciiArt.innerText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `NFT_#${currentNFTNumber}_Cyberpunk.txt`;
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function loadRandom() {
-            const randomNum = Math.floor(Math.random() * 10) + 1;
-            loadNFT(randomNum);
-        }
-
-        loadBtn.addEventListener('click', () => loadNFT(parseInt(nftNumberInput.value)));
-        downloadAsciiBtn.addEventListener('click', downloadAsciiTXT);
-        downloadPngBtn.addEventListener('click', downloadAsPNG);
-
-        window.addEventListener('load', () => {
-            updateBackgroundColor('#050508');
-            loadNFT(2);
-        });
-    </script>
-
+    // Run on load
+    window.addEventListener("DOMContentLoaded", fetchNFTs);
+  </script>
 </body>
 </html>
