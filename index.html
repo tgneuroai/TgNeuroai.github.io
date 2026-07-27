@@ -131,7 +131,7 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract Reader | Fully Fixed Local Extractor
+    Direct Smart Contract Reader | Pure On-Chain SVG Extractor
   </footer>
 
   <script>
@@ -142,14 +142,6 @@
 
     function encodeTokenURI(tokenId) {
       return "0xc87b56dd" + BigInt(tokenId).toString(16).padStart(64, '0');
-    }
-
-    function resolveIpfsUrl(url) {
-      if (!url) return '';
-      if (url.startsWith('ipfs://')) {
-        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
-      }
-      return url;
     }
 
     function decodeABIString(hexString) {
@@ -269,12 +261,8 @@
         const res = await fetch(url);
         if (!res.ok) return null;
         const data = await res.json();
-        
-        let imageUrl = data.image?.cachedUrl || data.image?.originalUrl || data.raw?.metadata?.image || '';
-        imageUrl = resolveIpfsUrl(imageUrl);
-
         return {
-          image: imageUrl,
+          image: data.raw?.metadata?.image || data.raw?.metadata?.image_data || '',
           rawMetadata: data.raw?.metadata || data
         };
       } catch (e) {
@@ -282,37 +270,51 @@
       }
     }
 
-    // ============= ULTRA-SAFE SVG CLEANER & PARSER =============
-    function extractCleanSVG(rawImageString) {
-      if (!rawImageString) return null;
+    // ============= PURE ON-CHAIN SVG PARSER & EXTRACTOR =============
+    function extractOnChainSVG(metadata) {
+      if (!metadata) return null;
+      
+      // Check both standard metadata keys
+      const rawField = metadata.image || metadata.image_data || "";
+      if (!rawField) return null;
 
-      let svgContent = "";
+      let str = rawField.trim();
 
-      if (rawImageString.trim().startsWith('<svg') || rawImageString.includes('<svg')) {
-        svgContent = rawImageString;
+      // Case 1: Plain SVG text
+      if (str.startsWith('<svg') || str.includes('<svg')) {
+        const svgStart = str.indexOf('<svg');
+        return str.substring(svgStart).trim();
       }
-      else if (rawImageString.includes('base64,')) {
+
+      // Case 2: Base64 Encoded SVG Data URI (data:image/svg+xml;base64,...)
+      if (str.includes('base64,')) {
         try {
-          const base64Part = rawImageString.split('base64,')[1];
-          svgContent = atob(base64Part);
-        } catch(e) {}
-      }
-      else if (rawImageString.includes('data:image/svg+xml')) {
-        try {
-          const urlEncodedPart = rawImageString.split(',')[1];
-          svgContent = decodeURIComponent(urlEncodedPart);
-        } catch(e) {}
+          const base64Content = str.split('base64,')[1];
+          const decoded = atob(base64Content);
+          if (decoded.includes('<svg')) {
+            return decoded.substring(decoded.indexOf('<svg')).trim();
+          }
+        } catch (e) {}
       }
 
-      const svgStartIndex = svgContent.indexOf('<svg');
-      if (svgStartIndex !== -1) {
-        return svgContent.substring(svgStartIndex).trim();
+      // Case 3: Percent / UTF8 Encoded SVG Data URI (data:image/svg+xml;utf8,...)
+      if (str.startsWith('data:image/svg+xml')) {
+        try {
+          const commaIndex = str.indexOf(',');
+          if (commaIndex !== -1) {
+            const encodedPart = str.substring(commaIndex + 1);
+            const decoded = decodeURIComponent(encodedPart);
+            if (decoded.includes('<svg')) {
+              return decoded.substring(decoded.indexOf('<svg')).trim();
+            }
+          }
+        } catch (e) {}
       }
 
       return null;
     }
 
-    // Direct Blob Download Helper
+    // Direct Blob Helper (Zero Network Call, Browser Internal Download)
     function directDownloadBlob(blob, fileName) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -327,70 +329,26 @@
       }, 2000);
     }
 
-    // Robust Image Data Fetcher (Bypasses CORS/Alchemy Redirects)
-    async function fetchImageAsTextOrBlob(imageUrl) {
-      const cleanSvg = extractCleanSVG(imageUrl);
-      if (cleanSvg) return { type: 'svg', data: cleanSvg };
-
-      try {
-        const res = await fetch(imageUrl);
-        if (res.ok) {
-          const text = await res.text();
-          const parsedSvg = extractCleanSVG(text);
-          if (parsedSvg) return { type: 'svg', data: parsedSvg };
-          
-          const blob = await res.blob();
-          return { type: 'blob', data: blob };
-        }
-      } catch (e) {
-        // CORS Fallback via CORS proxy
-        try {
-          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`;
-          const res = await fetch(proxyUrl);
-          if (res.ok) {
-            const text = await res.text();
-            const parsedSvg = extractCleanSVG(text);
-            if (parsedSvg) return { type: 'svg', data: parsedSvg };
-
-            const blob = await res.blob();
-            return { type: 'blob', data: blob };
-          }
-        } catch(err) {}
-      }
-
-      return null;
-    }
-
-    // ============= SINGLE DOWNLOAD (FIXED & FORCE LOCAL) =============
-    async function downloadSingleImage(tokenId) {
+    // ============= SINGLE DOWNLOAD (PURE ON-CHAIN ONLY) =============
+    function downloadSingleImage(tokenId) {
       const nft = burnedNFTs.find(n => n.tokenId === tokenId);
-      if (!nft || !nft.image) {
-        alert(`NORMIES #${tokenId} এর ইমেজ ডাটা পাওয়া যায়নি!`);
+      if (!nft || !nft.rawMetadata) {
+        alert(`NORMIES #${tokenId} এর মেটাডাটা পাওয়া যায়নি!`);
         return;
       }
 
-      const result = await fetchImageAsTextOrBlob(nft.image);
+      const svgContent = extractOnChainSVG(nft.rawMetadata);
 
-      if (result) {
-        if (result.type === 'svg') {
-          const blob = new Blob([result.data], { type: 'image/svg+xml;charset=utf-8' });
-          directDownloadBlob(blob, `NORMIES_${tokenId}.svg`);
-        } else if (result.type === 'blob') {
-          directDownloadBlob(result.data, `NORMIES_${tokenId}.svg`);
-        }
-      } else {
-        // Extreme Fallback Data URI Encoding
-        const encoded = encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#111827"/><text x="50%" y="50%" font-family="monospace" font-size="20" fill="#EF4444" text-anchor="middle">NORMIES #${tokenId}</text></svg>`);
-        const a = document.createElement("a");
-        a.href = `data:image/svg+xml;charset=utf-8,${encoded}`;
-        a.download = `NORMIES_${tokenId}.svg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+      if (!svgContent) {
+        alert(`NORMIES #${tokenId} এর মেটাডাটাতে অন-চেইন SVG পাওয়া যায়নি!`);
+        return;
       }
+
+      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+      directDownloadBlob(blob, `NORMIES_${tokenId}.svg`);
     }
 
-    // ============= ZIP GENERATOR (FIXED & NO EMPTY FILES) =============
+    // ============= ZIP GENERATOR (PURE LOCAL - ZERO FETCH) =============
     async function downloadImagesZip() {
       if (burnedNFTs.length === 0) return;
 
@@ -399,7 +357,7 @@
       const progressBar = document.getElementById("progressBar");
       
       statusBox.classList.remove("hidden");
-      statusText.innerText = "ZIP ফাইল তৈরি হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।";
+      statusText.innerText = "অন-চেইন SVG দিয়ে জিপ তৈরি হচ্ছে...";
       progressBar.style.width = "0%";
 
       const zip = new JSZip();
@@ -409,34 +367,29 @@
 
       for (let i = 0; i < total; i++) {
         const nft = burnedNFTs[i];
-        const serialNum = i + 1;
+        const svgContent = extractOnChainSVG(nft.rawMetadata);
 
-        const result = await fetchImageAsTextOrBlob(nft.image);
-
-        if (result && result.data) {
-          folder.file(`${serialNum}.svg`, result.data);
+        if (svgContent) {
+          folder.file(`NORMIES_${nft.tokenId}.svg`, svgContent);
           addedCount++;
-        } else {
-          // Minimal Valid SVG Fallback (Ensures zero 0-byte corrupt files in ZIP)
-          folder.file(`${serialNum}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#111827"/><text x="50%" y="50%" font-family="monospace" font-size="20" fill="#EF4444" text-anchor="middle">NORMIES #${nft.tokenId}</text></svg>`);
         }
 
-        if (i % 5 === 0 || i === total - 1) {
+        if (i % 20 === 0 || i === total - 1) {
           const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `SVG জিপ তৈরি হচ্ছে: ${i + 1}/${total}`;
+          statusText.innerText = `প্যাকেজিং: ${i + 1}/${total}`;
           progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 10));
+          await new Promise(r => setTimeout(r, 0));
         }
       }
 
-      statusText.innerText = "জিপ ফাইল প্যাকেজিং করা হচ্ছে...";
+      statusText.innerText = "ZIP ফাইল জেনারেট হচ্ছে...";
       const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
       
       directDownloadBlob(zipBlob, `NORMIES_Burned_SVG_Collection.zip`);
 
-      statusText.innerText = `✅ ${addedCount} টি ফাইল সফলভাবে ডাউনলোডে পাঠানো হয়েছে!`;
+      statusText.innerText = `✅ ${addedCount} টি অন-চেইন SVG ডাউনলোড হয়েছে!`;
       progressBar.style.width = "100%";
-      setTimeout(() => statusBox.classList.add("hidden"), 4000);
+      setTimeout(() => statusBox.classList.add("hidden"), 3000);
     }
 
     async function downloadMetadataZip() {
@@ -456,15 +409,13 @@
 
       for (let i = 0; i < total; i++) {
         const nft = burnedNFTs[i];
-        const serialNum = i + 1;
-
-        folder.file(`${serialNum}.json`, JSON.stringify(nft.rawMetadata, null, 2));
+        folder.file(`${nft.tokenId}.json`, JSON.stringify(nft.rawMetadata, null, 2));
 
         if (i % 20 === 0 || i === total - 1) {
           const pct = Math.floor(((i + 1) / total) * 100);
           statusText.innerText = `JSON প্যাকেজিং: ${i + 1}/${total}`;
           progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 5));
+          await new Promise(r => setTimeout(r, 0));
         }
       }
 
@@ -596,14 +547,14 @@
             ...originalMetadata,
             name: `NORMIES #${tokenId}`,
             description: originalMetadata.description || `Burned NORMIES NFT #${tokenId}`,
-            image: meta ? meta.image : '',
+            image: originalMetadata.image || originalMetadata.image_data || (meta ? meta.image : ''),
             attributes: newAttributes
           };
 
           const nftData = {
             tokenId: tokenId,
             name: `NORMIES #${tokenId}`,
-            image: meta ? meta.image : '',
+            image: enrichedMetadata.image,
             burner: finalBurnerIdentifier,
             burnDate: burnInfo.burnFullDate,
             rawMetadata: enrichedMetadata
@@ -657,8 +608,7 @@
           <img src="${nft.image}"
                alt="${nft.name}"
                loading="lazy"
-               class="w-full h-full object-contain"
-               onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23111827%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22monospace%22 font-size=%2224%22 fill=%22%23EF4444%22 text-anchor=%22middle%22 dominant-baseline=%22central%22%3ENORMIES #${nft.tokenId}%3C/text%3E%3C/svg%3E';" />
+               class="w-full h-full object-contain" />
           <div class="absolute top-2 left-2 bg-red-600/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md shadow-md">
             BURNED
           </div>
