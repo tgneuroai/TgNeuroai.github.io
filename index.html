@@ -1,60 +1,58 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NORMIES Burned NFT Extractor</title>
+  <title>On-Chain NFT Loader & Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- JSZip and FileSaver for Ultra Fast Zip Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: #0b0f17;
       color: #f3f4f6;
     }
+
     .glass-card {
-      background: rgba(17, 24, 39, 0.75);
+      background: rgba(17, 24, 39, 0.7);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
+
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
+    }
+
     .gradient-text {
-      background: linear-gradient(135deg, #ef4444 0%, #ec4899 50%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .download-btn {
-      transition: all 0.2s;
-    }
-    .download-btn:hover {
-      transform: scale(1.02);
-    }
-    .nft-card {
-      transition: all 0.3s;
-    }
-    .nft-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(239, 68, 68, 0.5);
-    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
 
   <!-- Header -->
   <header class="sticky top-0 z-40 backdrop-blur-md bg-[#0b0f17]/90 border-b border-white/10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-500/20">
-          <i class="fa-solid fa-fire"></i>
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-link"></i>
         </div>
-        <span class="text-xl font-bold tracking-tight text-white">NORMIES <span class="gradient-text">Burned Extractor</span></span>
+        <span class="text-xl font-bold tracking-tight text-white">OnChain <span class="gradient-text">Vault</span></span>
       </div>
 
-      <div class="flex items-center gap-3 flex-wrap">
+      <!-- ZIP Download Controls -->
+      <div class="flex items-center gap-3">
         <button id="downloadImagesBtn" onclick="downloadImagesZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-file-zipper"></i>
-          <span>Download All SVG ZIP</span>
+          <span>Download SVG ZIP</span>
         </button>
         <button id="downloadJsonBtn" onclick="downloadMetadataZip()" disabled class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-gray-800 text-gray-500 cursor-not-allowed transition flex items-center gap-2 border border-white/5">
           <i class="fa-solid fa-code"></i>
@@ -64,64 +62,53 @@
     </div>
   </header>
 
+  <!-- Main Section -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
-
-    <!-- Config Card -->
+    
+    <!-- API Controls -->
     <div class="glass-card p-6 rounded-2xl mb-8 border border-white/10">
-
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-        <div class="md:col-span-5">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-gears text-indigo-400"></i> Alchemy API Settings
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div class="md:col-span-4">
           <label class="block text-xs text-gray-400 mb-1 font-medium">Alchemy API Key</label>
-          <input type="text" id="apiKeyInput" value="azGUMoPxCx4XzlybaCSyc" placeholder="Alchemy API Key" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition font-mono">
+          <input type="text" id="apiKeyInput" value="Sgfq6KI6igqQuemutQiHy" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition font-mono">
         </div>
-        <div class="md:col-span-7">
-          <label class="block text-xs text-gray-400 mb-1 font-medium">NFT Contract Address</label>
-          <input type="text" id="contractInput" value="0x9eb6e2025b64f340691e424b7fe7022ffde12438" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition font-mono">
+        <div class="md:col-span-6">
+          <label class="block text-xs text-gray-400 mb-1 font-medium">Contract Address</label>
+          <input type="text" id="contractInput" value="0x9eb6e2025b64f340691e424b7fe7022ffde12438" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 transition font-mono">
         </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end border-t border-white/10 pt-4">
-        <div class="sm:col-span-4">
-          <label class="block text-xs text-gray-400 mb-1 font-medium">Scan Start Token ID</label>
-          <input type="number" id="rangeStart" value="1" min="1" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 font-mono">
-        </div>
-
-        <div class="sm:col-span-4">
-          <label class="block text-xs text-gray-400 mb-1 font-medium">Scan End Token ID</label>
-          <input type="number" id="rangeEnd" value="10000" min="1" class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 font-mono">
-        </div>
-
-        <div class="sm:col-span-4">
-          <button id="scanBtn" onclick="startScan()" class="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold py-2.5 px-4 rounded-xl hover:opacity-90 transition shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 text-sm">
-            <i class="fa-solid fa-magnifying-glass font-bold"></i> Extract Burned NORMIES
+        <div class="md:col-span-2 flex items-end">
+          <button onclick="startFetching()" class="w-full bg-indigo-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-arrows-rotate"></i> Fetch All
           </button>
         </div>
       </div>
-
     </div>
 
-    <!-- Live Status Box -->
+    <!-- Loading Progress Bar -->
     <div id="statusBox" class="glass-card p-6 rounded-2xl mb-8 border border-white/10 hidden">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-3">
-          <div id="statusDot" class="w-3 h-3 rounded-full bg-red-500 animate-ping"></div>
-          <span id="statusText" class="text-sm font-semibold text-white">Scanning Contract for Burned Tokens...</span>
+          <div class="w-3 h-3 rounded-full bg-indigo-500 animate-ping"></div>
+          <span id="statusText" class="text-sm font-semibold text-white">Fetching On-Chain Data...</span>
         </div>
-        <span id="progressCount" class="text-xs font-mono text-red-400 font-bold">0 Burned Found</span>
+        <span id="progressCount" class="text-xs font-mono text-indigo-400 font-bold">0 Loaded</span>
       </div>
       <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden border border-white/5">
-        <div id="progressBar" class="bg-red-500 h-full w-0 transition-all duration-150"></div>
+        <div id="progressBar" class="bg-indigo-500 h-full w-0 transition-all duration-150"></div>
       </div>
     </div>
 
     <!-- Gallery Header -->
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-bold text-white flex items-center gap-2">
-        <i class="fa-solid fa-fire text-red-500"></i>
-        Burned NORMIES Collection
+        <i class="fa-solid fa-border-all text-indigo-400"></i>
+        On-Chain Collection
       </h2>
       <div class="text-xs text-gray-400 font-mono">
-        Total Loaded: <span id="loadedCount" class="text-red-400 font-bold">0</span>
+        Total Items: <span id="loadedCount" class="text-white font-bold">0</span>
       </div>
     </div>
 
@@ -131,317 +118,28 @@
   </main>
 
   <footer class="border-t border-white/10 py-6 bg-black/40 text-center text-xs text-gray-500">
-    Direct Smart Contract Reader | Pure On-Chain SVG Extractor
+    High Speed On-Chain SVG & Metadata Fetcher
   </footer>
 
   <script>
-    let burnedNFTs = [];
+    let allNFTs = [];
     let isFetching = false;
-    const ensCache = new Map();
-    const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-    function encodeTokenURI(tokenId) {
-      return "0xc87b56dd" + BigInt(tokenId).toString(16).padStart(64, '0');
-    }
-
-    function decodeABIString(hexString) {
-      if (!hexString || hexString === "0x") return null;
-      let cleanHex = hexString.replace(/^0x/, '');
-      if (cleanHex.length >= 128) {
-        let lengthHex = cleanHex.substring(64, 128);
-        let strLen = parseInt(lengthHex, 16);
-        let dataHex = cleanHex.substring(128, 128 + (strLen * 2));
-        if (dataHex.length === 0) return null;
-        let bytes = new Uint8Array(dataHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-        return new TextDecoder().decode(bytes);
+    function resolveUrl(url) {
+      if (!url) return 'https://via.placeholder.com/400x400/111827/6B7280?text=No+Image';
+      if (url.startsWith('ipfs://')) {
+        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
       }
-      return null;
+      return url;
     }
 
-    function parseMetadata(uriString) {
-      if (!uriString) return null;
-      try {
-        if (uriString.startsWith('data:application/json;base64,')) {
-          return JSON.parse(atob(uriString.replace('data:application/json;base64,', '')));
-        } else if (uriString.startsWith('data:application/json;utf8,')) {
-          return JSON.parse(decodeURIComponent(uriString.replace('data:application/json;utf8,', '')));
-        } else if (uriString.startsWith('data:application/json,')) {
-          return JSON.parse(decodeURIComponent(uriString.replace('data:application/json,', '')));
-        } else if (uriString.startsWith('{')) {
-          return JSON.parse(uriString);
-        }
-      } catch (e) {}
-      return null;
-    }
-
-    async function rpcCall(rpcUrl, payload) {
-      const res = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}`);
-      }
-      return res.json();
-    }
-
-    async function resolveENS(apiKey, address) {
-      if (!address || address === NULL_ADDRESS) return address;
-      if (ensCache.has(address)) return ensCache.get(address);
-
-      try {
-        const url = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'alchemy_lookupAddress',
-            params: [address]
-          })
-        });
-        const data = await res.json();
-        if (data.result) {
-          ensCache.set(address, data.result);
-          return data.result;
-        }
-      } catch (e) {}
-      ensCache.set(address, address);
-      return address;
-    }
-
-    async function fetchBurnTransfersViaAssetTransfers(rpcUrl, contract, statusText, progressBar) {
-      const allTransfers = [];
-      let pageKey = undefined;
-      let page = 0;
-
-      do {
-        page++;
-        const params = {
-          fromBlock: "0x0",
-          toBlock: "latest",
-          toAddress: NULL_ADDRESS,
-          contractAddresses: [contract],
-          category: ["erc721", "erc1155"],
-          withMetadata: true,
-          excludeZeroValue: false,
-          maxCount: "0x3e8"
-        };
-        if (pageKey) params.pageKey = pageKey;
-
-        const data = await rpcCall(rpcUrl, {
-          jsonrpc: "2.0",
-          id: 1,
-          method: "alchemy_getAssetTransfers",
-          params: [params]
-        });
-
-        if (data.error) throw new Error(data.error.message || "alchemy_getAssetTransfers failed");
-
-        const result = data.result || {};
-        const transfers = result.transfers || [];
-        allTransfers.push(...transfers);
-        pageKey = result.pageKey;
-
-        statusText.innerText = `Finding Burn Logs... Page ${page} (${allTransfers.length} transfers found)`;
-        const pct = Math.min(30, 5 + page * 5);
-        progressBar.style.width = pct + "%";
-
-      } while (pageKey);
-
-      return allTransfers;
-    }
-
-    async function fetchNftMetadataAlchemy(apiKey, contract, tokenId) {
-      const url = `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}/getNFTMetadata?contractAddress=${contract}&tokenId=${tokenId}&refreshCache=false`;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return {
-          image: data.raw?.metadata?.image || data.raw?.metadata?.image_data || '',
-          rawMetadata: data.raw?.metadata || data
-        };
-      } catch (e) {
-        return null;
-      }
-    }
-
-    // ============= PURE ON-CHAIN SVG PARSER & EXTRACTOR =============
-    function extractOnChainSVG(metadata) {
-      if (!metadata) return null;
-      
-      const rawField = metadata.image || metadata.image_data || "";
-      if (!rawField) return null;
-
-      let str = rawField.trim();
-
-      if (str.startsWith('<svg') || str.includes('<svg')) {
-        const svgStart = str.indexOf('<svg');
-        return str.substring(svgStart).trim();
-      }
-
-      if (str.includes('base64,')) {
-        try {
-          const base64Content = str.split('base64,')[1];
-          const decoded = atob(base64Content);
-          if (decoded.includes('<svg')) {
-            return decoded.substring(decoded.indexOf('<svg')).trim();
-          }
-        } catch (e) {}
-      }
-
-      if (str.startsWith('data:image/svg+xml')) {
-        try {
-          const commaIndex = str.indexOf(',');
-          if (commaIndex !== -1) {
-            const encodedPart = str.substring(commaIndex + 1);
-            const decoded = decodeURIComponent(encodedPart);
-            if (decoded.includes('<svg')) {
-              return decoded.substring(decoded.indexOf('<svg')).trim();
-            }
-          }
-        } catch (e) {}
-      }
-
-      return null;
-    }
-
-    function directDownloadBlob(blob, fileName) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 2000);
-    }
-
-    // ============= SINGLE DOWNLOAD (NUMERIC FILENAME: 1.svg, 2.svg...) =============
-    function downloadSingleImage(tokenId, index) {
-      const nft = burnedNFTs.find(n => n.tokenId === tokenId);
-      if (!nft || !nft.rawMetadata) {
-        alert(`NORMIES #${tokenId} এর মেটাডাটা পাওয়া যায়নি!`);
-        return;
-      }
-
-      const svgContent = extractOnChainSVG(nft.rawMetadata);
-
-      if (!svgContent) {
-        alert(`NORMIES #${tokenId} এর মেটাডাটাতে অন-চেইন SVG পাওয়া যায়নি!`);
-        return;
-      }
-
-      const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
-      // সেভ হবে সংখ্যা দিয়ে: ১.svg, ২.svg...
-      directDownloadBlob(blob, `${index}.svg`);
-    }
-
-    // ============= ZIP GENERATOR (NUMERIC FILENAMES: 1.svg, 2.svg...) =============
-    async function downloadImagesZip() {
-      if (burnedNFTs.length === 0) return;
-
-      const statusBox = document.getElementById("statusBox");
-      const statusText = document.getElementById("statusText");
-      const progressBar = document.getElementById("progressBar");
-      
-      statusBox.classList.remove("hidden");
-      statusText.innerText = "অন-চেইন SVG দিয়ে জিপ তৈরি হচ্ছে...";
-      progressBar.style.width = "0%";
-
-      const zip = new JSZip();
-      const folder = zip.folder("NORMIES_SVG_Collection");
-      const total = burnedNFTs.length;
-      let addedCount = 0;
-
-      for (let i = 0; i < total; i++) {
-        const nft = burnedNFTs[i];
-        const svgContent = extractOnChainSVG(nft.rawMetadata);
-
-        if (svgContent) {
-          // নাম হবে সংখ্যা অনুযায়ী: ১.svg, ২.svg ...
-          folder.file(`${i + 1}.svg`, svgContent);
-          addedCount++;
-        }
-
-        if (i % 20 === 0 || i === total - 1) {
-          const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `প্যাকেজিং: ${i + 1}/${total}`;
-          progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 0));
-        }
-      }
-
-      statusText.innerText = "ZIP ফাইল জেনারেট হচ্ছে...";
-      const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-      
-      directDownloadBlob(zipBlob, `NORMIES_Burned_SVG_Collection.zip`);
-
-      statusText.innerText = `✅ ${addedCount} টি অন-চেইন SVG ডাউনলোড হয়েছে!`;
-      progressBar.style.width = "100%";
-      setTimeout(() => statusBox.classList.add("hidden"), 3000);
-    }
-
-    // ============= ZIP GENERATOR (NUMERIC FILENAMES: 1.json, 2.json...) =============
-    async function downloadMetadataZip() {
-      if (burnedNFTs.length === 0) return;
-
-      const statusBox = document.getElementById("statusBox");
-      const statusText = document.getElementById("statusText");
-      const progressBar = document.getElementById("progressBar");
-
-      statusBox.classList.remove("hidden");
-      statusText.innerText = "Metadata JSON জিপ বানানো হচ্ছে...";
-      progressBar.style.width = "0%";
-
-      const zip = new JSZip();
-      const folder = zip.folder("NORMIES_JSON_Collection");
-      const total = burnedNFTs.length;
-
-      for (let i = 0; i < total; i++) {
-        const nft = burnedNFTs[i];
-        // নাম হবে সংখ্যা অনুযায়ী: ১.json, ২.json ...
-        folder.file(`${i + 1}.json`, JSON.stringify(nft.rawMetadata, null, 2));
-
-        if (i % 20 === 0 || i === total - 1) {
-          const pct = Math.floor(((i + 1) / total) * 100);
-          statusText.innerText = `JSON প্যাকেজিং: ${i + 1}/${total}`;
-          progressBar.style.width = pct + '%';
-          await new Promise(r => setTimeout(r, 0));
-        }
-      }
-
-      const zipBlob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-      directDownloadBlob(zipBlob, `NORMIES_Burned_Metadata.zip`);
-
-      statusText.innerText = "✅ JSON ZIP ফাইল ডাউনলোডে পাঠানো হয়েছে!";
-      progressBar.style.width = "100%";
-      setTimeout(() => statusBox.classList.add("hidden"), 3000);
-    }
-
-    // ============= MAIN SCAN =============
-    async function startScan() {
+    async function startFetching() {
       if (isFetching) return;
+      isFetching = true;
 
       const apiKey = document.getElementById("apiKeyInput").value.trim();
       const contract = document.getElementById("contractInput").value.trim();
-      const startNum = parseInt(document.getElementById("rangeStart").value) || 1;
-      const endNum = parseInt(document.getElementById("rangeEnd").value) || 10000;
-
-      if (!apiKey) {
-        alert("দয়া করে আপনার Alchemy API Key দিন।");
-        return;
-      }
-
-      isFetching = true;
-
+      
       const grid = document.getElementById("nftGrid");
       const statusBox = document.getElementById("statusBox");
       const statusText = document.getElementById("statusText");
@@ -450,142 +148,42 @@
       const loadedCount = document.getElementById("loadedCount");
 
       grid.innerHTML = "";
-      burnedNFTs = [];
+      allNFTs = [];
       statusBox.classList.remove("hidden");
-      progressBar.style.width = "5%";
-      loadedCount.innerText = "0";
-      progressCount.innerText = "0 Burned Found";
-
-      const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
+      
+      let pageKey = null;
 
       try {
-        statusText.innerText = "Querying Burn Logs...";
-        const transfers = await fetchBurnTransfersViaAssetTransfers(rpcUrl, contract, statusText, progressBar);
-
-        let burnedTokenMap = new Map();
-        
-        transfers.forEach(t => {
-          let tokenIdHex = t.erc721TokenId || (t.erc1155Metadata && t.erc1155Metadata[0] && t.erc1155Metadata[0].tokenId);
-          if (!tokenIdHex) return;
-          let tokenId = parseInt(tokenIdHex, 16);
-
-          if (tokenId >= startNum && tokenId <= endNum) {
-            let rawAddress = t.from || NULL_ADDRESS;
-            let blockTimestamp = t.metadata && t.metadata.blockTimestamp ? t.metadata.blockTimestamp : null;
-            
-            let d = blockTimestamp ? new Date(blockTimestamp) : new Date();
-            let yearStr = d.getUTCFullYear().toString();
-            let monthStr = d.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
-            let fullDateStr = d.toISOString().split('T')[0];
-
-            burnedTokenMap.set(tokenId, {
-              rawBurner: rawAddress,
-              burnYear: yearStr,
-              burnMonth: monthStr,
-              burnFullDate: fullDateStr
-            });
-          }
-        });
-
-        let burnedTokenList = Array.from(burnedTokenMap.keys()).sort((a, b) => a - b);
-
-        statusText.innerText = `Found ${burnedTokenList.length} Burned Tokens!`;
-        progressCount.innerText = `${burnedTokenList.length} Burned Found`;
-        progressBar.style.width = "40%";
-
-        if (burnedTokenList.length === 0) {
-          statusText.innerText = "No Burned tokens found in this range!";
-          isFetching = false;
-          return;
-        }
-
-        const CONCURRENCY = 6;
-        let processedCount = 0;
-
-        async function fetchOneToken(tokenId) {
-          let burnInfo = burnedTokenMap.get(tokenId);
-          let finalBurnerIdentifier = await resolveENS(apiKey, burnInfo.rawBurner);
-          let meta = await fetchNftMetadataAlchemy(apiKey, contract, tokenId);
-
-          if (!meta || !meta.image) {
-            try {
-              const res = await rpcCall(rpcUrl, {
-                jsonrpc: "2.0",
-                id: tokenId,
-                method: "eth_call",
-                params: [{ to: contract, data: encodeTokenURI(tokenId) }, "latest"]
-              });
-
-              if (res.result && res.result !== "0x") {
-                const rawUri = decodeABIString(res.result);
-                const parsed = parseMetadata(rawUri);
-                if (parsed) {
-                  meta = {
-                    image: parsed.image || parsed.image_data || '',
-                    rawMetadata: parsed
-                  };
-                }
-              }
-            } catch (e) {}
+        do {
+          let url = `https://eth-mainnet.g.alchemy.com/nft/v3/${apiKey}/getNFTsForContract?contractAddress=${contract}&withMetadata=true&limit=100`;
+          if (pageKey) {
+            url += `&pageKey=${pageKey}`;
           }
 
-          let originalMetadata = (meta && meta.rawMetadata) ? JSON.parse(JSON.stringify(meta.rawMetadata)) : {};
-          let existingAttributes = originalMetadata.attributes || [];
-          if (!Array.isArray(existingAttributes)) existingAttributes = [];
+          statusText.innerText = `Fetching metadata batch... (${allNFTs.length} loaded)`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("API Connection Failed");
 
-          let newAttributes = [
-            ...existingAttributes,
-            { trait_type: "NORMIES", value: `#${tokenId}` },
-            { trait_type: "Burned By", value: finalBurnerIdentifier },
-            { trait_type: "Burn Year", value: burnInfo.burnYear },
-            { trait_type: "Burn Month", value: burnInfo.burnMonth },
-            { trait_type: "Burn Date", value: burnInfo.burnFullDate }
-          ];
-
-          let enrichedMetadata = {
-            ...originalMetadata,
-            name: `NORMIES #${tokenId}`,
-            description: originalMetadata.description || `Burned NORMIES NFT #${tokenId}`,
-            image: originalMetadata.image || originalMetadata.image_data || (meta ? meta.image : ''),
-            attributes: newAttributes
-          };
-
-          const nftData = {
-            tokenId: tokenId,
-            name: `NORMIES #${tokenId}`,
-            image: enrichedMetadata.image,
-            burner: finalBurnerIdentifier,
-            burnDate: burnInfo.burnFullDate,
-            rawMetadata: enrichedMetadata
-          };
-
-          burnedNFTs.push(nftData);
+          const data = await res.json();
+          const nfts = data.nfts || [];
           
-          // রিয়েল-টাইমে সাথে সাথে কার্ড নিচে রেন্ডার হবে
-          renderSingleCard(nftData, burnedNFTs.length);
-        }
+          if (nfts.length === 0) break;
 
-        let nextIndex = 0;
-        async function worker() {
-          while (nextIndex < burnedTokenList.length) {
-            const idx = nextIndex++;
-            const tokenId = burnedTokenList[idx];
-            await fetchOneToken(tokenId);
-            processedCount++;
-            let pct = 40 + Math.floor((processedCount / burnedTokenList.length) * 60);
-            progressBar.style.width = pct + "%";
-            loadedCount.innerText = burnedNFTs.length;
-            statusText.innerText = `Extracting: ${processedCount}/${burnedTokenList.length}`;
-          }
-        }
+          allNFTs.push(...nfts);
+          pageKey = data.pageKey;
 
-        const workers = [];
-        for (let w = 0; w < CONCURRENCY; w++) workers.push(worker());
-        await Promise.all(workers);
+          progressCount.innerText = `${allNFTs.length} Loaded`;
+          loadedCount.innerText = allNFTs.length;
+          
+          // Render Batch Directly
+          renderBatch(nfts);
 
-        statusText.innerText = `✅ Success! ${burnedNFTs.length} NORMIES NFTs ready.`;
+        } while (pageKey && allNFTs.length < 10000);
+
+        statusText.innerText = "All Collection Metadata Loaded Successfully!";
         progressBar.style.width = "100%";
-        if (burnedNFTs.length > 0) enableDownloadButtons();
+        
+        enableDownloadButtons();
 
       } catch (err) {
         console.error(err);
@@ -595,36 +193,37 @@
       }
     }
 
-    function renderSingleCard(nft, index) {
+    function renderBatch(nfts) {
       const grid = document.getElementById("nftGrid");
-      const card = document.createElement("div");
-      card.className = "nft-card glass-card rounded-2xl overflow-hidden flex flex-col p-3 border border-red-500/20 shadow-lg";
 
-      const displayBurner = nft.burner.endsWith('.eth') ? nft.burner : `${nft.burner.substring(0,6)}...${nft.burner.substring(nft.burner.length-4)}`;
+      nfts.forEach((nft) => {
+        const tokenId = nft.tokenId || (allNFTs.indexOf(nft) + 1);
+        const title = nft.name || nft.title || `#${tokenId}`;
+        let imgUrl = nft.image?.cachedUrl || nft.image?.originalUrl || nft.raw?.metadata?.image;
+        imgUrl = resolveUrl(imgUrl);
 
-      card.innerHTML = `
-        <div class="relative aspect-square rounded-xl overflow-hidden bg-black/60 border border-white/5 flex items-center justify-center">
-          <img src="${nft.image}"
-               alt="${nft.name}"
-               loading="lazy"
-               class="w-full h-full object-contain" />
-          <div class="absolute top-2 left-2 bg-red-600/90 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded-md shadow-md">
-            BURNED
+        const card = document.createElement("div");
+        card.className = "glass-card rounded-2xl overflow-hidden flex flex-col justify-between p-3 transition duration-300";
+
+        card.innerHTML = `
+          <div class="relative aspect-square rounded-xl overflow-hidden bg-black/40 border border-white/5 flex items-center justify-center">
+            <img src="${imgUrl}" 
+                 alt="${title}"
+                 loading="lazy"
+                 class="w-full h-full object-contain" 
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400/111827/6B7280?text=Load+Error';" />
+            <div class="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 text-[10px] font-mono text-indigo-400 font-bold">
+              #${tokenId}
+            </div>
           </div>
-        </div>
-        <div class="mt-3 px-1 flex-1">
-          <h3 class="font-bold text-white text-sm truncate">${nft.name}</h3>
-          <p class="text-[10px] text-gray-400 font-mono truncate mt-1">Burner: <span class="text-red-400 font-bold">${displayBurner}</span></p>
-          <p class="text-[9px] text-gray-500 font-mono truncate">Date: ${nft.burnDate}</p>
-        </div>
-        <div class="mt-2 px-1">
-          <button onclick="downloadSingleImage(${nft.tokenId}, ${index})" 
-                  class="w-full download-btn text-xs font-bold py-1.5 rounded-lg bg-red-600/80 hover:bg-red-500 text-white transition flex items-center justify-center gap-1">
-            <i class="fa-solid fa-download"></i> Download SVG (${index}.svg)
-          </button>
-        </div>
-      `;
-      grid.appendChild(card);
+          <div class="mt-3 px-1">
+            <h3 class="font-bold text-white text-sm truncate">${title}</h3>
+            <p class="text-[11px] text-gray-400 font-mono mt-0.5">Token ID: ${tokenId}</p>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
     }
 
     function enableDownloadButtons() {
@@ -632,11 +231,80 @@
       const jsonBtn = document.getElementById("downloadJsonBtn");
 
       imgBtn.disabled = false;
-      imgBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-red-500/20";
+      imgBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-indigo-500/20";
 
       jsonBtn.disabled = false;
-      jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-pink-600 text-white hover:bg-pink-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-pink-500/20";
+      jsonBtn.className = "text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-purple-600 text-white hover:bg-purple-500 cursor-pointer transition flex items-center gap-2 shadow-lg shadow-purple-500/20";
     }
+
+    // High Speed SVG ZIP Downloader
+    async function downloadImagesZip() {
+      const zip = new JSZip();
+      const statusText = document.getElementById("statusText");
+      const progressBar = document.getElementById("progressBar");
+
+      statusText.innerText = "Extracting On-Chain SVG files into ZIP...";
+      let total = allNFTs.length;
+
+      for (let i = 0; i < total; i++) {
+        const nft = allNFTs[i];
+        const serialNumber = i + 1; // 1, 2, 3... Serial Number
+        let imgUrl = nft.image?.cachedUrl || nft.image?.originalUrl || nft.raw?.metadata?.image;
+        imgUrl = resolveUrl(imgUrl);
+
+        try {
+          if (imgUrl.startsWith('data:image/svg+xml;base64,')) {
+            // Base64 Encoded On-Chain SVG
+            const base64Data = imgUrl.replace('data:image/svg+xml;base64,', '');
+            zip.file(`${serialNumber}.svg`, base64Data, { base64: true });
+          } else if (imgUrl.startsWith('data:image/svg+xml;utf8,')) {
+            // Plain UTF-8 SVG
+            const svgContent = decodeURIComponent(imgUrl.replace('data:image/svg+xml;utf8,', ''));
+            zip.file(`${serialNumber}.svg`, svgContent);
+          } else {
+            // Fetch Remote SVG/Image URL
+            const res = await fetch(imgUrl);
+            const blob = await res.blob();
+            const ext = blob.type.includes('svg') ? 'svg' : 'png';
+            zip.file(`${serialNumber}.${ext}`, blob);
+          }
+        } catch (e) {
+          console.error(`Error adding item ${serialNumber}`, e);
+        }
+
+        let pct = Math.floor(((i + 1) / total) * 100);
+        progressBar.style.width = pct + "%";
+        statusText.innerText = `Packaging item ${serialNumber} of ${total}...`;
+      }
+
+      statusText.innerText = "Generating ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "OnChain_NFT_SVGs.zip");
+      statusText.innerText = "SVG ZIP Downloaded Successfully!";
+    }
+
+    // High Speed JSON ZIP Downloader
+    async function downloadMetadataZip() {
+      const zip = new JSZip();
+      const statusText = document.getElementById("statusText");
+
+      statusText.innerText = "Packaging JSON Metadata into ZIP...";
+
+      allNFTs.forEach((nft, index) => {
+        const serialNumber = index + 1; // 1, 2, 3... Serial Number
+        const metadata = nft.raw?.metadata || nft;
+        const jsonContent = JSON.stringify(metadata, null, 2);
+        zip.file(`${serialNumber}.json`, jsonContent);
+      });
+
+      statusText.innerText = "Generating Metadata ZIP File...";
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "NFT_Metadata_JSON.zip");
+      statusText.innerText = "JSON ZIP Downloaded Successfully!";
+    }
+
+    // Auto load on start
+    window.addEventListener("DOMContentLoaded", startFetching);
   </script>
 </body>
 </html>
