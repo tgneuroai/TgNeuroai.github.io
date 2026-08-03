@@ -4,22 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DystoPunks — প্রিমিয়াম NFT গ্যালারি</title>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
-        /* ============================================
-                   প্রিমিয়াম ডিজাইন — DystoPunks গ্যালারি
-                   ============================================ */
-
-        /* ----- রিসেট ও বেস ----- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
             background: #070b10;
             color: #eef2f8;
             min-height: 100vh;
@@ -29,30 +20,13 @@
                 radial-gradient(ellipse at 50% 50%, rgba(10, 20, 40, 0.8) 0%, #070b10 100%);
             padding: 0;
         }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f1620; }
+        ::-webkit-scrollbar-thumb { background: #2a3a50; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d4ff00; }
 
-        /* ----- স্ক্রলবার স্টাইল ----- */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f1620;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2a3a50;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4f7dff;
-        }
+        .container { max-width: 1600px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
 
-        /* ----- কন্টেইনার ----- */
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 1.5rem 2rem 3rem;
-        }
-
-        /* ===== হেডার (প্রিমিয়াম) ===== */
         .header {
             display: flex;
             justify-content: space-between;
@@ -63,37 +37,28 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1.2rem;
-        }
-
+        .header-left { display: flex; align-items: center; gap: 1.2rem; }
         .logo-icon {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(135deg, #4f7dff, #7aa9ff);
+            width: 52px; height: 52px;
+            background: #d4ff00;
             border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.8rem;
             font-weight: 700;
-            color: #fff;
-            box-shadow: 0 8px 30px rgba(79, 125, 255, 0.25);
+            color: #070b10;
+            box-shadow: 0 8px 30px rgba(212, 255, 0, 0.2);
         }
-
         .header h1 {
             font-size: 2.2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ffffff 30%, #7aa9ff 100%);
+            background: linear-gradient(135deg, #ffffff 30%, #d4ff00 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             letter-spacing: -0.5px;
         }
-
         .header-stats {
             display: flex;
             align-items: center;
@@ -103,8 +68,8 @@
             border-radius: 60px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(10px);
+            flex-wrap: wrap;
         }
-
         .header-stats .stat-item {
             display: flex;
             align-items: center;
@@ -113,18 +78,9 @@
             font-size: 0.85rem;
             font-weight: 500;
         }
+        .header-stats .stat-item i { color: #d4ff00; font-size: 0.9rem; }
+        .header-stats .stat-item .num { color: #fff; font-weight: 600; }
 
-        .header-stats .stat-item i {
-            color: #4f7dff;
-            font-size: 0.9rem;
-        }
-
-        .header-stats .stat-item .num {
-            color: #fff;
-            font-weight: 600;
-        }
-
-        /* ===== ফিল্টার / সার্চ বার ===== */
         .toolbar {
             display: flex;
             justify-content: space-between;
@@ -133,7 +89,6 @@
             gap: 1rem;
             margin-bottom: 2rem;
         }
-
         .search-box {
             display: flex;
             align-items: center;
@@ -145,18 +100,11 @@
             flex: 1;
             max-width: 400px;
         }
-
         .search-box:focus-within {
-            border-color: #4f7dff;
-            box-shadow: 0 0 30px rgba(79, 125, 255, 0.08);
+            border-color: #d4ff00;
+            box-shadow: 0 0 30px rgba(212, 255, 0, 0.08);
             background: rgba(255, 255, 255, 0.07);
         }
-
-        .search-box i {
-            color: #5a7395;
-            font-size: 0.9rem;
-        }
-
         .search-box input {
             background: transparent;
             border: none;
@@ -167,15 +115,11 @@
             outline: none;
             font-family: inherit;
         }
-
-        .search-box input::placeholder {
-            color: #4a6385;
-        }
-
+        .search-box input::placeholder { color: #4a6385; }
         .search-box button {
-            background: linear-gradient(135deg, #4f7dff, #3b62d9);
+            background: #d4ff00;
             border: none;
-            color: #fff;
+            color: #070b10;
             padding: 0.6rem 1.4rem;
             border-radius: 60px;
             font-weight: 600;
@@ -184,18 +128,9 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
+        .search-box button:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.3); }
 
-        .search-box button:hover {
-            transform: scale(1.03);
-            box-shadow: 0 4px 20px rgba(79, 125, 255, 0.3);
-        }
-
-        .filter-tags {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
+        .filter-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .filter-tags .tag {
             padding: 0.4rem 1.2rem;
             border-radius: 60px;
@@ -208,20 +143,26 @@
             transition: all 0.3s ease;
             font-family: inherit;
         }
+        .filter-tags .tag:hover { background: rgba(212, 255, 0, 0.15); border-color: #d4ff00; color: #fff; }
+        .filter-tags .tag.active { background: rgba(212, 255, 0, 0.2); border-color: #d4ff00; color: #fff; }
 
-        .filter-tags .tag:hover {
-            background: rgba(79, 125, 255, 0.15);
-            border-color: #4f7dff;
-            color: #fff;
+        .download-btn {
+            background: #d4ff00;
+            border: none;
+            color: #070b10;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
+        .download-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.3); }
 
-        .filter-tags .tag.active {
-            background: rgba(79, 125, 255, 0.2);
-            border-color: #4f7dff;
-            color: #fff;
-        }
-
-        /* ===== প্রগ্রেস বার ===== */
         .progress-wrap {
             background: rgba(255, 255, 255, 0.04);
             border-radius: 40px;
@@ -230,15 +171,13 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
-
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #4f7dff, #7aa9ff, #b0d0ff);
+            background: #d4ff00;
             border-radius: 40px;
             transition: width 0.4s ease;
         }
-
         .progress-text {
             text-align: right;
             font-size: 0.75rem;
@@ -247,18 +186,12 @@
             letter-spacing: 0.3px;
         }
 
-        .progress-text i {
-            margin-right: 0.3rem;
-        }
-
-        /* ===== গ্রিড ===== */
         .nft-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.8rem;
         }
 
-        /* ===== কার্ড (প্রিমিয়াম) ===== */
         .nft-card {
             background: linear-gradient(145deg, rgba(20, 30, 45, 0.9), rgba(12, 18, 28, 0.95));
             border-radius: 24px;
@@ -271,29 +204,27 @@
             backdrop-filter: blur(12px);
             position: relative;
         }
-
         .nft-card::before {
             content: '';
             position: absolute;
             inset: 0;
             border-radius: 24px;
             padding: 1px;
-            background: linear-gradient(135deg, rgba(79, 125, 255, 0.2), transparent, rgba(79, 125, 255, 0.05));
+            background: linear-gradient(135deg, rgba(212, 255, 0, 0.2), transparent, rgba(212, 255, 0, 0.05));
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             -webkit-mask-composite: xor;
             mask-composite: exclude;
             pointer-events: none;
         }
-
         .nft-card:hover {
             transform: translateY(-8px) scale(1.01);
-            border-color: rgba(79, 125, 255, 0.3);
-            box-shadow: 0 20px 60px rgba(30, 60, 150, 0.25);
+            border-color: rgba(212, 255, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(212, 255, 0, 0.15);
         }
 
-        /* ===== মিডিয়া র‍্যাপার ===== */
+        /* ===== মিডিয়া — ব্যাকগ্রাউন্ড #d4ff00 ===== */
         .media-wrapper {
-            background: #0a0f16;
+            background: #d4ff00;
             position: relative;
             padding-top: 100%;
             overflow: hidden;
@@ -302,28 +233,17 @@
             justify-content: center;
         }
 
-        .media-wrapper img,
-        .media-wrapper video {
+        .media-wrapper canvas, .media-wrapper video {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            background: #0a0f16;
-            transition: transform 0.5s ease;
+            object-fit: contain;
+            background: #d4ff00;
+            image-rendering: pixelated;
         }
 
-        .nft-card:hover .media-wrapper img,
-        .nft-card:hover .media-wrapper video {
-            transform: scale(1.03);
-        }
-
-        .media-wrapper video {
-            object-fit: cover;
-        }
-
-        /* GIF ব্যাজ */
         .media-badge {
             position: absolute;
             top: 12px;
@@ -334,18 +254,13 @@
             border-radius: 30px;
             font-size: 0.6rem;
             font-weight: 600;
-            color: #b0d0ff;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #d4ff00;
+            border: 1px solid rgba(212, 255, 0, 0.2);
             letter-spacing: 0.5px;
             text-transform: uppercase;
             z-index: 2;
         }
 
-        .media-badge i {
-            margin-right: 0.2rem;
-        }
-
-        /* ===== কার্ড ইনফো ===== */
         .nft-info {
             padding: 1.2rem 1.3rem 1.4rem;
             background: linear-gradient(180deg, rgba(18, 26, 38, 0.9), rgba(12, 18, 28, 0.95));
@@ -354,7 +269,6 @@
             flex-direction: column;
             gap: 0.5rem;
         }
-
         .nft-name {
             font-size: 1.1rem;
             font-weight: 600;
@@ -364,7 +278,6 @@
             align-items: center;
             justify-content: space-between;
         }
-
         .nft-name .token-id {
             font-size: 0.7rem;
             font-weight: 500;
@@ -374,14 +287,12 @@
             border-radius: 30px;
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
-
         .attributes {
             display: flex;
             flex-wrap: wrap;
             gap: 0.3rem 0.4rem;
             margin-top: 0.2rem;
         }
-
         .trait {
             background: rgba(255, 255, 255, 0.04);
             padding: 0.2rem 0.7rem;
@@ -395,16 +306,8 @@
             gap: 0.2rem;
             letter-spacing: 0.2px;
         }
-
-        .trait-type {
-            color: #6a84aa;
-            font-weight: 400;
-        }
-
-        .trait-value {
-            color: #dce8ff;
-            font-weight: 500;
-        }
+        .trait-type { color: #6a84aa; font-weight: 400; }
+        .trait-value { color: #dce8ff; font-weight: 500; }
 
         .card-footer {
             display: flex;
@@ -418,159 +321,79 @@
             text-transform: uppercase;
             letter-spacing: 0.4px;
         }
-
-        .card-footer .format {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
+        .card-footer .download-single {
+            background: rgba(212, 255, 0, 0.1);
+            border: 1px solid rgba(212, 255, 0, 0.2);
+            color: #d4ff00;
+            padding: 0.2rem 0.6rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.55rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
         }
+        .card-footer .download-single:hover { background: rgba(212, 255, 0, 0.2); }
 
-        .card-footer .format i {
-            font-size: 0.7rem;
-        }
-
-        /* ===== লোডিং প্লেসহোল্ডার ===== */
         .loading-placeholder {
             grid-column: 1 / -1;
             text-align: center;
             padding: 5rem 1rem;
             color: #5a7395;
         }
-
         .loading-placeholder .spinner {
             display: inline-block;
             width: 44px;
             height: 44px;
             border: 3px solid rgba(255, 255, 255, 0.04);
-            border-top-color: #4f7dff;
+            border-top-color: #d4ff00;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin-bottom: 1.2rem;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .nft-card { animation: fadeUp 0.5s ease forwards; }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-placeholder .main-text {
-            font-size: 1.1rem;
-            color: #8aa3c9;
-        }
-
-        .loading-placeholder .sub-text {
-            font-size: 0.85rem;
-            color: #4a6385;
-            margin-top: 0.3rem;
-        }
-
-        /* ===== এনিমেশন ===== */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .nft-card {
-            animation: fadeUp 0.5s ease forwards;
-        }
-
-        /* ===== রেসপন্সিভ ===== */
         @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-            .header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.8rem;
-            }
-            .header-left {
-                justify-content: center;
-            }
-            .header h1 {
-                font-size: 1.6rem;
-            }
-            .header-stats {
-                justify-content: center;
-                padding: 0.4rem 1rem;
-                flex-wrap: wrap;
-            }
-            .header-stats .stat-item {
-                font-size: 0.7rem;
-            }
-            .toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .search-box {
-                max-width: 100%;
-            }
-            .filter-tags {
-                justify-content: center;
-            }
-            .nft-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: 1.2rem;
-            }
-            .nft-name {
-                font-size: 0.95rem;
-            }
+            .container { padding: 1rem; }
+            .header { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+            .header-left { justify-content: center; }
+            .header h1 { font-size: 1.6rem; }
+            .header-stats { justify-content: center; padding: 0.4rem 1rem; flex-wrap: wrap; }
+            .header-stats .stat-item { font-size: 0.7rem; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-box { max-width: 100%; }
+            .filter-tags { justify-content: center; }
+            .download-btn { justify-content: center; }
+            .nft-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.2rem; }
         }
-
         @media (max-width: 480px) {
-            .nft-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                gap: 0.8rem;
-            }
-            .nft-info {
-                padding: 0.8rem;
-            }
-            .trait {
-                font-size: 0.55rem;
-                padding: 0.15rem 0.5rem;
-            }
-            .nft-name {
-                font-size: 0.8rem;
-                flex-wrap: wrap;
-            }
+            .nft-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.8rem; }
+            .nft-info { padding: 0.8rem; }
+            .trait { font-size: 0.55rem; padding: 0.15rem 0.5rem; }
+            .nft-name { font-size: 0.8rem; flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- ===== হেডার ===== -->
     <header class="header">
         <div class="header-left">
             <div class="logo-icon"><i class="fas fa-cube"></i></div>
             <h1>DystoPunks</h1>
         </div>
         <div class="header-stats">
-            <span class="stat-item">
-                <i class="fas fa-image"></i>
-                <span class="num" id="totalCount">0</span> / 2076
-            </span>
-            <span class="stat-item">
-                <i class="fas fa-film"></i>
-                <span class="num" id="gifCount">0</span> GIF
-            </span>
-            <span class="stat-item">
-                <i class="fas fa-file-image"></i>
-                <span class="num" id="pngCount">0</span> PNG
-            </span>
+            <span class="stat-item"><i class="fas fa-image"></i> <span class="num" id="totalCount">0</span> / 2076</span>
+            <span class="stat-item"><i class="fas fa-film"></i> <span class="num" id="gifCount">0</span> GIF</span>
+            <span class="stat-item"><i class="fas fa-file-image"></i> <span class="num" id="pngCount">0</span> PNG</span>
         </div>
     </header>
 
-    <!-- ===== টুলবার ===== -->
     <div class="toolbar">
         <div class="search-box">
             <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="NFT খুঁজুন (নাম বা আইডি)..." />
+            <input type="text" id="searchInput" placeholder="NFT খুঁজুন..." />
             <button id="searchBtn"><i class="fas fa-arrow-right"></i></button>
         </div>
         <div class="filter-tags">
@@ -578,17 +401,12 @@
             <button class="tag" data-filter="gif">🎞️ GIF</button>
             <button class="tag" data-filter="png">🖼️ PNG</button>
         </div>
+        <button class="download-btn" id="downloadAllBtn"><i class="fas fa-download"></i> ZIP ডাউনলোড</button>
     </div>
 
-    <!-- ===== প্রগ্রেস ===== -->
-    <div class="progress-wrap">
-        <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="progress-text" id="progressText">
-        <i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...
-    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-text" id="progressText"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
 
-    <!-- ===== গ্রিড ===== -->
     <div id="nftGrid" class="nft-grid">
         <div class="loading-placeholder">
             <div class="spinner"></div>
@@ -600,16 +418,10 @@
 
 <script>
     (function() {
-        // ============================================================
-        //  কনফিগারেশন
-        // ============================================================
         const TOTAL = 2076;
         const BASE_URL = 'https://dystopunks.mypinata.cloud/ipfs/QmeYQ2eDCcJpfBQHq59P7SNevQR2ycEfctn6waw8fZBJhK/';
-        const CONCURRENCY = 25;
+        const CONCURRENCY = 10;
 
-        // ============================================================
-        //  DOM রেফারেন্স
-        // ============================================================
         const grid = document.getElementById('nftGrid');
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
@@ -619,20 +431,15 @@
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const filterTags = document.querySelectorAll('.filter-tags .tag');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
 
-        // ============================================================
-        //  স্টেট
-        // ============================================================
-        let allCards = [];          // { element, tokenId, name, format, attributes }
-        let loadedCount = 0;
+        let allCards = [];
+        let allNFTData = [];
         let gifTotal = 0;
         let pngTotal = 0;
         let currentFilter = 'all';
         let searchQuery = '';
 
-        // ============================================================
-        //  হেল্পার: ফাইল এক্সটেনশন (URL থেকে)
-        // ============================================================
         function getExtension(url) {
             if (!url) return '';
             try {
@@ -640,75 +447,147 @@
                 const parts = path.split('.');
                 return parts.length > 1 ? parts.pop().toLowerCase() : '';
             } catch {
-                // URL পার্স না হলে স্ট্রিং থেকে বের করার চেষ্টা
                 const match = url.match(/\.([^./?#]+)(?:[?#]|$)/);
                 return match ? match[1].toLowerCase() : '';
             }
         }
 
-        // ============================================================
-        //  মিডিয়া এলিমেন্ট তৈরি (PNG / GIF)
-        // ============================================================
-        function createMedia(imageUrl, altText) {
+        // ===== ক্যানভাস ব্যাকগ্রাউন্ড রিমুভ এবং #d4ff00 ফিল রেন্ডারিং (PNG-এর জন্য) =====
+        function processAndRenderImageOnCanvas(imageUrl, canvas) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    ctx.imageSmoothingEnabled = false;
+
+                    // ১. র ক্যানভাস তৈরি মূল ইমেজের পিক্সেল রিড করার জন্য
+                    const offCanvas = document.createElement('canvas');
+                    offCanvas.width = img.width;
+                    offCanvas.height = img.height;
+                    const offCtx = offCanvas.getContext('2d');
+                    offCtx.drawImage(img, 0, 0);
+
+                    const imgData = offCtx.getImageData(0, 0, img.width, img.height);
+                    const data = imgData.data;
+
+                    // টপ-লেফট পিক্সেল থেকে অরিজিনাল ব্যাকগ্রাউন্ড কালার জানা
+                    const bgR = data[0], bgG = data[1], bgB = data[2];
+
+                    // ২. নতুন ব্যাকগ্রাউন্ড (#d4ff00 -> R:212, G:255, B:0)
+                    ctx.fillStyle = '#d4ff00';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // ৩. অরিজিনাল ব্যাকগ্রাউন্ড রিমুভ করে ফোরগ্রাউন্ড রেন্ডার
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+                        
+                        // ব্যাকগ্রাউন্ড ম্যাচ অথবা ট্রান্সপারেন্ট ফিল্টারিং
+                        const isBg = Math.abs(r - bgR) < 15 && Math.abs(g - bgG) < 15 && Math.abs(b - bgB) < 15;
+                        
+                        if (isBg || a < 50) {
+                            // ব্যাকগ্রাউন্ড স্কিপ
+                            continue;
+                        }
+                    }
+
+                    // অরিজিনাল ইমেজ কে ক্যানভাসের উপর সোর্স-ওভার দিয়ে ব্লেন্ড
+                    ctx.drawImage(img, 0, 0);
+
+                    // পিক্সেল রিপ্লেসমেন্ট লজিক
+                    const targetData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const td = targetData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+                        const isBg = Math.abs(r - bgR) < 20 && Math.abs(g - bgG) < 20 && Math.abs(b - bgB) < 20;
+
+                        if (isBg || a < 50) {
+                            td[i] = 212;   // Red (#d4ff00)
+                            td[i+1] = 255; // Green
+                            td[i+2] = 0;   // Blue
+                            td[i+3] = 255; // Fully opaque
+                        }
+                    }
+                    ctx.putImageData(targetData, 0, 0);
+                    resolve(canvas);
+                };
+                img.onerror = function() {
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 400; canvas.height = 400;
+                    ctx.fillStyle = '#d4ff00';
+                    ctx.fillRect(0, 0, 400, 400);
+                    resolve(canvas);
+                };
+                img.src = imageUrl;
+            });
+        }
+
+        // ===== GIF রেন্ডার ব্যাকগ্রাউন্ড #d4ff00 সহ =====
+        function createGifElement(imageUrl, tokenId) {
             const wrapper = document.createElement('div');
             wrapper.className = 'media-wrapper';
 
-            const ext = getExtension(imageUrl);
+            const video = document.createElement('video');
+            video.src = imageUrl;
+            video.autoplay = true;
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.setAttribute('crossorigin', 'anonymous');
+            video.style.background = '#d4ff00';
 
-            // GIF চিহ্নিত করলে ভিডিও, নাহলে ইমেজ
-            if (ext === 'gif') {
-                const video = document.createElement('video');
-                video.src = imageUrl;
-                video.autoplay = true;
-                video.loop = true;
-                video.muted = true;
-                video.playsInline = true;
-                video.setAttribute('aria-label', altText);
-                wrapper.appendChild(video);
+            video.onerror = function() {
+                this.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:0.5rem; background:#d4ff00; color:#070b10;';
+                fallback.innerHTML = `
+                    <i class="fas fa-film" style="font-size:3rem; opacity:0.3;"></i>
+                    <span style="font-size:1rem; opacity:0.5;">GIF #${tokenId}</span>
+                `;
+                wrapper.appendChild(fallback);
+            };
 
-                // GIF ব্যাজ
-                const badge = document.createElement('div');
-                badge.className = 'media-badge';
-                badge.innerHTML = '<i class="fas fa-play"></i> GIF';
-                wrapper.appendChild(badge);
-            } else {
-                const img = document.createElement('img');
-                img.src = imageUrl;
-                img.alt = altText;
-                img.loading = 'lazy';
-                img.decoding = 'async';
-                // ইমেজ লোড না হলে প্লেসহোল্ডার
-                img.onerror = function() {
-                    this.style.display = 'none';
-                    const fallback = document.createElement('div');
-                    fallback.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#0b1118; color:#4a6385; font-size:2rem;';
-                    fallback.innerHTML = '<i class="fas fa-image" style="opacity:0.3;"></i>';
-                    this.parentNode.appendChild(fallback);
-                };
-                wrapper.appendChild(img);
-            }
+            wrapper.appendChild(video);
+
+            const badge = document.createElement('div');
+            badge.className = 'media-badge';
+            badge.innerHTML = '<i class="fas fa-play"></i> GIF';
+            wrapper.appendChild(badge);
+
             return wrapper;
         }
 
-        // ============================================================
-        //  অ্যাট্রিবিউট রেন্ডার
-        // ============================================================
+        // ===== মিডিয়া উপাদান তৈরি =====
+        function createMedia(imageUrl, tokenId, format) {
+            if (format === 'gif') {
+                return createGifElement(imageUrl, tokenId);
+            } else {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'media-wrapper';
+
+                const canvas = document.createElement('canvas');
+                wrapper.appendChild(canvas);
+
+                processAndRenderImageOnCanvas(imageUrl, canvas);
+                return wrapper;
+            }
+        }
+
         function renderAttrs(attrs) {
             if (!attrs || attrs.length === 0) {
                 return `<span class="trait"><span class="trait-type">—</span> <span class="trait-value">কোনো অ্যাট্রিবিউট নেই</span></span>`;
             }
-            // বেশি অ্যাট্রিবিউট থাকলে ৪টার বেশি দেখাবো না
-            const displayAttrs = attrs.slice(0, 6);
-            return displayAttrs.map(a => {
+            return attrs.slice(0, 6).map(a => {
                 const type = a.trait_type || 'বৈশিষ্ট্য';
                 const value = a.value || '—';
                 return `<span class="trait"><span class="trait-type">${type}:</span> <span class="trait-value">${value}</span></span>`;
             }).join('');
         }
 
-        // ============================================================
-        //  একক NFT কার্ড তৈরি (ফেচ সহ)
-        // ============================================================
         function fetchAndBuildCard(index) {
             const tokenId = index + 1;
             const url = `${BASE_URL}${tokenId}`;
@@ -722,31 +601,24 @@
                     const imageUrl = data.image || '';
                     const name = data.name || `DystoPunk #${tokenId}`;
                     const attrs = data.attributes || [];
-
                     const ext = getExtension(imageUrl);
                     const format = ext === 'gif' ? 'gif' : 'png';
 
-                    // কার্ড এলিমেন্ট
                     const card = document.createElement('div');
                     card.className = 'nft-card';
                     card.dataset.tokenId = tokenId;
                     card.dataset.format = format;
                     card.dataset.name = name.toLowerCase();
 
-                    // মিডিয়া
-                    const media = createMedia(imageUrl, name);
+                    const media = createMedia(imageUrl, tokenId, format);
                     card.appendChild(media);
 
-                    // ইনফো
                     const info = document.createElement('div');
                     info.className = 'nft-info';
 
                     const nameDiv = document.createElement('div');
                     nameDiv.className = 'nft-name';
-                    nameDiv.innerHTML = `
-                        ${name}
-                        <span class="token-id">#${tokenId}</span>
-                    `;
+                    nameDiv.innerHTML = `${name} <span class="token-id">#${tokenId}</span>`;
                     info.appendChild(nameDiv);
 
                     const attrDiv = document.createElement('div');
@@ -754,7 +626,6 @@
                     attrDiv.innerHTML = renderAttrs(attrs);
                     info.appendChild(attrDiv);
 
-                    // ফুটার
                     const footer = document.createElement('div');
                     footer.className = 'card-footer';
                     const formatLabel = format === 'gif' ? 'GIF' : 'PNG';
@@ -762,42 +633,43 @@
                     footer.innerHTML = `
                         <span class="format"><i class="fas ${formatIcon}"></i> ${formatLabel}</span>
                         <span>${attrs.length} টি অ্যাট্রিবিউট</span>
+                        <button class="download-single" data-token="${tokenId}"><i class="fas fa-download"></i></button>
                     `;
                     info.appendChild(footer);
-
                     card.appendChild(info);
 
-                    // স্টেটে সংরক্ষণের জন্য ডেটা
+                    const downloadBtn = card.querySelector('.download-single');
+                    downloadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        downloadSingleNFT(tokenId, data);
+                    });
+
                     return {
                         element: card,
                         tokenId: tokenId,
                         name: name,
                         format: format,
-                        attributes: attrs
+                        attributes: attrs,
+                        imageUrl: imageUrl,
+                        metadata: data
                     };
                 })
                 .catch(err => {
-                    console.warn(`#${tokenId} লোড ব্যর্থ:`, err);
-                    // ফallback কার্ড
                     const fallback = document.createElement('div');
                     fallback.className = 'nft-card';
                     fallback.dataset.tokenId = tokenId;
                     fallback.dataset.format = 'error';
-                    fallback.style.borderColor = 'rgba(200,80,80,0.2)';
                     fallback.innerHTML = `
-                        <div class="media-wrapper" style="background:#0f1620; display:flex; align-items:center; justify-content:center; color:#4a6385;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:2.5rem; opacity:0.3;"></i>
+                        <div class="media-wrapper" style="background:#d4ff00; display:flex; align-items:center; justify-content:center; color:#070b10;">
+                            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:0.3rem;">
+                                <i class="fas fa-exclamation-triangle" style="font-size:2.5rem; opacity:0.3;"></i>
+                                <span style="font-size:0.6rem; opacity:0.5;">#${tokenId}</span>
+                            </div>
                         </div>
                         <div class="nft-info">
-                            <div class="nft-name">
-                                DystoPunk #${tokenId}
-                                <span class="token-id">#${tokenId}</span>
-                            </div>
-                            <div class="attributes"><span class="trait" style="background:rgba(255,255,255,0.03);">মেটাডাটা লোড হয়নি</span></div>
-                            <div class="card-footer">
-                                <span class="format"><i class="fas fa-ban"></i> Error</span>
-                                <span>—</span>
-                            </div>
+                            <div class="nft-name">DystoPunk #${tokenId} <span class="token-id">#${tokenId}</span></div>
+                            <div class="attributes"><span class="trait">মেটাডাটা লোড হয়নি</span></div>
+                            <div class="card-footer"><span class="format"><i class="fas fa-ban"></i> Error</span></div>
                         </div>
                     `;
                     return {
@@ -805,28 +677,59 @@
                         tokenId: tokenId,
                         name: `DystoPunk #${tokenId}`,
                         format: 'error',
-                        attributes: []
+                        attributes: [],
+                        imageUrl: '',
+                        metadata: null
                     };
                 });
         }
 
-        // ============================================================
-        //  ফিল্টার ও সার্চ ফাংশন
-        // ============================================================
+        function downloadSingleNFT(tokenId, metadata) {
+            const imageUrl = metadata.image || '';
+            const name = metadata.name || `DystoPunk #${tokenId}`;
+            const metadataJson = JSON.stringify(metadata, null, 2);
+
+            fetch(imageUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                    const ext = getExtension(imageUrl);
+                    const filename = `${name.replace(/\s+/g, '_')}.${ext || 'png'}`;
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    const metaBlob = new Blob([metadataJson], {type: 'application/json'});
+                    const metaLink = document.createElement('a');
+                    metaLink.href = URL.createObjectURL(metaBlob);
+                    metaLink.download = `${name.replace(/\s+/g, '_')}_metadata.json`;
+                    document.body.appendChild(metaLink);
+                    metaLink.click();
+                    document.body.removeChild(metaLink);
+                })
+                .catch(() => {
+                    const metaBlob = new Blob([metadataJson], {type: 'application/json'});
+                    const metaLink = document.createElement('a');
+                    metaLink.href = URL.createObjectURL(metaBlob);
+                    metaLink.download = `${name.replace(/\s+/g, '_')}_metadata.json`;
+                    document.body.appendChild(metaLink);
+                    metaLink.click();
+                    document.body.removeChild(metaLink);
+                });
+        }
+
         function applyFilters() {
             const query = searchQuery.toLowerCase().trim();
             const filter = currentFilter;
-
-            let visibleCount = 0;
-            let visibleGif = 0;
-            let visiblePng = 0;
+            let visibleCount = 0, visibleGif = 0, visiblePng = 0;
 
             allCards.forEach(item => {
                 const card = item.element;
                 const format = item.format;
                 const nameMatch = item.name.toLowerCase().includes(query) || String(item.tokenId).includes(query);
                 const formatMatch = filter === 'all' || filter === format;
-
                 const show = nameMatch && formatMatch;
                 card.style.display = show ? 'flex' : 'none';
                 if (show) {
@@ -836,21 +739,13 @@
                 }
             });
 
-            // আপডেট স্ট্যাটাস
             progressText.innerHTML = `
-                <i class="fas fa-eye"></i> 
-                ${visibleCount} টি দেখানো হচ্ছে 
-                <span style="color:#4a6385; margin-left:0.5rem;">
-                    (GIF: ${visibleGif} · PNG: ${visiblePng})
-                </span>
+                <i class="fas fa-eye"></i> ${visibleCount} টি দেখানো হচ্ছে 
+                <span style="color:#4a6385; margin-left:0.5rem;">(GIF: ${visibleGif} · PNG: ${visiblePng})</span>
             `;
         }
 
-        // ============================================================
-        //  সবগুলো লোড করা (কনকারেন্ট ব্যাচ)
-        // ============================================================
         async function loadAll() {
-            // প্লেসহোল্ডার সরানো
             const placeholder = grid.querySelector('.loading-placeholder');
             if (placeholder) placeholder.remove();
 
@@ -870,79 +765,74 @@
                     if (result.status === 'fulfilled') {
                         const cardData = result.value;
                         allCards.push(cardData);
+                        allNFTData.push(cardData);
                         grid.appendChild(cardData.element);
-
-                        // কাউন্ট আপডেট
                         if (cardData.format === 'gif') gifTotal++;
                         else if (cardData.format === 'png') pngTotal++;
-                    } else {
-                        // খুবই বিরল ক্ষেত্রে
-                        const idx = loaded;
-                        const fallback = document.createElement('div');
-                        fallback.className = 'nft-card';
-                        fallback.dataset.tokenId = idx + 1;
-                        fallback.dataset.format = 'error';
-                        fallback.style.borderColor = 'rgba(200,80,80,0.15)';
-                        fallback.innerHTML = `
-                            <div class="media-wrapper" style="background:#0f1620; display:flex; align-items:center; justify-content:center; color:#4a6385;">
-                                <i class="fas fa-times" style="font-size:2.5rem; opacity:0.2;"></i>
-                            </div>
-                            <div class="nft-info">
-                                <div class="nft-name">DystoPunk #${idx+1} <span class="token-id">#${idx+1}</span></div>
-                                <div class="attributes"><span class="trait">লোড হয়নি</span></div>
-                                <div class="card-footer"><span class="format"><i class="fas fa-ban"></i> Error</span></div>
-                            </div>
-                        `;
-                        allCards.push({
-                            element: fallback,
-                            tokenId: idx + 1,
-                            name: `DystoPunk #${idx+1}`,
-                            format: 'error',
-                            attributes: []
-                        });
-                        grid.appendChild(fallback);
                     }
                     loaded++;
                 }
 
-                // প্রগ্রেস আপডেট
                 const percent = Math.min(100, Math.round((loaded / TOTAL) * 100));
                 progressBar.style.width = percent + '%';
                 progressText.innerHTML = `
-                    <i class="fas fa-spinner fa-spin"></i> 
-                    ${loaded} / ${TOTAL} লোড হয়েছে 
-                    <span style="color:#4a6385; margin-left:0.5rem;">
-                        (GIF: ${gifTotal} · PNG: ${pngTotal})
-                    </span>
+                    <i class="fas fa-spinner fa-spin"></i> ${loaded} / ${TOTAL} লোড হয়েছে 
+                    <span style="color:#4a6385; margin-left:0.5rem;">(GIF: ${gifTotal} · PNG: ${pngTotal})</span>
                 `;
-
-                // কাউন্টার আপডেট
                 totalCount.textContent = loaded;
                 gifCount.textContent = gifTotal;
                 pngCount.textContent = pngTotal;
             }
 
-            // সম্পূর্ণ
             progressBar.style.width = '100%';
             progressText.innerHTML = `
-                <i class="fas fa-check-circle" style="color:#4f7dff;"></i> 
-                ✅ ${TOTAL} / ${TOTAL} সম্পূর্ণ! 
-                <span style="color:#4a6385; margin-left:0.5rem;">
-                    (GIF: ${gifTotal} · PNG: ${pngTotal})
-                </span>
+                <i class="fas fa-check-circle" style="color:#d4ff00;"></i> ✅ ${TOTAL} / ${TOTAL} সম্পূর্ণ! 
+                <span style="color:#4a6385; margin-left:0.5rem;">(GIF: ${gifTotal} · PNG: ${pngTotal})</span>
             `;
-
-            // ডিফল্ট ফিল্টার apply
             applyFilters();
-
-            console.log(`✅ মোট ${TOTAL} টি NFT লোড সম্পূর্ণ!`);
         }
 
-        // ============================================================
-        //  ইভেন্ট লিসেনার
-        // ============================================================
+        async function downloadAllAsZip() {
+            if (allNFTData.length === 0) {
+                alert('কোনো NFT লোড হয়নি।');
+                return;
+            }
 
-        // সার্চ
+            const zip = new JSZip();
+            const folder = zip.folder('DystoPunks_NFTs');
+            let count = 0;
+
+            downloadAllBtn.disabled = true;
+            downloadAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> তৈরি হচ্ছে...';
+
+            for (const item of allNFTData) {
+                if (item.format === 'error' || !item.imageUrl) continue;
+                try {
+                    const response = await fetch(item.imageUrl);
+                    const blob = await response.blob();
+                    const ext = getExtension(item.imageUrl) || 'png';
+                    folder.file(`${item.name.replace(/\s+/g, '_')}.${ext}`, blob);
+                    if (item.metadata) {
+                        folder.file(`${item.name.replace(/\s+/g, '_')}_metadata.json`, JSON.stringify(item.metadata, null, 2));
+                    }
+                    count++;
+                } catch (err) {
+                    console.warn(`#${item.tokenId} ডাউনলোড ব্যর্থ`);
+                }
+            }
+
+            try {
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                saveAs(zipBlob, 'DystoPunks_NFTs_Complete.zip');
+                alert(`✅ ${count} টি NFT ডাউনলোড হয়েছে!`);
+            } catch (err) {
+                alert('ZIP তৈরি করতে সমস্যা হয়েছে।');
+            }
+
+            downloadAllBtn.disabled = false;
+            downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> ZIP ডাউনলোড';
+        }
+
         function handleSearch() {
             searchQuery = searchInput.value;
             applyFilters();
@@ -950,8 +840,8 @@
 
         searchInput.addEventListener('input', handleSearch);
         searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSearch(); });
 
-        // ফিল্টার ট্যাগ
         filterTags.forEach(tag => {
             tag.addEventListener('click', function() {
                 filterTags.forEach(t => t.classList.remove('active'));
@@ -961,23 +851,11 @@
             });
         });
 
-        // এন্টার কী
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') handleSearch();
-        });
+        downloadAllBtn.addEventListener('click', downloadAllAsZip);
 
-        // ============================================================
-        //  শুরু করা
-        // ============================================================
         loadAll().catch(err => {
             console.error('গ্লোবাল এরর:', err);
-            grid.innerHTML = `
-                <div class="loading-placeholder" style="color:#d67a7a;">
-                    <div style="font-size:2.5rem; margin-bottom:0.5rem;">⚠️</div>
-                    <div class="main-text">গ্যালারি লোড করতে সমস্যা</div>
-                    <div class="sub-text">পৃষ্ঠা রিফ্রেশ করে আবার চেষ্টা করুন</div>
-                </div>
-            `;
+            grid.innerHTML = `<div class="loading-placeholder" style="color:#d67a7a;"><div style="font-size:2.5rem;">⚠️</div><div>গ্যালারি লোড করতে সমস্যা</div></div>`;
         });
 
     })();
