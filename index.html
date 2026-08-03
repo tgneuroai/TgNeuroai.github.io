@@ -146,6 +146,11 @@
         .filter-tags .tag:hover { background: rgba(212, 255, 0, 0.15); border-color: #d4ff00; color: #fff; }
         .filter-tags .tag.active { background: rgba(212, 255, 0, 0.2); border-color: #d4ff00; color: #fff; }
 
+        .download-btns {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
         .download-btn {
             background: #d4ff00;
             border: none;
@@ -162,6 +167,12 @@
             gap: 0.5rem;
         }
         .download-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.3); }
+        .download-btn.secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #eef2f8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .download-btn.secondary:hover { background: rgba(212, 255, 0, 0.15); border-color: #d4ff00; color: #fff; }
 
         .progress-wrap {
             background: rgba(255, 255, 255, 0.04);
@@ -223,7 +234,6 @@
             box-shadow: 0 20px 60px rgba(212, 255, 0, 0.2);
         }
 
-        /* ===== মিডিয়া — ব্যাকগ্রাউন্ড #d4ff00 ===== */
         .media-wrapper {
             background: #d4ff00;
             position: relative;
@@ -233,7 +243,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .media-wrapper canvas, .media-wrapper video, .media-wrapper img {
             position: absolute;
             top: 0;
@@ -244,7 +253,6 @@
             background: #d4ff00;
             image-rendering: pixelated;
         }
-
         .media-badge {
             position: absolute;
             top: 12px;
@@ -336,7 +344,7 @@
         }
         .card-footer .download-single:hover { background: #d4ff00; color: #070b10; }
 
-        /* ===== প্রিমিয়াম পপআপ মোডাল ===== */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -524,7 +532,10 @@
             <button class="tag" data-filter="gif">🎞️ GIF</button>
             <button class="tag" data-filter="png">🖼️ PNG</button>
         </div>
-        <button class="download-btn" id="downloadAllBtn"><i class="fas fa-download"></i> ZIP ডাউনলোড</button>
+        <div class="download-btns">
+            <button class="download-btn" id="downloadImagesBtn"><i class="fas fa-download"></i> PNG জিপ</button>
+            <button class="download-btn secondary" id="downloadMetadataBtn"><i class="fas fa-download"></i> JSON জিপ</button>
+        </div>
     </div>
 
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
@@ -539,7 +550,7 @@
     </div>
 </div>
 
-<!-- প্রিমিয়াম মোডাল পপআপ -->
+<!-- Modal -->
 <div class="modal-overlay" id="nftModal">
     <div class="modal-container">
         <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
@@ -577,9 +588,9 @@
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
         const filterTags = document.querySelectorAll('.filter-tags .tag');
-        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const downloadImagesBtn = document.getElementById('downloadImagesBtn');
+        const downloadMetadataBtn = document.getElementById('downloadMetadataBtn');
 
-        // Modal Elements
         const modal = document.getElementById('nftModal');
         const modalClose = document.getElementById('modalClose');
         const modalMedia = document.getElementById('modalMedia');
@@ -608,7 +619,6 @@
             }
         }
 
-        // ===== ক্যানভাস ব্যাকগ্রাউন্ড রিমুভ ও #d4ff00 ফিল প্রসেসর =====
         function getModifiedCanvas(imageUrl) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -643,10 +653,10 @@
                         const isBg = Math.abs(r - bgR) < 22 && Math.abs(g - bgG) < 22 && Math.abs(b - bgB) < 22;
 
                         if (isBg || a < 50) {
-                            td[i] = 212;   
-                            td[i+1] = 255; 
-                            td[i+2] = 0;   
-                            td[i+3] = 255; 
+                            td[i] = 212;
+                            td[i+1] = 255;
+                            td[i+2] = 0;
+                            td[i+3] = 255;
                         }
                     }
                     ctx.putImageData(targetData, 0, 0);
@@ -664,7 +674,6 @@
             });
         }
 
-        // ===== GIF এবং PNG মিডিয়া এলিমেন্ট জেনারেটর =====
         function createMediaElement(imageUrl, tokenId, format) {
             const wrapper = document.createElement('div');
             wrapper.className = 'media-wrapper';
@@ -761,10 +770,8 @@
                         metadata: data
                     };
 
-                    // কার্ড ক্লিকে প্রিমিয়াম পপআপ ওপেন
                     card.addEventListener('click', () => openModal(itemData));
 
-                    // ডাইরেক্ট ডাউনলোড বাটন
                     const downloadBtn = card.querySelector('.download-single');
                     downloadBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -786,18 +793,15 @@
                 });
         }
 
-        // ===== প্রিমিয়াম পপআপ খুলুন =====
         function openModal(item) {
             activeModalItem = item;
             modalTokenId.textContent = `#${item.tokenId}`;
             modalName.textContent = item.name;
 
-            // মেটেরিয়াল বসানো
             modalMedia.innerHTML = '';
             const mediaElem = createMediaElement(item.imageUrl, item.tokenId, item.format);
             modalMedia.appendChild(mediaElem);
 
-            // অ্যাট্রিবিউট গ্রিড
             modalTraitsGrid.innerHTML = '';
             if (item.attributes && item.attributes.length > 0) {
                 item.attributes.forEach(attr => {
@@ -824,15 +828,10 @@
         modalClose.addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-        // ===== মোডিফাইড ব্যাকগ্রাউন্ড ডাউনলোড লজিক =====
         async function downloadSingleNFT(item) {
             const canvas = await getModifiedCanvas(item.imageUrl);
-            
             canvas.toBlob((blob) => {
-                const filename = `${item.tokenId}.png`;
-                saveAs(blob, filename);
-
-                // মেটাডাটা
+                saveAs(blob, `${item.tokenId}.png`);
                 if (item.metadata) {
                     const metaBlob = new Blob([JSON.stringify(item.metadata, null, 2)], {type: 'application/json'});
                     saveAs(metaBlob, `${item.tokenId}.json`);
@@ -915,46 +914,68 @@
             applyFilters();
         }
 
-        // ===== ZIP প্যাকেজ (শুধু সিরিয়াল নাম্বার দিয়ে নামকরণ: 1.png / 1.json) =====
-        async function downloadAllAsZip() {
+        // ====== আলাদা জিপ ডাউনলোড: PNG এবং JSON ======
+        async function downloadImagesZip() {
             if (allNFTData.length === 0) return;
-
             const zip = new JSZip();
             let count = 0;
 
-            downloadAllBtn.disabled = true;
-            downloadAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> রেন্ডার ও প্রসেস হচ্ছে...';
+            downloadImagesBtn.disabled = true;
+            downloadImagesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> রেন্ডার হচ্ছে...';
 
             for (const item of allNFTData) {
                 if (item.format === 'error' || !item.imageUrl) continue;
                 try {
                     const canvas = await getModifiedCanvas(item.imageUrl);
                     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-                    
-                    // শুধু সংখ্যা দিয়ে ফাইল সেভ হবে (যেমন: 1.png, 2.png)
                     zip.file(`${item.tokenId}.png`, blob);
-
-                    // সংসংলগ্ন মেটাডাটাও শুধু সংখ্যা দিয়ে সেভ হবে (যেমন: 1.json, 2.json)
-                    if (item.metadata) {
-                        zip.file(`${item.tokenId}.json`, JSON.stringify(item.metadata, null, 2));
-                    }
                     count++;
                 } catch (err) {
-                    console.warn(`#${item.tokenId} রেন্ডারিং ব্যর্থ`);
+                    console.warn(`#${item.tokenId} PNG রেন্ডার ব্যর্থ`);
                 }
             }
 
             try {
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
-                saveAs(zipBlob, 'DystoPunks_Collection.zip');
-                alert(`✅ ${count} টি NFT এবং মেটাডাটা জিপ ফাইল হিসেবে ডাউনলোড হয়েছে!`);
+                saveAs(zipBlob, 'DystoPunks_Images.zip');
+                alert(`✅ ${count} টি PNG ডাউনলোড হয়েছে!`);
             } catch (err) {
-                alert('ZIP ফাইল তৈরিতে ব্যর্থ।');
+                alert('ZIP তৈরিতে ব্যর্থ।');
             }
 
-            downloadAllBtn.disabled = false;
-            downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> ZIP ডাউনলোড';
+            downloadImagesBtn.disabled = false;
+            downloadImagesBtn.innerHTML = '<i class="fas fa-download"></i> PNG জিপ';
         }
+
+        async function downloadMetadataZip() {
+            if (allNFTData.length === 0) return;
+            const zip = new JSZip();
+            let count = 0;
+
+            downloadMetadataBtn.disabled = true;
+            downloadMetadataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রস্তুত হচ্ছে...';
+
+            for (const item of allNFTData) {
+                if (item.metadata) {
+                    zip.file(`${item.tokenId}.json`, JSON.stringify(item.metadata, null, 2));
+                    count++;
+                }
+            }
+
+            try {
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                saveAs(zipBlob, 'DystoPunks_Metadata.zip');
+                alert(`✅ ${count} টি JSON মেটাডাটা ডাউনলোড হয়েছে!`);
+            } catch (err) {
+                alert('ZIP তৈরিতে ব্যর্থ।');
+            }
+
+            downloadMetadataBtn.disabled = false;
+            downloadMetadataBtn.innerHTML = '<i class="fas fa-download"></i> JSON জিপ';
+        }
+
+        downloadImagesBtn.addEventListener('click', downloadImagesZip);
+        downloadMetadataBtn.addEventListener('click', downloadMetadataZip);
 
         function handleSearch() {
             searchQuery = searchInput.value;
@@ -973,8 +994,6 @@
                 applyFilters();
             });
         });
-
-        downloadAllBtn.addEventListener('click', downloadAllAsZip);
 
         loadAll().catch(err => {
             console.error('গ্লোবাল এরর:', err);
