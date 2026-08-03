@@ -524,7 +524,7 @@
             <button class="tag" data-filter="gif">🎞️ GIF</button>
             <button class="tag" data-filter="png">🖼️ PNG</button>
         </div>
-        <button class="download-btn" id="downloadAllBtn"><i class="fas fa-download"></i> ZIP ডাউনলোড (সংশোধিত)</button>
+        <button class="download-btn" id="downloadAllBtn"><i class="fas fa-download"></i> ZIP ডাউনলোড</button>
     </div>
 
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
@@ -829,13 +829,13 @@
             const canvas = await getModifiedCanvas(item.imageUrl);
             
             canvas.toBlob((blob) => {
-                const filename = `${item.name.replace(/\s+/g, '_')}_#d4ff00.png`;
+                const filename = `${item.tokenId}.png`;
                 saveAs(blob, filename);
 
                 // মেটাডাটা
                 if (item.metadata) {
                     const metaBlob = new Blob([JSON.stringify(item.metadata, null, 2)], {type: 'application/json'});
-                    saveAs(metaBlob, `${item.name.replace(/\s+/g, '_')}_metadata.json`);
+                    saveAs(metaBlob, `${item.tokenId}.json`);
                 }
             }, 'image/png');
         }
@@ -915,12 +915,11 @@
             applyFilters();
         }
 
-        // ===== ZIP প্যাকেজ ক্যানভাস ব্যাকগ্রাউন্ড পরিবর্তিত ফাইলে =====
+        // ===== ZIP প্যাকেজ (শুধু সিরিয়াল নাম্বার দিয়ে নামকরণ: 1.png / 1.json) =====
         async function downloadAllAsZip() {
             if (allNFTData.length === 0) return;
 
             const zip = new JSZip();
-            const folder = zip.folder('DystoPunks_Yellow_BG');
             let count = 0;
 
             downloadAllBtn.disabled = true;
@@ -932,9 +931,12 @@
                     const canvas = await getModifiedCanvas(item.imageUrl);
                     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
                     
-                    folder.file(`${item.name.replace(/\s+/g, '_')}.png`, blob);
+                    // শুধু সংখ্যা দিয়ে ফাইল সেভ হবে (যেমন: 1.png, 2.png)
+                    zip.file(`${item.tokenId}.png`, blob);
+
+                    // সংসংলগ্ন মেটাডাটাও শুধু সংখ্যা দিয়ে সেভ হবে (যেমন: 1.json, 2.json)
                     if (item.metadata) {
-                        folder.file(`${item.name.replace(/\s+/g, '_')}_metadata.json`, JSON.stringify(item.metadata, null, 2));
+                        zip.file(`${item.tokenId}.json`, JSON.stringify(item.metadata, null, 2));
                     }
                     count++;
                 } catch (err) {
@@ -944,14 +946,14 @@
 
             try {
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
-                saveAs(zipBlob, 'DystoPunks_Custom_BG_NFTs.zip');
-                alert(`✅ ${count} টি NFT পরিবর্তিত ব্যাকগ্রাউন্ডে ডাউনলোড হয়েছে!`);
+                saveAs(zipBlob, 'DystoPunks_Collection.zip');
+                alert(`✅ ${count} টি NFT এবং মেটাডাটা জিপ ফাইল হিসেবে ডাউনলোড হয়েছে!`);
             } catch (err) {
                 alert('ZIP ফাইল তৈরিতে ব্যর্থ।');
             }
 
             downloadAllBtn.disabled = false;
-            downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> ZIP ডাউনলোড (সংশোধিত)';
+            downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> ZIP ডাউনলোড';
         }
 
         function handleSearch() {
