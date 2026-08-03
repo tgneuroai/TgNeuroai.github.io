@@ -197,6 +197,34 @@
             letter-spacing: 0.3px;
         }
 
+        /* ডাউনলোড প্রগ্রেস বার */
+        .download-progress-wrap {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 40px;
+            height: 6px;
+            margin: 0.5rem 0 0.8rem;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: none;
+        }
+        .download-progress-wrap.active { display: block; }
+        .download-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #d4ff00, #a8cc00);
+            border-radius: 40px;
+            transition: width 0.3s ease;
+        }
+        .download-status {
+            text-align: right;
+            font-size: 0.75rem;
+            color: #d4ff00;
+            margin-bottom: 0.5rem;
+            display: none;
+            font-weight: 500;
+        }
+        .download-status.active { display: block; }
+
         .nft-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -541,6 +569,12 @@
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-text" id="progressText"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
 
+    <!-- ডাউনলোড প্রগ্রেস -->
+    <div class="download-progress-wrap" id="downloadProgressWrap">
+        <div class="download-progress-bar" id="downloadProgressBar"></div>
+    </div>
+    <div class="download-status" id="downloadStatus"><i class="fas fa-spinner fa-spin"></i> প্রস্তুত হচ্ছে...</div>
+
     <div id="nftGrid" class="nft-grid">
         <div class="loading-placeholder">
             <div class="spinner"></div>
@@ -577,7 +611,7 @@
     (function() {
         const TOTAL = 2076;
         const BASE_URL = 'https://dystopunks.mypinata.cloud/ipfs/QmeYQ2eDCcJpfBQHq59P7SNevQR2ycEfctn6waw8fZBJhK/';
-        const CONCURRENCY = 10;
+        const CONCURRENCY = 15; // দ্রুত লোডের জন্য কনকারেন্সি বাড়ানো
 
         const grid = document.getElementById('nftGrid');
         const progressBar = document.getElementById('progressBar');
@@ -590,6 +624,9 @@
         const filterTags = document.querySelectorAll('.filter-tags .tag');
         const downloadImagesBtn = document.getElementById('downloadImagesBtn');
         const downloadMetadataBtn = document.getElementById('downloadMetadataBtn');
+        const downloadProgressWrap = document.getElementById('downloadProgressWrap');
+        const downloadProgressBar = document.getElementById('downloadProgressBar');
+        const downloadStatus = document.getElementById('downloadStatus');
 
         const modal = document.getElementById('nftModal');
         const modalClose = document.getElementById('modalClose');
@@ -759,7 +796,7 @@
                         <button class="download-single"><i class="fas fa-download"></i> ডাউনলোড</button>
                     `;
                     info.appendChild(footer);
-                    card.appendChild(info);
+                    card.appendChild(footer);
 
                     const itemData = {
                         tokenId: tokenId,
@@ -914,14 +951,19 @@
             applyFilters();
         }
 
-        // ====== আলাদা জিপ ডাউনলোড: PNG এবং JSON ======
+        // ====== আলাদা জিপ ডাউনলোড: PNG এবং JSON (লাইভ প্রগ্রেস সহ) ======
         async function downloadImagesZip() {
             if (allNFTData.length === 0) return;
             const zip = new JSZip();
             let count = 0;
+            const total = allNFTData.filter(item => item.format !== 'error' && item.imageUrl).length;
 
             downloadImagesBtn.disabled = true;
             downloadImagesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> রেন্ডার হচ্ছে...';
+            downloadProgressWrap.classList.add('active');
+            downloadStatus.classList.add('active');
+            downloadStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 0% — PNG প্রস্তুত হচ্ছে...';
+            downloadProgressBar.style.width = '0%';
 
             for (const item of allNFTData) {
                 if (item.format === 'error' || !item.imageUrl) continue;
@@ -930,17 +972,32 @@
                     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
                     zip.file(`${item.tokenId}.png`, blob);
                     count++;
+                    
+                    const percent = Math.round((count / total) * 100);
+                    downloadProgressBar.style.width = percent + '%';
+                    downloadStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${percent}% — ${count}/${total} PNG প্রস্তুত`;
                 } catch (err) {
                     console.warn(`#${item.tokenId} PNG রেন্ডার ব্যর্থ`);
                 }
             }
 
+            downloadStatus.innerHTML = '<i class="fas fa-compress"></i> জিপ তৈরি হচ্ছে...';
+            
             try {
-                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const zipBlob = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
                 saveAs(zipBlob, 'DystoPunks_Images.zip');
-                alert(`✅ ${count} টি PNG ডাউনলোড হয়েছে!`);
+                downloadStatus.innerHTML = `✅ ${count} টি PNG ডাউনলোড সম্পন্ন!`;
+                setTimeout(() => {
+                    downloadProgressWrap.classList.remove('active');
+                    downloadStatus.classList.remove('active');
+                }, 3000);
             } catch (err) {
                 alert('ZIP তৈরিতে ব্যর্থ।');
+                downloadStatus.innerHTML = '❌ ZIP তৈরি ব্যর্থ';
             }
 
             downloadImagesBtn.disabled = false;
@@ -951,23 +1008,42 @@
             if (allNFTData.length === 0) return;
             const zip = new JSZip();
             let count = 0;
+            const total = allNFTData.filter(item => item.metadata).length;
 
             downloadMetadataBtn.disabled = true;
             downloadMetadataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রস্তুত হচ্ছে...';
+            downloadProgressWrap.classList.add('active');
+            downloadStatus.classList.add('active');
+            downloadStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 0% — JSON প্রস্তুত হচ্ছে...';
+            downloadProgressBar.style.width = '0%';
 
             for (const item of allNFTData) {
                 if (item.metadata) {
                     zip.file(`${item.tokenId}.json`, JSON.stringify(item.metadata, null, 2));
                     count++;
+                    const percent = Math.round((count / total) * 100);
+                    downloadProgressBar.style.width = percent + '%';
+                    downloadStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${percent}% — ${count}/${total} JSON প্রস্তুত`;
                 }
             }
 
+            downloadStatus.innerHTML = '<i class="fas fa-compress"></i> জিপ তৈরি হচ্ছে...';
+
             try {
-                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const zipBlob = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 }
+                });
                 saveAs(zipBlob, 'DystoPunks_Metadata.zip');
-                alert(`✅ ${count} টি JSON মেটাডাটা ডাউনলোড হয়েছে!`);
+                downloadStatus.innerHTML = `✅ ${count} টি JSON ডাউনলোড সম্পন্ন!`;
+                setTimeout(() => {
+                    downloadProgressWrap.classList.remove('active');
+                    downloadStatus.classList.remove('active');
+                }, 3000);
             } catch (err) {
                 alert('ZIP তৈরিতে ব্যর্থ।');
+                downloadStatus.innerHTML = '❌ ZIP তৈরি ব্যর্থ';
             }
 
             downloadMetadataBtn.disabled = false;
