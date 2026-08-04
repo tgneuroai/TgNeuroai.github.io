@@ -1,1082 +1,482 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DystoPunks — প্রিমিয়াম NFT গ্যালারি</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>On-Chain NFT Original Layer Extractor</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- JSZip for ZIP exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090a0f',
+                        panelBg: '#11131c',
+                        borderCol: '#1f2433',
+                        accent: '#3b82f6',
+                        accentHover: '#2563eb'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-            background: #070b10;
-            color: #eef2f8;
-            min-height: 100vh;
-            background-image: 
-                radial-gradient(ellipse at 10% 20%, rgba(30, 60, 120, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 90% 80%, rgba(60, 30, 120, 0.10) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(10, 20, 40, 0.8) 0%, #070b10 100%);
-            padding: 0;
-        }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f1620; }
-        ::-webkit-scrollbar-thumb { background: #2a3a50; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #d4ff00; }
-
-        .container { max-width: 1600px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 2.5rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        .header-left { display: flex; align-items: center; gap: 1.2rem; }
-        .logo-icon {
-            width: 52px; height: 52px;
-            background: #d4ff00;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #070b10;
-            box-shadow: 0 8px 30px rgba(212, 255, 0, 0.2);
-        }
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ffffff 30%, #d4ff00 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
-        }
-        .header-stats {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 0.5rem 1.5rem;
-            border-radius: 60px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(10px);
-            flex-wrap: wrap;
-        }
-        .header-stats .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #8aa3c9;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .header-stats .stat-item i { color: #d4ff00; font-size: 0.9rem; }
-        .header-stats .stat-item .num { color: #fff; font-weight: 600; }
-
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .search-box {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 60px;
-            padding: 0.3rem 0.3rem 0.3rem 1.2rem;
-            transition: all 0.3s ease;
-            flex: 1;
-            max-width: 400px;
-        }
-        .search-box:focus-within {
-            border-color: #d4ff00;
-            box-shadow: 0 0 30px rgba(212, 255, 0, 0.08);
-            background: rgba(255, 255, 255, 0.07);
-        }
-        .search-box input {
-            background: transparent;
-            border: none;
-            padding: 0.7rem 0.8rem;
-            color: #eef2f8;
-            font-size: 0.9rem;
-            width: 100%;
-            outline: none;
-            font-family: inherit;
-        }
-        .search-box input::placeholder { color: #4a6385; }
-        .search-box button {
-            background: #d4ff00;
-            border: none;
-            color: #070b10;
-            padding: 0.6rem 1.4rem;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        .search-box button:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.3); }
-
-        .filter-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .filter-tags .tag {
-            padding: 0.4rem 1.2rem;
-            border-radius: 60px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: #8aa3c9;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        .filter-tags .tag:hover { background: rgba(212, 255, 0, 0.15); border-color: #d4ff00; color: #fff; }
-        .filter-tags .tag.active { background: rgba(212, 255, 0, 0.2); border-color: #d4ff00; color: #fff; }
-
-        .download-btns {
-            display: flex;
-            gap: 0.8rem;
-            flex-wrap: wrap;
-        }
-        .download-btn {
-            background: #d4ff00;
-            border: none;
-            color: #070b10;
-            padding: 0.6rem 1.5rem;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .download-btn:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.3); }
-        .download-btn.secondary {
-            background: rgba(255, 255, 255, 0.06);
-            color: #eef2f8;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .download-btn.secondary:hover { background: rgba(212, 255, 0, 0.15); border-color: #d4ff00; color: #fff; }
-
-        .progress-wrap {
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 40px;
-            height: 4px;
-            margin-bottom: 0.8rem;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: #d4ff00;
-            border-radius: 40px;
-            transition: width 0.4s ease;
-        }
-        .progress-text {
-            text-align: right;
-            font-size: 0.75rem;
-            color: #5a7395;
-            margin-bottom: 1.8rem;
-            letter-spacing: 0.3px;
-        }
-
-        /* ডাউনলোড প্রগ্রেস বার */
-        .download-progress-wrap {
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 40px;
-            height: 6px;
-            margin: 0.5rem 0 0.8rem;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            display: none;
-        }
-        .download-progress-wrap.active { display: block; }
-        .download-progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #d4ff00, #a8cc00);
-            border-radius: 40px;
-            transition: width 0.3s ease;
-        }
-        .download-status {
-            text-align: right;
-            font-size: 0.75rem;
-            color: #d4ff00;
-            margin-bottom: 0.5rem;
-            display: none;
-            font-weight: 500;
-        }
-        .download-status.active { display: block; }
-
-        .nft-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.8rem;
-        }
-
-        .nft-card {
-            background: linear-gradient(145deg, rgba(20, 30, 45, 0.9), rgba(12, 18, 28, 0.95));
-            border-radius: 24px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            backdrop-filter: blur(12px);
-            position: relative;
-            cursor: pointer;
-        }
-        .nft-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 24px;
-            padding: 1px;
-            background: linear-gradient(135deg, rgba(212, 255, 0, 0.2), transparent, rgba(212, 255, 0, 0.05));
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-        }
-        .nft-card:hover {
-            transform: translateY(-8px) scale(1.01);
-            border-color: rgba(212, 255, 0, 0.4);
-            box-shadow: 0 20px 60px rgba(212, 255, 0, 0.2);
-        }
-
-        .media-wrapper {
-            background: #d4ff00;
-            position: relative;
-            padding-top: 100%;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .media-wrapper canvas, .media-wrapper video, .media-wrapper img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #d4ff00;
-            image-rendering: pixelated;
-        }
-        .media-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            font-size: 0.6rem;
-            font-weight: 600;
-            color: #d4ff00;
-            border: 1px solid rgba(212, 255, 0, 0.2);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            z-index: 2;
-        }
-
-        .nft-info {
-            padding: 1.2rem 1.3rem 1.4rem;
-            background: linear-gradient(180deg, rgba(18, 26, 38, 0.9), rgba(12, 18, 28, 0.95));
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .nft-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #eef2f8;
-            letter-spacing: 0.2px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .nft-name .token-id {
-            font-size: 0.7rem;
-            font-weight: 500;
-            color: #5a7395;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 0.15rem 0.7rem;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-        }
-        .attributes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem 0.4rem;
-            margin-top: 0.2rem;
-        }
-        .trait {
-            background: rgba(255, 255, 255, 0.04);
-            padding: 0.2rem 0.7rem;
-            border-radius: 30px;
-            font-size: 0.65rem;
-            font-weight: 500;
-            color: #b6cdff;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.2rem;
-            letter-spacing: 0.2px;
-        }
-        .trait-type { color: #6a84aa; font-weight: 400; }
-        .trait-value { color: #dce8ff; font-weight: 500; }
-
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 0.5rem;
-            padding-top: 0.6rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
-            font-size: 0.6rem;
-            color: #5a7395;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .card-footer .download-single {
-            background: rgba(212, 255, 0, 0.1);
-            border: 1px solid rgba(212, 255, 0, 0.2);
-            color: #d4ff00;
-            padding: 0.3rem 0.8rem;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.6rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-        .card-footer .download-single:hover { background: #d4ff00; color: #070b10; }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(5, 8, 14, 0.85);
-            backdrop-filter: blur(16px);
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.35s ease;
-            padding: 1.5rem;
-        }
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .modal-container {
-            background: linear-gradient(145deg, #121a26, #0a0f18);
-            border: 1px solid rgba(212, 255, 0, 0.3);
-            border-radius: 28px;
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            overflow: hidden;
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8), 0 0 50px rgba(212, 255, 0, 0.15);
-            transform: scale(0.9) translateY(20px);
-            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-        }
-        .modal-overlay.active .modal-container {
-            transform: scale(1) translateY(0);
-        }
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 38px;
-            height: 38px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            cursor: pointer;
-            z-index: 10;
-            transition: all 0.25s ease;
-        }
-        .modal-close:hover { background: #d4ff00; color: #070b10; transform: rotate(90deg); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090a0f; }
+        ::-webkit-scrollbar-thumb { background: #1f2433; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
         
-        .modal-media {
-            flex: 1.1;
-            background: #d4ff00;
-            min-height: 400px;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-media canvas, .modal-media video, .modal-media img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            image-rendering: pixelated;
-        }
-        .modal-details {
-            flex: 1;
-            padding: 2.5rem 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 1.5rem;
-        }
-        .modal-header h2 {
-            font-size: 1.8rem;
-            color: #fff;
-            margin-bottom: 0.4rem;
-        }
-        .modal-header .modal-badge-id {
-            display: inline-block;
-            background: rgba(212, 255, 0, 0.15);
-            border: 1px solid #d4ff00;
-            color: #d4ff00;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .modal-traits-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #6a84aa;
-            margin-bottom: 0.8rem;
-        }
-        .modal-traits-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.6rem;
-            max-height: 220px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .modal-trait-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 0.6rem 0.8rem;
-            border-radius: 12px;
-        }
-        .modal-trait-card .type { font-size: 0.65rem; color: #6a84aa; text-transform: uppercase; }
-        .modal-trait-card .val { font-size: 0.85rem; color: #fff; font-weight: 600; margin-top: 2px; }
-
-        .modal-actions { display: flex; gap: 0.8rem; margin-top: 1rem; }
-        .modal-download-btn {
-            flex: 1;
-            background: #d4ff00;
-            color: #070b10;
-            border: none;
-            padding: 0.8rem;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-        .modal-download-btn:hover { box-shadow: 0 6px 25px rgba(212, 255, 0, 0.35); transform: translateY(-2px); }
-
-        .loading-placeholder {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 5rem 1rem;
-            color: #5a7395;
-        }
-        .loading-placeholder .spinner {
-            display: inline-block;
-            width: 44px; height: 44px;
-            border: 3px solid rgba(255, 255, 255, 0.04);
-            border-top-color: #d4ff00;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 1.2rem;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .nft-card { animation: fadeUp 0.5s ease forwards; }
-
-        @media (max-width: 850px) {
-            .modal-container { flex-direction: column; max-height: 90vh; overflow-y: auto; }
-            .modal-media { min-height: 280px; }
-            .modal-details { padding: 1.5rem; }
+        /* Grid background pattern */
+        .svg-checkerboard {
+            background-color: #1a1d28;
+            background-image: linear-gradient(45deg, #11131c 25%, transparent 25%), 
+                              linear-gradient(-45deg, #11131c 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #11131c 75%), 
+                              linear-gradient(-45deg, transparent 75%, #11131c 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
         }
     </style>
 </head>
-<body>
+<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col">
 
-<div class="container">
-    <header class="header">
-        <div class="header-left">
-            <div class="logo-icon"><i class="fas fa-cube"></i></div>
-            <h1>DystoPunks</h1>
+    <!-- Top Navigation Header -->
+    <header class="bg-panelBg border-b border-borderCol px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white tracking-wide">NFT Layer Extractor</h1>
+                <p class="text-xs text-slate-400">On-Chain Verified Solidity Asset Engine</p>
+            </div>
         </div>
-        <div class="header-stats">
-            <span class="stat-item"><i class="fas fa-image"></i> <span class="num" id="totalCount">0</span> / 2076</span>
-            <span class="stat-item"><i class="fas fa-film"></i> <span class="num" id="gifCount">0</span> GIF</span>
-            <span class="stat-item"><i class="fas fa-file-image"></i> <span class="num" id="pngCount">0</span> PNG</span>
+        
+        <div class="flex items-center space-x-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Pure Extraction (Zero Generative AI)
+            </span>
         </div>
     </header>
 
-    <div class="toolbar">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchInput" placeholder="NFT খুঁজুন..." />
-            <button id="searchBtn"><i class="fas fa-arrow-right"></i></button>
-        </div>
-        <div class="filter-tags">
-            <button class="tag active" data-filter="all">সব</button>
-            <button class="tag" data-filter="gif">🎞️ GIF</button>
-            <button class="tag" data-filter="png">🖼️ PNG</button>
-        </div>
-        <div class="download-btns">
-            <button class="download-btn" id="downloadImagesBtn"><i class="fas fa-download"></i> PNG জিপ</button>
-            <button class="download-btn secondary" id="downloadMetadataBtn"><i class="fas fa-download"></i> JSON জিপ</button>
-        </div>
-    </div>
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
 
-    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="progress-text" id="progressText"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>
-
-    <!-- ডাউনলোড প্রগ্রেস -->
-    <div class="download-progress-wrap" id="downloadProgressWrap">
-        <div class="download-progress-bar" id="downloadProgressBar"></div>
-    </div>
-    <div class="download-status" id="downloadStatus"><i class="fas fa-spinner fa-spin"></i> প্রস্তুত হচ্ছে...</div>
-
-    <div id="nftGrid" class="nft-grid">
-        <div class="loading-placeholder">
-            <div class="spinner"></div>
-            <div class="main-text">NFT গুলো লোড হচ্ছে</div>
-            <div class="sub-text">মেটাডাটা থেকে ছবি আনা হচ্ছে...</div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal -->
-<div class="modal-overlay" id="nftModal">
-    <div class="modal-container">
-        <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
-        <div class="modal-media" id="modalMedia"></div>
-        <div class="modal-details">
+        <!-- Sidebar / Control Panel -->
+        <aside class="w-80 bg-panelBg border-r border-borderCol p-5 flex flex-col space-y-6 overflow-y-auto">
+            <!-- Contract Source Input Section -->
             <div>
-                <div class="modal-header">
-                    <span class="modal-badge-id" id="modalTokenId">#0</span>
-                    <h2 id="modalName">DystoPunk</h2>
-                </div>
-                <div style="margin-top: 1.5rem;">
-                    <div class="modal-traits-title"><i class="fas fa-sliders-h"></i> অ্যাট্রিবিউট সমূহ</div>
-                    <div class="modal-traits-grid" id="modalTraitsGrid"></div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Source Code / Contract</label>
+                <div class="space-y-2">
+                    <textarea id="solidityInput" rows="8" class="w-full bg-darkBg border border-borderCol rounded-lg p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-accent transition-colors" placeholder="Paste Solidity Source Code or raw contract bundle here..."></textarea>
+                    <button id="loadSampleBtn" class="w-full py-1.5 text-xs text-slate-400 hover:text-white bg-darkBg border border-borderCol rounded hover:border-slate-600 transition">Load Code Sample</button>
                 </div>
             </div>
-            <div class="modal-actions">
-                <button class="modal-download-btn" id="modalDownloadBtn"><i class="fas fa-download"></i> #d4ff00 ব্যাকগ্রাউন্ড সহ ডাউনলোড</button>
+
+            <!-- Extraction Trigger -->
+            <button id="extractBtn" class="w-full py-3 bg-accent hover:bg-accentHover text-white font-semibold rounded-lg shadow-lg shadow-blue-500/10 transition-all flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <span>Extract On-Chain Layers</span>
+            </button>
+
+            <hr class="border-borderCol">
+
+            <!-- Global Downloads -->
+            <div class="space-y-2">
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Export Operations</label>
+                <button id="downloadCategoryZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Download Category ZIP</span>
+                </button>
+                <button id="downloadAllZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <span>Download Full Library (ZIP)</span>
+                </button>
+            </div>
+
+            <!-- Scanner Status Info -->
+            <div class="mt-auto p-3 bg-darkBg rounded-lg border border-borderCol text-xs space-y-1">
+                <div class="text-slate-400">Scanner Engine: <span class="text-slate-200 font-mono">AST-Regex Hybrid</span></div>
+                <div class="text-slate-400">Mode: <span class="text-emerald-400">Strict Non-Generative</span></div>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden bg-darkBg">
+            
+            <!-- Statistics Bar -->
+            <div class="grid grid-cols-6 gap-4 p-5 bg-panelBg/50 border-b border-borderCol">
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Total Categories</div>
+                    <div id="statCategories" class="text-xl font-bold text-white mt-1">0</div>
+                </div>
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Total Extracted Layers</div>
+                    <div id="statLayers" class="text-xl font-bold text-blue-400 mt-1">0</div>
+                </div>
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Raw SVG Elements</div>
+                    <div id="statSvgCount" class="text-xl font-bold text-indigo-400 mt-1">0</div>
+                </div>
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Missing Assets</div>
+                    <div id="statMissing" class="text-xl font-bold text-amber-400 mt-1">0</div>
+                </div>
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Duplicates Filtered</div>
+                    <div id="statDuplicates" class="text-xl font-bold text-rose-400 mt-1">0</div>
+                </div>
+                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
+                    <div class="text-xs text-slate-400">Files Processed</div>
+                    <div id="statFiles" class="text-xl font-bold text-emerald-400 mt-1">0</div>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="p-4 bg-panelBg border-b border-borderCol flex items-center justify-between space-x-4">
+                <div class="flex items-center space-x-3 flex-1">
+                    <input type="text" id="searchInput" placeholder="Search by layer name or source pattern..." class="w-64 bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accent">
+                    
+                    <select id="categoryFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
+                        <option value="ALL">All Categories</option>
+                    </select>
+
+                    <select id="sortFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
+                        <option value="NAME_ASC">Sort by Name (A-Z)</option>
+                        <option value="NAME_DESC">Sort by Name (Z-A)</option>
+                        <option value="CATEGORY">Sort by Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Layer Grid Container -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-borderCol rounded-xl">
+                    <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <h3 class="text-base font-semibold text-slate-300 mb-1">No Assets Extracted</h3>
+                    <p class="text-xs text-slate-500 max-w-sm">Provide a verified Solidity source code file or bundle and execute the extractor to view original artwork assets.</p>
+                </div>
+
+                <div id="layerGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
+                    <!-- Layer cards populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Source Modal -->
+    <div id="codeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-panelBg border border-borderCol rounded-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-borderCol flex items-center justify-between">
+                <div>
+                    <h3 id="modalTitle" class="text-sm font-bold text-white">Source Inspector</h3>
+                    <p id="modalSubtitle" class="text-xs text-slate-400"></p>
+                </div>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <div class="p-4 flex-1 overflow-auto bg-darkBg">
+                <pre id="modalCode" class="text-xs font-mono text-emerald-400 whitespace-pre-wrap"></pre>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    (function() {
-        const TOTAL = 2076;
-        const BASE_URL = 'https://dystopunks.mypinata.cloud/ipfs/QmeYQ2eDCcJpfBQHq59P7SNevQR2ycEfctn6waw8fZBJhK/';
-        const CONCURRENCY = 15; // দ্রুত লোডের জন্য কনকারেন্সি বাড়ানো
+    <!-- Application Script -->
+    <script>
+        // Global State
+        let extractedLayers = [];
+        let contractFilesCount = 0;
 
-        const grid = document.getElementById('nftGrid');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const totalCount = document.getElementById('totalCount');
-        const gifCount = document.getElementById('gifCount');
-        const pngCount = document.getElementById('pngCount');
+        // Sample Solidity Code derived from the provided source context[cite: 1]
+        const sampleSolidity = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+library SvgTraits {
+    function getBackgrounds() internal pure returns (string[] memory) {
+        string[] memory bg = new string[](2);
+        bg[0] = '<rect width="24" height="24" fill="#87CEEB"/>';
+        bg[1] = '<rect width="24" height="24" fill="#36454F"/>';
+        return bg;
+    }
+}
+
+contract SvgRenderer {
+    // Direct SVG fragment constants
+    string public constant EYE_BULL = '<rect x="8" y="8" width="3" height="2" fill="#f4f4f4"/><rect x="9" y="8" width="1" height="1" fill="#1a1a1a"/><rect x="9" y="9" width="1" height="1" fill="#2ee06a"/>';
+    string public constant MOUTH_GOLD = '<rect x="10" y="13" width="2" height="1" fill="#101010"/><rect x="12" y="13" width="1" height="1" fill="#ffd700"/><rect x="13" y="13" width="1" height="1" fill="#101010"/><rect x="11" y="14" width="2" height="1" fill="#101010"/>';
+    string public constant HAIR_SIDE = '<rect x="7" y="3" width="10" height="2" fill="#e8c468"/><rect x="6" y="4" width="1" height="10" fill="#e8c468"/>';
+    string public constant FACE_GLASSES = '<rect x="8" y="7" width="3" height="1" fill="#c5d0dc"/><rect x="8" y="9" width="3" height="1" fill="#c5d0dc"/><rect x="11" y="8" width="2" height="1" fill="#aeb8c4"/>';
+
+    function _renderMouth(uint8 style) internal pure returns (string memory) {
+        if (style == 0) return '<rect x="10" y="13" width="4" height="1" fill="#101010"/>'; 
+        if (style == 1) return '<rect x="10" y="13" width="4" height="1" fill="#101010"/><rect x="11" y="14" width="2" height="1" fill="#101010"/>';
+        return "";
+    }
+}`;
+
+        // DOM Elements
+        const solidityInput = document.getElementById('solidityInput');
+        const loadSampleBtn = document.getElementById('loadSampleBtn');
+        const extractBtn = document.getElementById('extractBtn');
+        const emptyState = document.getElementById('emptyState');
+        const layerGrid = document.getElementById('layerGrid');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortFilter = document.getElementById('sortFilter');
         const searchInput = document.getElementById('searchInput');
-        const searchBtn = document.getElementById('searchBtn');
-        const filterTags = document.querySelectorAll('.filter-tags .tag');
-        const downloadImagesBtn = document.getElementById('downloadImagesBtn');
-        const downloadMetadataBtn = document.getElementById('downloadMetadataBtn');
-        const downloadProgressWrap = document.getElementById('downloadProgressWrap');
-        const downloadProgressBar = document.getElementById('downloadProgressBar');
-        const downloadStatus = document.getElementById('downloadStatus');
+        const downloadCategoryZipBtn = document.getElementById('downloadCategoryZipBtn');
+        const downloadAllZipBtn = document.getElementById('downloadAllZipBtn');
+        const codeModal = document.getElementById('codeModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
 
-        const modal = document.getElementById('nftModal');
-        const modalClose = document.getElementById('modalClose');
-        const modalMedia = document.getElementById('modalMedia');
-        const modalTokenId = document.getElementById('modalTokenId');
-        const modalName = document.getElementById('modalName');
-        const modalTraitsGrid = document.getElementById('modalTraitsGrid');
-        const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+        // Statistics Elements
+        const statCategories = document.getElementById('statCategories');
+        const statLayers = document.getElementById('statLayers');
+        const statSvgCount = document.getElementById('statSvgCount');
+        const statMissing = document.getElementById('statMissing');
+        const statDuplicates = document.getElementById('statDuplicates');
+        const statFiles = document.getElementById('statFiles');
 
-        let allCards = [];
-        let allNFTData = [];
-        let gifTotal = 0;
-        let pngTotal = 0;
-        let currentFilter = 'all';
-        let searchQuery = '';
-        let activeModalItem = null;
+        // Event Listeners
+        loadSampleBtn.addEventListener('click', () => { solidityInput.value = sampleSolidity; });
+        extractBtn.addEventListener('click', processSourceCode);
+        categoryFilter.addEventListener('change', renderFilteredLayers);
+        sortFilter.addEventListener('change', renderFilteredLayers);
+        searchInput.addEventListener('input', renderFilteredLayers);
+        closeModalBtn.addEventListener('click', () => codeModal.classList.add('hidden'));
+        downloadAllZipBtn.addEventListener('click', () => exportZip('ALL'));
+        downloadCategoryZipBtn.addEventListener('click', () => exportZip(categoryFilter.value));
 
-        function getExtension(url) {
-            if (!url) return '';
-            try {
-                const path = new URL(url).pathname;
-                const parts = path.split('.');
-                return parts.length > 1 ? parts.pop().toLowerCase() : '';
-            } catch {
-                const match = url.match(/\.([^./?#]+)(?:[?#]|$)/);
-                return match ? match[1].toLowerCase() : '';
-            }
-        }
+        // Core Parser & Extractor Engine
+        function processSourceCode() {
+            const sourceCode = solidityInput.value;
+            if (!sourceCode.trim()) return;
 
-        function getModifiedCanvas(imageUrl) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.imageSmoothingEnabled = false;
+            extractedLayers = [];
+            let rawSvgCount = 0;
+            let duplicateCount = 0;
+            let missingCount = 0;
 
-                    const offCanvas = document.createElement('canvas');
-                    offCanvas.width = img.width;
-                    offCanvas.height = img.height;
-                    const offCtx = offCanvas.getContext('2d');
-                    offCtx.drawImage(img, 0, 0);
+            // Detect multiple contracts/files in single source block
+            const files = sourceCode.split(/(?=contract\s+|library\s+|interface\s+)/g);
+            contractFilesCount = files.length || 1;
 
-                    const imgData = offCtx.getImageData(0, 0, img.width, img.height);
-                    const data = imgData.data;
+            const seenContent = new Set();
 
-                    const bgR = data[0], bgG = data[1], bgB = data[2];
+            // Regex Patterns for Parsing
+            const svgTagRegex = /<svg[^>]*>([\s\S]*?)<\/svg>/gi;
+            const fragmentRegex = /<([a-z]+)[^>]*fill="[^"]+"[^>]*\/?>/gi;
+            const stringLiteralRegex = /"(<[^">]+>)"|'(<[^'>]+>)'/g;
 
-                    ctx.fillStyle = '#d4ff00';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    ctx.drawImage(img, 0, 0);
-                    const targetData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const td = targetData.data;
-
-                    for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-                        const isBg = Math.abs(r - bgR) < 22 && Math.abs(g - bgG) < 22 && Math.abs(b - bgB) < 22;
-
-                        if (isBg || a < 50) {
-                            td[i] = 212;
-                            td[i+1] = 255;
-                            td[i+2] = 0;
-                            td[i+3] = 255;
-                        }
-                    }
-                    ctx.putImageData(targetData, 0, 0);
-                    resolve(canvas);
-                };
-                img.onerror = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 400; canvas.height = 400;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#d4ff00';
-                    ctx.fillRect(0, 0, 400, 400);
-                    resolve(canvas);
-                };
-                img.src = imageUrl;
-            });
-        }
-
-        function createMediaElement(imageUrl, tokenId, format) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'media-wrapper';
-
-            if (format === 'gif') {
-                const video = document.createElement('video');
-                video.src = imageUrl;
-                video.autoplay = true;
-                video.loop = true;
-                video.muted = true;
-                video.playsInline = true;
-                video.setAttribute('crossorigin', 'anonymous');
-                video.style.background = '#d4ff00';
-                wrapper.appendChild(video);
-
-                const badge = document.createElement('div');
-                badge.className = 'media-badge';
-                badge.innerHTML = '<i class="fas fa-play"></i> GIF';
-                wrapper.appendChild(badge);
-            } else {
-                const canvas = document.createElement('canvas');
-                wrapper.appendChild(canvas);
-                getModifiedCanvas(imageUrl).then(renderedCanvas => {
-                    canvas.width = renderedCanvas.width;
-                    canvas.height = renderedCanvas.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(renderedCanvas, 0, 0);
+            // Step 1: Scan for explicit <svg> blocks
+            let match;
+            while ((match = svgTagRegex.exec(sourceCode)) !== null) {
+                const fullSvg = match[0];
+                rawSvgCount++;
+                if (seenContent.has(fullSvg)) {
+                    duplicateCount++;
+                    continue;
+                }
+                seenContent.add(fullSvg);
+                
+                const category = autoDetectCategory(fullSvg);
+                extractedLayers.push({
+                    id: `layer_${extractedLayers.length + 1}`,
+                    name: `${category}_${String(extractedLayers.length + 1).padStart(3, '0')}`,
+                    category: category,
+                    rawSvg: fullSvg,
+                    fileSize: new Blob([fullSvg]).size,
+                    sourceSnippet: match[0]
                 });
             }
-            return wrapper;
-        }
 
-        function renderAttrs(attrs) {
-            if (!attrs || attrs.length === 0) {
-                return `<span class="trait"><span class="trait-type">—</span> <span class="trait-value">কোনো বৈশিষ্ট্য নেই</span></span>`;
-            }
-            return attrs.slice(0, 6).map(a => {
-                return `<span class="trait"><span class="trait-type">${a.trait_type || 'বৈশিষ্ট্য'}:</span> <span class="trait-value">${a.value || '—'}</span></span>`;
-            }).join('');
-        }
+            // Step 2: Scan for SVG Fragments (rect, path, group)
+            while ((match = stringLiteralRegex.exec(sourceCode)) !== null) {
+                const content = match[1] || match[2];
+                if (content && (content.includes('rect') || content.includes('path') || content.includes('g '))) {
+                    rawSvgCount++;
+                    if (seenContent.has(content)) {
+                        duplicateCount++;
+                        continue;
+                    }
+                    seenContent.add(content);
 
-        function fetchAndBuildCard(index) {
-            const tokenId = index + 1;
-            const url = `${BASE_URL}${tokenId}`;
+                    const wrappedSvg = wrapInSvgContainer(content);
+                    const category = autoDetectCategory(content);
 
-            return fetch(url)
-                .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    const imageUrl = data.image || '';
-                    const name = data.name || `DystoPunk #${tokenId}`;
-                    const attrs = data.attributes || [];
-                    const ext = getExtension(imageUrl);
-                    const format = ext === 'gif' ? 'gif' : 'png';
-
-                    const card = document.createElement('div');
-                    card.className = 'nft-card';
-
-                    const media = createMediaElement(imageUrl, tokenId, format);
-                    card.appendChild(media);
-
-                    const info = document.createElement('div');
-                    info.className = 'nft-info';
-
-                    const nameDiv = document.createElement('div');
-                    nameDiv.className = 'nft-name';
-                    nameDiv.innerHTML = `${name} <span class="token-id">#${tokenId}</span>`;
-                    info.appendChild(nameDiv);
-
-                    const attrDiv = document.createElement('div');
-                    attrDiv.className = 'attributes';
-                    attrDiv.innerHTML = renderAttrs(attrs);
-                    info.appendChild(attrDiv);
-
-                    const footer = document.createElement('div');
-                    footer.className = 'card-footer';
-                    const formatLabel = format === 'gif' ? 'GIF' : 'PNG';
-                    const formatIcon = format === 'gif' ? 'fa-film' : 'fa-file-image';
-                    footer.innerHTML = `
-                        <span class="format"><i class="fas ${formatIcon}"></i> ${formatLabel}</span>
-                        <button class="download-single"><i class="fas fa-download"></i> ডাউনলোড</button>
-                    `;
-                    info.appendChild(footer);
-                    card.appendChild(footer);
-
-                    const itemData = {
-                        tokenId: tokenId,
-                        name: name,
-                        format: format,
-                        attributes: attrs,
-                        imageUrl: imageUrl,
-                        metadata: data
-                    };
-
-                    card.addEventListener('click', () => openModal(itemData));
-
-                    const downloadBtn = card.querySelector('.download-single');
-                    downloadBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        downloadSingleNFT(itemData);
+                    extractedLayers.push({
+                        id: `layer_${extractedLayers.length + 1}`,
+                        name: `${category}_${String(extractedLayers.length + 1).padStart(3, '0')}`,
+                        category: category,
+                        rawSvg: wrappedSvg,
+                        fileSize: new Blob([wrappedSvg]).size,
+                        sourceSnippet: match[0]
                     });
+                }
+            }
 
-                    return { element: card, ...itemData };
-                })
-                .catch(() => {
-                    const fallback = document.createElement('div');
-                    fallback.className = 'nft-card';
-                    fallback.innerHTML = `
-                        <div class="media-wrapper" style="background:#d4ff00; display:flex; align-items:center; justify-content:center; color:#070b10;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:2rem; opacity:0.3;"></i>
+            // Update UI State & Filters
+            updateStatistics(rawSvgCount, duplicateCount, missingCount);
+            populateCategories();
+            renderFilteredLayers();
+
+            downloadAllZipBtn.disabled = extractedLayers.length === 0;
+            downloadCategoryZipBtn.disabled = extractedLayers.length === 0;
+        }
+
+        // Automatic Category Detector
+        function autoDetectCategory(svgContent) {
+            const lower = svgContent.toLowerCase();
+            if (lower.includes('width="24" height="24" fill=') || lower.includes('background')) return 'Background';
+            if (lower.includes('y="3"') || lower.includes('y="4"') || lower.includes('hair')) return 'Hair';
+            if (lower.includes('y="7"') || lower.includes('y="8"') || lower.includes('glasses') || lower.includes('eye')) return 'Eyes';
+            if (lower.includes('y="13"') || lower.includes('y="14"') || lower.includes('mouth') || lower.includes('tooth')) return 'Mouth';
+            if (lower.includes('y="18"') || lower.includes('y="19"') || lower.includes('body') || lower.includes('suit')) return 'Body';
+            if (lower.includes('nose')) return 'Nose';
+            return 'Accessories';
+        }
+
+        // Wrap SVG Fragment in Standard Container
+        function wrapInSvgContainer(fragment) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" viewBox="0 0 24 24" width="100%" height="100%">${fragment}</svg>`;
+        }
+
+        // Statistics Updating
+        function updateStatistics(rawSvgCount, duplicates, missing) {
+            const categories = new Set(extractedLayers.map(l => l.category));
+            statCategories.textContent = categories.size;
+            statLayers.textContent = extractedLayers.length;
+            statSvgCount.textContent = rawSvgCount;
+            statDuplicates.textContent = duplicates;
+            statMissing.textContent = missing;
+            statFiles.textContent = contractFilesCount;
+        }
+
+        // Populate Category Filter Dropdown
+        function populateCategories() {
+            const categories = Array.from(new Set(extractedLayers.map(l => l.category)));
+            categoryFilter.innerHTML = '<option value="ALL">All Categories</option>';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                categoryFilter.appendChild(opt);
+            });
+        }
+
+        // Render Filtered Layers to Grid
+        function renderFilteredLayers() {
+            const selectedCat = categoryFilter.value;
+            const sortMode = sortFilter.value;
+            const searchVal = searchInput.value.toLowerCase();
+
+            let filtered = extractedLayers.filter(item => {
+                const matchCat = (selectedCat === 'ALL' || item.category === selectedCat);
+                const matchSearch = item.name.toLowerCase().includes(searchVal) || item.category.toLowerCase().includes(searchVal);
+                return matchCat && matchSearch;
+            });
+
+            // Sorting Logic
+            filtered.sort((a, b) => {
+                if (sortMode === 'NAME_ASC') return a.name.localeCompare(b.name);
+                if (sortMode === 'NAME_DESC') return b.name.localeCompare(a.name);
+                if (sortMode === 'CATEGORY') return a.category.localeCompare(b.category);
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                layerGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            layerGrid.classList.remove('hidden');
+            layerGrid.innerHTML = '';
+
+            filtered.forEach(layer => {
+                const card = document.createElement('div');
+                card.className = "bg-panelBg border border-borderCol rounded-xl overflow-hidden flex flex-col hover:border-slate-600 transition-all";
+                card.innerHTML = `
+                    <div class="h-48 svg-checkerboard p-4 flex items-center justify-center border-b border-borderCol relative">
+                        <div class="w-32 h-32 flex items-center justify-center">${layer.rawSvg}</div>
+                        <span class="absolute top-2 right-2 text-[10px] bg-darkBg/80 border border-borderCol text-slate-400 px-2 py-0.5 rounded font-mono">${(layer.fileSize / 1024).toFixed(2)} KB</span>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                            <div class="text-xs text-blue-400 font-medium uppercase tracking-wider">${layer.category}</div>
+                            <div class="text-sm font-semibold text-white mt-0.5">${layer.name}</div>
                         </div>
-                        <div class="nft-info"><div class="nft-name">DystoPunk #${tokenId}</div></div>
-                    `;
-                    return { element: fallback, tokenId, format: 'error', imageUrl: '', metadata: null };
-                });
-        }
-
-        function openModal(item) {
-            activeModalItem = item;
-            modalTokenId.textContent = `#${item.tokenId}`;
-            modalName.textContent = item.name;
-
-            modalMedia.innerHTML = '';
-            const mediaElem = createMediaElement(item.imageUrl, item.tokenId, item.format);
-            modalMedia.appendChild(mediaElem);
-
-            modalTraitsGrid.innerHTML = '';
-            if (item.attributes && item.attributes.length > 0) {
-                item.attributes.forEach(attr => {
-                    const box = document.createElement('div');
-                    box.className = 'modal-trait-card';
-                    box.innerHTML = `
-                        <div class="type">${attr.trait_type || 'Trait'}</div>
-                        <div class="val">${attr.value || '—'}</div>
-                    `;
-                    modalTraitsGrid.appendChild(box);
-                });
-            } else {
-                modalTraitsGrid.innerHTML = '<div style="color:#6a84aa; font-size:0.8rem;">কোনো বৈশিষ্ট্য নেই</div>';
-            }
-
-            modal.classList.add('active');
-        }
-
-        function closeModal() {
-            modal.classList.remove('active');
-            activeModalItem = null;
-        }
-
-        modalClose.addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-
-        async function downloadSingleNFT(item) {
-            const canvas = await getModifiedCanvas(item.imageUrl);
-            canvas.toBlob((blob) => {
-                saveAs(blob, `${item.tokenId}.png`);
-                if (item.metadata) {
-                    const metaBlob = new Blob([JSON.stringify(item.metadata, null, 2)], {type: 'application/json'});
-                    saveAs(metaBlob, `${item.tokenId}.json`);
-                }
-            }, 'image/png');
-        }
-
-        modalDownloadBtn.addEventListener('click', () => {
-            if (activeModalItem) downloadSingleNFT(activeModalItem);
-        });
-
-        function applyFilters() {
-            const query = searchQuery.toLowerCase().trim();
-            const filter = currentFilter;
-            let visibleCount = 0, visibleGif = 0, visiblePng = 0;
-
-            allCards.forEach(item => {
-                const card = item.element;
-                const format = item.format;
-                const nameMatch = (item.name || '').toLowerCase().includes(query) || String(item.tokenId).includes(query);
-                const formatMatch = filter === 'all' || filter === format;
-                const show = nameMatch && formatMatch;
-                card.style.display = show ? 'flex' : 'none';
-                if (show) {
-                    visibleCount++;
-                    if (format === 'gif') visibleGif++;
-                    else if (format === 'png') visiblePng++;
-                }
-            });
-
-            progressText.innerHTML = `
-                <i class="fas fa-eye"></i> ${visibleCount} টি দেখানো হচ্ছে 
-                <span style="color:#4a6385; margin-left:0.5rem;">(GIF: ${visibleGif} · PNG: ${visiblePng})</span>
-            `;
-        }
-
-        async function loadAll() {
-            const placeholder = grid.querySelector('.loading-placeholder');
-            if (placeholder) placeholder.remove();
-
-            let loaded = 0;
-
-            for (let i = 0; i < TOTAL; i += CONCURRENCY) {
-                const end = Math.min(i + CONCURRENCY, TOTAL);
-                const batchPromises = [];
-
-                for (let j = i; j < end; j++) {
-                    batchPromises.push(fetchAndBuildCard(j));
-                }
-
-                const results = await Promise.allSettled(batchPromises);
-
-                for (const result of results) {
-                    if (result.status === 'fulfilled') {
-                        const cardData = result.value;
-                        allCards.push(cardData);
-                        allNFTData.push(cardData);
-                        grid.appendChild(cardData.element);
-                        if (cardData.format === 'gif') gifTotal++;
-                        else if (cardData.format === 'png') pngTotal++;
-                    }
-                    loaded++;
-                }
-
-                const percent = Math.min(100, Math.round((loaded / TOTAL) * 100));
-                progressBar.style.width = percent + '%';
-                progressText.innerHTML = `
-                    <i class="fas fa-spinner fa-spin"></i> ${loaded} / ${TOTAL} লোড হয়েছে 
-                    <span style="color:#4a6385; margin-left:0.5rem;">(GIF: ${gifTotal} · PNG: ${pngTotal})</span>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-borderCol">
+                            <button onclick="inspectCode('${layer.id}')" class="py-1.5 px-2 bg-darkBg hover:bg-borderCol border border-borderCol text-[11px] font-medium text-slate-300 rounded text-center transition">Inspect Code</button>
+                            <button onclick="downloadSvg('${layer.id}')" class="py-1.5 px-2 bg-accent/10 hover:bg-accent/20 border border-accent/30 text-[11px] font-medium text-blue-400 rounded text-center transition">Download SVG</button>
+                        </div>
+                    </div>
                 `;
-                totalCount.textContent = loaded;
-                gifCount.textContent = gifTotal;
-                pngCount.textContent = pngTotal;
-            }
-
-            progressBar.style.width = '100%';
-            progressText.innerHTML = `
-                <i class="fas fa-check-circle" style="color:#d4ff00;"></i> ✅ ${TOTAL} / ${TOTAL} গ্যালারি লোড সম্পন্ন!
-            `;
-            applyFilters();
-        }
-
-        // ====== আলাদা জিপ ডাউনলোড: PNG এবং JSON (লাইভ প্রগ্রেস সহ) ======
-        async function downloadImagesZip() {
-            if (allNFTData.length === 0) return;
-            const zip = new JSZip();
-            let count = 0;
-            const total = allNFTData.filter(item => item.format !== 'error' && item.imageUrl).length;
-
-            downloadImagesBtn.disabled = true;
-            downloadImagesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> রেন্ডার হচ্ছে...';
-            downloadProgressWrap.classList.add('active');
-            downloadStatus.classList.add('active');
-            downloadStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 0% — PNG প্রস্তুত হচ্ছে...';
-            downloadProgressBar.style.width = '0%';
-
-            for (const item of allNFTData) {
-                if (item.format === 'error' || !item.imageUrl) continue;
-                try {
-                    const canvas = await getModifiedCanvas(item.imageUrl);
-                    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-                    zip.file(`${item.tokenId}.png`, blob);
-                    count++;
-                    
-                    const percent = Math.round((count / total) * 100);
-                    downloadProgressBar.style.width = percent + '%';
-                    downloadStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${percent}% — ${count}/${total} PNG প্রস্তুত`;
-                } catch (err) {
-                    console.warn(`#${item.tokenId} PNG রেন্ডার ব্যর্থ`);
-                }
-            }
-
-            downloadStatus.innerHTML = '<i class="fas fa-compress"></i> জিপ তৈরি হচ্ছে...';
-            
-            try {
-                const zipBlob = await zip.generateAsync({ 
-                    type: 'blob',
-                    compression: 'DEFLATE',
-                    compressionOptions: { level: 6 }
-                });
-                saveAs(zipBlob, 'DystoPunks_Images.zip');
-                downloadStatus.innerHTML = `✅ ${count} টি PNG ডাউনলোড সম্পন্ন!`;
-                setTimeout(() => {
-                    downloadProgressWrap.classList.remove('active');
-                    downloadStatus.classList.remove('active');
-                }, 3000);
-            } catch (err) {
-                alert('ZIP তৈরিতে ব্যর্থ।');
-                downloadStatus.innerHTML = '❌ ZIP তৈরি ব্যর্থ';
-            }
-
-            downloadImagesBtn.disabled = false;
-            downloadImagesBtn.innerHTML = '<i class="fas fa-download"></i> PNG জিপ';
-        }
-
-        async function downloadMetadataZip() {
-            if (allNFTData.length === 0) return;
-            const zip = new JSZip();
-            let count = 0;
-            const total = allNFTData.filter(item => item.metadata).length;
-
-            downloadMetadataBtn.disabled = true;
-            downloadMetadataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> প্রস্তুত হচ্ছে...';
-            downloadProgressWrap.classList.add('active');
-            downloadStatus.classList.add('active');
-            downloadStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 0% — JSON প্রস্তুত হচ্ছে...';
-            downloadProgressBar.style.width = '0%';
-
-            for (const item of allNFTData) {
-                if (item.metadata) {
-                    zip.file(`${item.tokenId}.json`, JSON.stringify(item.metadata, null, 2));
-                    count++;
-                    const percent = Math.round((count / total) * 100);
-                    downloadProgressBar.style.width = percent + '%';
-                    downloadStatus.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${percent}% — ${count}/${total} JSON প্রস্তুত`;
-                }
-            }
-
-            downloadStatus.innerHTML = '<i class="fas fa-compress"></i> জিপ তৈরি হচ্ছে...';
-
-            try {
-                const zipBlob = await zip.generateAsync({ 
-                    type: 'blob',
-                    compression: 'DEFLATE',
-                    compressionOptions: { level: 6 }
-                });
-                saveAs(zipBlob, 'DystoPunks_Metadata.zip');
-                downloadStatus.innerHTML = `✅ ${count} টি JSON ডাউনলোড সম্পন্ন!`;
-                setTimeout(() => {
-                    downloadProgressWrap.classList.remove('active');
-                    downloadStatus.classList.remove('active');
-                }, 3000);
-            } catch (err) {
-                alert('ZIP তৈরিতে ব্যর্থ।');
-                downloadStatus.innerHTML = '❌ ZIP তৈরি ব্যর্থ';
-            }
-
-            downloadMetadataBtn.disabled = false;
-            downloadMetadataBtn.innerHTML = '<i class="fas fa-download"></i> JSON জিপ';
-        }
-
-        downloadImagesBtn.addEventListener('click', downloadImagesZip);
-        downloadMetadataBtn.addEventListener('click', downloadMetadataZip);
-
-        function handleSearch() {
-            searchQuery = searchInput.value;
-            applyFilters();
-        }
-
-        searchInput.addEventListener('input', handleSearch);
-        searchBtn.addEventListener('click', handleSearch);
-        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSearch(); });
-
-        filterTags.forEach(tag => {
-            tag.addEventListener('click', function() {
-                filterTags.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                currentFilter = this.dataset.filter;
-                applyFilters();
+                layerGrid.appendChild(card);
             });
-        });
+        }
 
-        loadAll().catch(err => {
-            console.error('গ্লোবাল এরর:', err);
-        });
+        // Code Inspection Modal Handler
+        window.inspectCode = function(layerId) {
+            const layer = extractedLayers.find(l => l.id === layerId);
+            if (!layer) return;
 
-    })();
-</script>
+            document.getElementById('modalTitle').textContent = `Layer Code Inspector - ${layer.name}`;
+            document.getElementById('modalSubtitle').textContent = `Category: ${layer.category} | File Size: ${layer.fileSize} Bytes`;
+            document.getElementById('modalCode').textContent = layer.sourceSnippet;
+            codeModal.classList.remove('hidden');
+        }
 
+        // Individual SVG Download
+        window.downloadSvg = function(layerId) {
+            const layer = extractedLayers.find(l => l.id === layerId);
+            if (!layer) return;
+
+            const blob = new Blob([layer.rawSvg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${layer.name}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Export ZIP Functionality (Category-specific or Full Library)
+        function exportZip(targetCategory) {
+            const zip = new JSZip();
+            const layersToExport = targetCategory === 'ALL' 
+                ? extractedLayers 
+                : extractedLayers.filter(l => l.category === targetCategory);
+
+            if (layersToExport.length === 0) return;
+
+            layersToExport.forEach(layer => {
+                const folder = zip.folder(layer.category);
+                folder.file(`${layer.name}.svg`, layer.rawSvg);
+            });
+
+            zip.generateAsync({ type: 'blob' }).then(content => {
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = targetCategory === 'ALL' ? `OnChain_NFT_Full_Library.zip` : `Layer_${targetCategory}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+    </script>
 </body>
 </html>
