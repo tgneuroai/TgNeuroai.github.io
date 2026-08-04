@@ -1,481 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>On-Chain NFT Original Layer Extractor</title>
-    <!-- Tailwind CSS CDN for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- JSZip for ZIP exports -->
+    <title>ZIP Layer & Directory Tree Extractor</title>
+    <!-- JSZip Library for client-side unzipping -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#090a0f',
-                        panelBg: '#11131c',
-                        borderCol: '#1f2433',
-                        accent: '#3b82f6',
-                        accentHover: '#2563eb'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #090a0f; }
-        ::-webkit-scrollbar-thumb { background: #1f2433; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: #38bdf8; margin-bottom: 5px; }
+        p { color: #94a3b8; margin-top: 0; }
         
-        /* Grid background pattern */
-        .svg-checkerboard {
-            background-color: #1a1d28;
-            background-image: linear-gradient(45deg, #11131c 25%, transparent 25%), 
-                              linear-gradient(-45deg, #11131c 25%, transparent 25%), 
-                              linear-gradient(45deg, transparent 75%, #11131c 75%), 
-                              linear-gradient(-45deg, transparent 75%, #11131c 75%);
-            background-size: 16px 16px;
-            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        .upload-card {
+            background-color: #1e293b;
+            border: 2px dashed #38bdf8;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            width: 100%;
+            max-width: 650px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+        }
+        .upload-card:hover {
+            background-color: #334155;
+            border-color: #60a5fa;
+        }
+        input[type="file"] { display: none; }
+        
+        .output-box {
+            background-color: #020617;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        .output-header {
+            color: #f59e0b;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 8px;
+        }
+        pre {
+            color: #4ade80;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin: 0;
         }
     </style>
 </head>
-<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col">
+<body>
 
-    <!-- Top Navigation Header -->
-    <header class="bg-panelBg border-b border-borderCol px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div class="flex items-center space-x-3">
-            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-lg font-bold text-white tracking-wide">NFT Layer Extractor</h1>
-                <p class="text-xs text-slate-400">On-Chain Verified Solidity Asset Engine</p>
-            </div>
-        </div>
-        
-        <div class="flex items-center space-x-4">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Pure Extraction (Zero Generative AI)
-            </span>
-        </div>
-    </header>
+    <h1>📁 ZIP Layer Extractor Web App</h1>
+    <p>আপনার ZIP ফাইলটি এখানে আপলোড করুন এবং তাৎক্ষণিক লেয়ার ট্রি দেখুন</p>
 
-    <!-- Main Container -->
-    <div class="flex-1 flex overflow-hidden">
-
-        <!-- Sidebar / Control Panel -->
-        <aside class="w-80 bg-panelBg border-r border-borderCol p-5 flex flex-col space-y-6 overflow-y-auto">
-            <!-- Contract Source Input Section -->
-            <div>
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Source Code / Contract</label>
-                <div class="space-y-2">
-                    <textarea id="solidityInput" rows="8" class="w-full bg-darkBg border border-borderCol rounded-lg p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-accent transition-colors" placeholder="Paste Solidity Source Code or raw contract bundle here..."></textarea>
-                    <button id="loadSampleBtn" class="w-full py-1.5 text-xs text-slate-400 hover:text-white bg-darkBg border border-borderCol rounded hover:border-slate-600 transition">Load Code Sample</button>
-                </div>
-            </div>
-
-            <!-- Extraction Trigger -->
-            <button id="extractBtn" class="w-full py-3 bg-accent hover:bg-accentHover text-white font-semibold rounded-lg shadow-lg shadow-blue-500/10 transition-all flex items-center justify-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <span>Extract On-Chain Layers</span>
-            </button>
-
-            <hr class="border-borderCol">
-
-            <!-- Global Downloads -->
-            <div class="space-y-2">
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Export Operations</label>
-                <button id="downloadCategoryZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span>Download Category ZIP</span>
-                </button>
-                <button id="downloadAllZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    <span>Download Full Library (ZIP)</span>
-                </button>
-            </div>
-
-            <!-- Scanner Status Info -->
-            <div class="mt-auto p-3 bg-darkBg rounded-lg border border-borderCol text-xs space-y-1">
-                <div class="text-slate-400">Scanner Engine: <span class="text-slate-200 font-mono">AST-Regex Hybrid</span></div>
-                <div class="text-slate-400">Mode: <span class="text-emerald-400">Strict Non-Generative</span></div>
-            </div>
-        </aside>
-
-        <!-- Content Area -->
-        <main class="flex-1 flex flex-col overflow-hidden bg-darkBg">
-            
-            <!-- Statistics Bar -->
-            <div class="grid grid-cols-6 gap-4 p-5 bg-panelBg/50 border-b border-borderCol">
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Total Categories</div>
-                    <div id="statCategories" class="text-xl font-bold text-white mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Total Extracted Layers</div>
-                    <div id="statLayers" class="text-xl font-bold text-blue-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Raw SVG Elements</div>
-                    <div id="statSvgCount" class="text-xl font-bold text-indigo-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Missing Assets</div>
-                    <div id="statMissing" class="text-xl font-bold text-amber-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Duplicates Filtered</div>
-                    <div id="statDuplicates" class="text-xl font-bold text-rose-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Files Processed</div>
-                    <div id="statFiles" class="text-xl font-bold text-emerald-400 mt-1">0</div>
-                </div>
-            </div>
-
-            <!-- Filter Controls -->
-            <div class="p-4 bg-panelBg border-b border-borderCol flex items-center justify-between space-x-4">
-                <div class="flex items-center space-x-3 flex-1">
-                    <input type="text" id="searchInput" placeholder="Search by layer name or source pattern..." class="w-64 bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accent">
-                    
-                    <select id="categoryFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
-                        <option value="ALL">All Categories</option>
-                    </select>
-
-                    <select id="sortFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
-                        <option value="NAME_ASC">Sort by Name (A-Z)</option>
-                        <option value="NAME_DESC">Sort by Name (Z-A)</option>
-                        <option value="CATEGORY">Sort by Category</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Layer Grid Container -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-borderCol rounded-xl">
-                    <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    <h3 class="text-base font-semibold text-slate-300 mb-1">No Assets Extracted</h3>
-                    <p class="text-xs text-slate-500 max-w-sm">Provide a verified Solidity source code file or bundle and execute the extractor to view original artwork assets.</p>
-                </div>
-
-                <div id="layerGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
-                    <!-- Layer cards populated by JS -->
-                </div>
-            </div>
-        </main>
+    <!-- Upload Area -->
+    <div class="upload-card" id="dropZone" onclick="document.getElementById('zipInput').click()">
+        <div style="font-size: 40px; margin-bottom: 10px;">📦 ➔ 🌳</div>
+        <div style="font-size: 18px; font-weight: bold; color: #e2e8f0;">এখানে ZIP ফাইল ড্রপ করুন অথবা ক্লিক করুন</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 5px;">১০০% ক্লায়েন্ট-সাইড পার্সিং (ফাইল সার্ভারে যাবে না)</div>
+        <input type="file" id="zipInput" accept=".zip" />
     </div>
 
-    <!-- Source Modal -->
-    <div id="codeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-        <div class="bg-panelBg border border-borderCol rounded-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div class="p-4 border-b border-borderCol flex items-center justify-between">
-                <div>
-                    <h3 id="modalTitle" class="text-sm font-bold text-white">Source Inspector</h3>
-                    <p id="modalSubtitle" class="text-xs text-slate-400"></p>
-                </div>
-                <button id="closeModalBtn" class="text-slate-400 hover:text-white text-lg">&times;</button>
-            </div>
-            <div class="p-4 flex-1 overflow-auto bg-darkBg">
-                <pre id="modalCode" class="text-xs font-mono text-emerald-400 whitespace-pre-wrap"></pre>
-            </div>
-        </div>
+    <!-- Output Area -->
+    <div class="output-box" id="outputBox">
+        <div class="output-header">📊 Extracted Directory Layer Tree:</div>
+        <pre id="treeOutput">প্রসেস হচ্ছে...</pre>
     </div>
 
-    <!-- Application Script -->
     <script>
-        // Global State
-        let extractedLayers = [];
-        let contractFilesCount = 0;
+        const zipInput = document.getElementById('zipInput');
+        const treeOutput = document.getElementById('treeOutput');
+        const outputBox = document.getElementById('outputBox');
 
-        // Sample Solidity Code derived from the provided source context[cite: 1]
-        const sampleSolidity = `// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+        zipInput.addEventListener('change', handleFile);
 
-library SvgTraits {
-    function getBackgrounds() internal pure returns (string[] memory) {
-        string[] memory bg = new string[](2);
-        bg[0] = '<rect width="24" height="24" fill="#87CEEB"/>';
-        bg[1] = '<rect width="24" height="24" fill="#36454F"/>';
-        return bg;
-    }
-}
+        async function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-contract SvgRenderer {
-    // Direct SVG fragment constants
-    string public constant EYE_BULL = '<rect x="8" y="8" width="3" height="2" fill="#f4f4f4"/><rect x="9" y="8" width="1" height="1" fill="#1a1a1a"/><rect x="9" y="9" width="1" height="1" fill="#2ee06a"/>';
-    string public constant MOUTH_GOLD = '<rect x="10" y="13" width="2" height="1" fill="#101010"/><rect x="12" y="13" width="1" height="1" fill="#ffd700"/><rect x="13" y="13" width="1" height="1" fill="#101010"/><rect x="11" y="14" width="2" height="1" fill="#101010"/>';
-    string public constant HAIR_SIDE = '<rect x="7" y="3" width="10" height="2" fill="#e8c468"/><rect x="6" y="4" width="1" height="10" fill="#e8c468"/>';
-    string public constant FACE_GLASSES = '<rect x="8" y="7" width="3" height="1" fill="#c5d0dc"/><rect x="8" y="9" width="3" height="1" fill="#c5d0dc"/><rect x="11" y="8" width="2" height="1" fill="#aeb8c4"/>';
+            outputBox.style.display = 'block';
+            treeOutput.textContent = "⏳ ZIP ফাইল পার্স এবং লেয়ার এক্সট্রাক্ট করা হচ্ছে...";
 
-    function _renderMouth(uint8 style) internal pure returns (string memory) {
-        if (style == 0) return '<rect x="10" y="13" width="4" height="1" fill="#101010"/>'; 
-        if (style == 1) return '<rect x="10" y="13" width="4" height="1" fill="#101010"/><rect x="11" y="14" width="2" height="1" fill="#101010"/>';
-        return "";
-    }
-}`;
-
-        // DOM Elements
-        const solidityInput = document.getElementById('solidityInput');
-        const loadSampleBtn = document.getElementById('loadSampleBtn');
-        const extractBtn = document.getElementById('extractBtn');
-        const emptyState = document.getElementById('emptyState');
-        const layerGrid = document.getElementById('layerGrid');
-        const categoryFilter = document.getElementById('categoryFilter');
-        const sortFilter = document.getElementById('sortFilter');
-        const searchInput = document.getElementById('searchInput');
-        const downloadCategoryZipBtn = document.getElementById('downloadCategoryZipBtn');
-        const downloadAllZipBtn = document.getElementById('downloadAllZipBtn');
-        const codeModal = document.getElementById('codeModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-
-        // Statistics Elements
-        const statCategories = document.getElementById('statCategories');
-        const statLayers = document.getElementById('statLayers');
-        const statSvgCount = document.getElementById('statSvgCount');
-        const statMissing = document.getElementById('statMissing');
-        const statDuplicates = document.getElementById('statDuplicates');
-        const statFiles = document.getElementById('statFiles');
-
-        // Event Listeners
-        loadSampleBtn.addEventListener('click', () => { solidityInput.value = sampleSolidity; });
-        extractBtn.addEventListener('click', processSourceCode);
-        categoryFilter.addEventListener('change', renderFilteredLayers);
-        sortFilter.addEventListener('change', renderFilteredLayers);
-        searchInput.addEventListener('input', renderFilteredLayers);
-        closeModalBtn.addEventListener('click', () => codeModal.classList.add('hidden'));
-        downloadAllZipBtn.addEventListener('click', () => exportZip('ALL'));
-        downloadCategoryZipBtn.addEventListener('click', () => exportZip(categoryFilter.value));
-
-        // Core Parser & Extractor Engine
-        function processSourceCode() {
-            const sourceCode = solidityInput.value;
-            if (!sourceCode.trim()) return;
-
-            extractedLayers = [];
-            let rawSvgCount = 0;
-            let duplicateCount = 0;
-            let missingCount = 0;
-
-            // Detect multiple contracts/files in single source block
-            const files = sourceCode.split(/(?=contract\s+|library\s+|interface\s+)/g);
-            contractFilesCount = files.length || 1;
-
-            const seenContent = new Set();
-
-            // Regex Patterns for Parsing
-            const svgTagRegex = /<svg[^>]*>([\s\S]*?)<\/svg>/gi;
-            const fragmentRegex = /<([a-z]+)[^>]*fill="[^"]+"[^>]*\/?>/gi;
-            const stringLiteralRegex = /"(<[^">]+>)"|'(<[^'>]+>)'/g;
-
-            // Step 1: Scan for explicit <svg> blocks
-            let match;
-            while ((match = svgTagRegex.exec(sourceCode)) !== null) {
-                const fullSvg = match[0];
-                rawSvgCount++;
-                if (seenContent.has(fullSvg)) {
-                    duplicateCount++;
-                    continue;
-                }
-                seenContent.add(fullSvg);
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
                 
-                const category = autoDetectCategory(fullSvg);
-                extractedLayers.push({
-                    id: `layer_${extractedLayers.length + 1}`,
-                    name: `${category}_${String(extractedLayers.length + 1).padStart(3, '0')}`,
-                    category: category,
-                    rawSvg: fullSvg,
-                    fileSize: new Blob([fullSvg]).size,
-                    sourceSnippet: match[0]
-                });
-            }
+                // ১. ফাইল পাথগুলো এক্সট্রাক্ট করা
+                const filePaths = Object.keys(contents.files).filter(path => !path.startsWith('__MACOSX'));
 
-            // Step 2: Scan for SVG Fragments (rect, path, group)
-            while ((match = stringLiteralRegex.exec(sourceCode)) !== null) {
-                const content = match[1] || match[2];
-                if (content && (content.includes('rect') || content.includes('path') || content.includes('g '))) {
-                    rawSvgCount++;
-                    if (seenContent.has(content)) {
-                        duplicateCount++;
-                        continue;
-                    }
-                    seenContent.add(content);
-
-                    const wrappedSvg = wrapInSvgContainer(content);
-                    const category = autoDetectCategory(content);
-
-                    extractedLayers.push({
-                        id: `layer_${extractedLayers.length + 1}`,
-                        name: `${category}_${String(extractedLayers.length + 1).padStart(3, '0')}`,
-                        category: category,
-                        rawSvg: wrappedSvg,
-                        fileSize: new Blob([wrappedSvg]).size,
-                        sourceSnippet: match[0]
+                // ২. অবজেক্ট ট্রি বিল্ডিং
+                const treeObj = {};
+                filePaths.forEach(path => {
+                    const parts = path.split('/').filter(Boolean);
+                    let current = treeObj;
+                    parts.forEach((part, index) => {
+                        if (!current[part]) {
+                            current[part] = (index === parts.length - 1 && !path.endsWith('/')) ? null : {};
+                        }
+                        if (current[part] !== null) {
+                            current = current[part];
+                        }
                     });
+                });
+
+                // ৩. ভিজ্যুয়াল ট্রি জেনারেটর
+                function generateAsciiTree(node, prefix = '') {
+                    let result = '';
+                    const keys = Object.keys(node);
+                    keys.forEach((key, index) => {
+                        const isLast = index === keys.length - 1;
+                        const connector = isLast ? '┗━ ' : '┣━ ';
+                        const childPrefix = isLast ? '   ' : '┃  ';
+                        
+                        const isFile = node[key] === null;
+                        const icon = isFile ? '📄 ' : '📂 ';
+
+                        result += prefix + connector + icon + key + '\n';
+
+                        if (!isFile && node[key]) {
+                            result += generateAsciiTree(node[key], prefix + childPrefix);
+                        }
+                    });
+                    return result;
                 }
+
+                const treeText = "📦 " + file.name + "\n" + generateAsciiTree(treeObj);
+                treeOutput.textContent = treeText;
+
+            } catch (err) {
+                treeOutput.textContent = "❌ জিপ ফাইলটি পার্স করতে সমস্যা হয়েছে: " + err.message;
             }
-
-            // Update UI State & Filters
-            updateStatistics(rawSvgCount, duplicateCount, missingCount);
-            populateCategories();
-            renderFilteredLayers();
-
-            downloadAllZipBtn.disabled = extractedLayers.length === 0;
-            downloadCategoryZipBtn.disabled = extractedLayers.length === 0;
-        }
-
-        // Automatic Category Detector
-        function autoDetectCategory(svgContent) {
-            const lower = svgContent.toLowerCase();
-            if (lower.includes('width="24" height="24" fill=') || lower.includes('background')) return 'Background';
-            if (lower.includes('y="3"') || lower.includes('y="4"') || lower.includes('hair')) return 'Hair';
-            if (lower.includes('y="7"') || lower.includes('y="8"') || lower.includes('glasses') || lower.includes('eye')) return 'Eyes';
-            if (lower.includes('y="13"') || lower.includes('y="14"') || lower.includes('mouth') || lower.includes('tooth')) return 'Mouth';
-            if (lower.includes('y="18"') || lower.includes('y="19"') || lower.includes('body') || lower.includes('suit')) return 'Body';
-            if (lower.includes('nose')) return 'Nose';
-            return 'Accessories';
-        }
-
-        // Wrap SVG Fragment in Standard Container
-        function wrapInSvgContainer(fragment) {
-            return `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" viewBox="0 0 24 24" width="100%" height="100%">${fragment}</svg>`;
-        }
-
-        // Statistics Updating
-        function updateStatistics(rawSvgCount, duplicates, missing) {
-            const categories = new Set(extractedLayers.map(l => l.category));
-            statCategories.textContent = categories.size;
-            statLayers.textContent = extractedLayers.length;
-            statSvgCount.textContent = rawSvgCount;
-            statDuplicates.textContent = duplicates;
-            statMissing.textContent = missing;
-            statFiles.textContent = contractFilesCount;
-        }
-
-        // Populate Category Filter Dropdown
-        function populateCategories() {
-            const categories = Array.from(new Set(extractedLayers.map(l => l.category)));
-            categoryFilter.innerHTML = '<option value="ALL">All Categories</option>';
-            categories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                categoryFilter.appendChild(opt);
-            });
-        }
-
-        // Render Filtered Layers to Grid
-        function renderFilteredLayers() {
-            const selectedCat = categoryFilter.value;
-            const sortMode = sortFilter.value;
-            const searchVal = searchInput.value.toLowerCase();
-
-            let filtered = extractedLayers.filter(item => {
-                const matchCat = (selectedCat === 'ALL' || item.category === selectedCat);
-                const matchSearch = item.name.toLowerCase().includes(searchVal) || item.category.toLowerCase().includes(searchVal);
-                return matchCat && matchSearch;
-            });
-
-            // Sorting Logic
-            filtered.sort((a, b) => {
-                if (sortMode === 'NAME_ASC') return a.name.localeCompare(b.name);
-                if (sortMode === 'NAME_DESC') return b.name.localeCompare(a.name);
-                if (sortMode === 'CATEGORY') return a.category.localeCompare(b.category);
-                return 0;
-            });
-
-            if (filtered.length === 0) {
-                layerGrid.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-            layerGrid.classList.remove('hidden');
-            layerGrid.innerHTML = '';
-
-            filtered.forEach(layer => {
-                const card = document.createElement('div');
-                card.className = "bg-panelBg border border-borderCol rounded-xl overflow-hidden flex flex-col hover:border-slate-600 transition-all";
-                card.innerHTML = `
-                    <div class="h-48 svg-checkerboard p-4 flex items-center justify-center border-b border-borderCol relative">
-                        <div class="w-32 h-32 flex items-center justify-center">${layer.rawSvg}</div>
-                        <span class="absolute top-2 right-2 text-[10px] bg-darkBg/80 border border-borderCol text-slate-400 px-2 py-0.5 rounded font-mono">${(layer.fileSize / 1024).toFixed(2)} KB</span>
-                    </div>
-                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-                        <div>
-                            <div class="text-xs text-blue-400 font-medium uppercase tracking-wider">${layer.category}</div>
-                            <div class="text-sm font-semibold text-white mt-0.5">${layer.name}</div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-borderCol">
-                            <button onclick="inspectCode('${layer.id}')" class="py-1.5 px-2 bg-darkBg hover:bg-borderCol border border-borderCol text-[11px] font-medium text-slate-300 rounded text-center transition">Inspect Code</button>
-                            <button onclick="downloadSvg('${layer.id}')" class="py-1.5 px-2 bg-accent/10 hover:bg-accent/20 border border-accent/30 text-[11px] font-medium text-blue-400 rounded text-center transition">Download SVG</button>
-                        </div>
-                    </div>
-                `;
-                layerGrid.appendChild(card);
-            });
-        }
-
-        // Code Inspection Modal Handler
-        window.inspectCode = function(layerId) {
-            const layer = extractedLayers.find(l => l.id === layerId);
-            if (!layer) return;
-
-            document.getElementById('modalTitle').textContent = `Layer Code Inspector - ${layer.name}`;
-            document.getElementById('modalSubtitle').textContent = `Category: ${layer.category} | File Size: ${layer.fileSize} Bytes`;
-            document.getElementById('modalCode').textContent = layer.sourceSnippet;
-            codeModal.classList.remove('hidden');
-        }
-
-        // Individual SVG Download
-        window.downloadSvg = function(layerId) {
-            const layer = extractedLayers.find(l => l.id === layerId);
-            if (!layer) return;
-
-            const blob = new Blob([layer.rawSvg], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${layer.name}.svg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // Export ZIP Functionality (Category-specific or Full Library)
-        function exportZip(targetCategory) {
-            const zip = new JSZip();
-            const layersToExport = targetCategory === 'ALL' 
-                ? extractedLayers 
-                : extractedLayers.filter(l => l.category === targetCategory);
-
-            if (layersToExport.length === 0) return;
-
-            layersToExport.forEach(layer => {
-                const folder = zip.folder(layer.category);
-                folder.file(`${layer.name}.svg`, layer.rawSvg);
-            });
-
-            zip.generateAsync({ type: 'blob' }).then(content => {
-                const url = URL.createObjectURL(content);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = targetCategory === 'ALL' ? `OnChain_NFT_Full_Library.zip` : `Layer_${targetCategory}.zip`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
         }
     </script>
 </body>
