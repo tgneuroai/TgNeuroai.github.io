@@ -933,7 +933,7 @@ function evalExpr(node, env, reg, depth, ctx, fn) {
   switch (node.k) {
     case 'Str': return STR(node.v);
     case 'Num': return NUM(node.v);
-    case 'Hex': { const len = Math.ceil(node.v.length / 2); return BYTES(parseInt(node.v, 16), len); }
+    case 'Hex': { const digits = node.v.replace(/^0x/i, ''); const len = Math.ceil(digits.length / 2); return BYTES(parseInt(digits, 16), len); }
     case 'Ident': {
       if (env.has(node.v)) return env.get(node.v);
       if (node.v === 'true') return BOOL(true);
@@ -1124,6 +1124,30 @@ function isSvgLike(text) {
   return /<rect|<path|<circle|<polygon|<g\s|<g>|<svg|<ellipse|<line/.test(text);
 }
 
+// Many on-chain renderers wrap isolated QA/catalog layers in a solid full-canvas
+// "muted backdrop" rect purely so the shape is easy to see against a neutral color —
+// that backdrop is not part of the stored artwork itself and must be removed so the
+// extracted layer has a true transparent background and can be composited correctly
+// with the other layers. We detect it structurally: a <rect> immediately after the
+// opening <svg ...> tag whose x/y are 0 (or omitted) and whose width/height cover the
+// full declared viewBox. The real Background category is left untouched, since for
+// that category a full-canvas rect *is* the legitimate stored asset.
+function stripPreviewBackdrop(svg, category, viewBox) {
+  if (category === 'Background') return svg;
+  const m = svg.match(/^(<svg[^>]*>)\s*(<rect\b[^>]*\/>)([\s\S]*)$/i);
+  if (!m) return svg;
+  const [, openTag, rectTag, rest] = m;
+  const attr = name => {
+    const am = rectTag.match(new RegExp(name + '="([^"]*)"'));
+    return am ? parseFloat(am[1]) : null;
+  };
+  const x = attr('x') ?? 0, y = attr('y') ?? 0;
+  const w = attr('width'), h = attr('height');
+  const isFullCanvas = x === 0 && y === 0 && w === viewBox[0] && h === viewBox[1];
+  if (!isFullCanvas) return svg;
+  return openTag + rest;
+}
+
 // candidate "entry point" functions: single/double small-int param, SVG-like body, in renderer-ish files
 function findEntryPoints(reg) {
   const candidates = [];
@@ -1221,7 +1245,8 @@ function extractLayers(files) {
       if (!label) label = `${cand.name}_${idx}`;
       if (/^none$/i.test(label)) continue;
 
-      const svg = wrapIfNeeded(raw, viewBox);
+      let svg = wrapIfNeeded(raw, viewBox);
+      svg = stripPreviewBackdrop(svg, category, viewBox);
       const hasPlaceholder = /\{[a-zA-Z0-9_]+\}/.test(svg);
       idCounter++;
       layers.push({
