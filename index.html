@@ -1,594 +1,1716 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>On-Chain NFT Original Layer Extractor</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        darkBg: '#090a0f',
-                        panelBg: '#11131c',
-                        borderCol: '#1f2433',
-                        accent: '#3b82f6',
-                        accentHover: '#2563eb'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #090a0f; }
-        ::-webkit-scrollbar-thumb { background: #1f2433; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
-        .svg-checkerboard {
-            background-color: #1a1d28;
-            background-image: linear-gradient(45deg, #11131c 25%, transparent 25%), 
-                              linear-gradient(-45deg, #11131c 25%, transparent 25%), 
-                              linear-gradient(45deg, transparent 75%, #11131c 75%), 
-                              linear-gradient(-45deg, transparent 75%, #11131c 75%);
-            background-size: 16px 16px;
-            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-        }
-        .layer-card {
-            transition: all 0.2s ease;
-        }
-        .layer-card:hover {
-            transform: translateY(-2px);
-            border-color: #3b82f6;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer Extract — Original On-Chain Layer Extractor</title>
+<style>
+:root{
+  --bg:#0a0b0e;
+  --panel:#111318;
+  --panel-2:#15171d;
+  --border:#22252c;
+  --border-soft:#1a1c22;
+  --text:#e8e9ec;
+  --text-dim:#8b909c;
+  --text-faint:#565b66;
+  --gold:#e8b84b;
+  --gold-dim:#8a6d2e;
+  --teal:#4fd1c5;
+  --red:#e8604b;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --sans:'Inter','Space Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
+  --radius:6px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:14px;
+  min-height:100vh;
+}
+::selection{background:rgba(232,184,75,.3);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:#26292f;border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:#33363e;}
+
+.app{display:grid;grid-template-columns:300px 1fr;min-height:100vh;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  background:var(--panel); border-right:1px solid var(--border);
+  padding:20px 16px; display:flex; flex-direction:column; gap:20px;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:2px 2px 8px;}
+.brand-mark{
+  width:30px;height:30px;border-radius:7px;
+  background:linear-gradient(135deg,var(--gold),#a9772f);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono); font-weight:700; color:#0a0b0e; font-size:14px;
+  flex-shrink:0;
+}
+.brand-text{line-height:1.15;}
+.brand-text .t1{font-family:var(--mono); font-weight:600; font-size:13.5px; letter-spacing:.02em;}
+.brand-text .t2{font-size:10.5px; color:var(--text-faint); letter-spacing:.06em; text-transform:uppercase;}
+
+.panel{
+  background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px;
+}
+.panel-title{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-faint); margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.panel-title::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--gold);}
+
+.load-tabs{display:flex; gap:4px; margin-bottom:10px; background:var(--bg); padding:3px; border-radius:6px; border:1px solid var(--border-soft);}
+.load-tab{
+  flex:1; background:transparent; border:none; color:var(--text-dim); font-family:var(--sans);
+  font-size:11.5px; padding:6px 4px; border-radius:4px; cursor:pointer; transition:.15s;
+}
+.load-tab.active{background:var(--panel-2); color:var(--gold);}
+.load-pane{display:none; flex-direction:column; gap:8px;}
+.load-pane.active{display:flex;}
+
+.dropzone{
+  border:1.5px dashed var(--border); border-radius:var(--radius); padding:16px 10px;
+  text-align:center; color:var(--text-faint); font-size:11.5px; cursor:pointer; transition:.15s;
+}
+.dropzone.drag{border-color:var(--gold); color:var(--gold); background:rgba(232,184,75,.05);}
+.dropzone label{color:var(--gold); cursor:pointer; text-decoration:underline; text-underline-offset:2px;}
+
+input[type=text],input[type=file],textarea,select{
+  width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text);
+  font-family:var(--sans); font-size:12.5px; padding:8px 9px; border-radius:5px; outline:none;
+}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--gold-dim);}
+textarea{font-family:var(--mono); font-size:11.5px; resize:vertical; min-height:80px;}
+label.field-label{font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; display:block; margin:6px 0 4px;}
+
+.btn{
+  background:var(--gold); color:#1a1305; border:none; font-family:var(--sans); font-weight:600;
+  font-size:12.5px; padding:9px 12px; border-radius:5px; cursor:pointer; transition:.15s; width:100%;
+}
+.btn:hover{filter:brightness(1.08);}
+.btn:disabled{background:#3a3d44; color:var(--text-faint); cursor:not-allowed;}
+.btn-outline{background:transparent; border:1px solid var(--border); color:var(--text-dim);}
+.btn-outline:hover{border-color:var(--gold-dim); color:var(--gold);}
+
+.files-list{display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto; margin-top:8px;}
+.file-row{display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10.5px; color:var(--text-dim); background:var(--bg); border:1px solid var(--border-soft); border-radius:4px; padding:5px 7px;}
+.file-path{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.file-size{color:var(--text-faint); flex-shrink:0;}
+.file-remove{background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:11px; flex-shrink:0;}
+.file-remove:hover{color:var(--red);}
+.file-count-line{font-size:10.5px; color:var(--text-faint); margin-top:6px; font-family:var(--mono);}
+
+.stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.stat-card{background:var(--bg); border:1px solid var(--border-soft); border-radius:5px; padding:8px 10px;}
+.stat-val{font-family:var(--mono); font-size:19px; font-weight:600; color:var(--gold); line-height:1.1;}
+.stat-label{font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.04em; margin-top:3px;}
+
+.category-list{display:flex; flex-direction:column; gap:2px; max-height:320px; overflow-y:auto;}
+.cat-btn-wrap{display:flex; align-items:center; gap:4px;}
+.cat-btn{
+  display:flex; justify-content:space-between; align-items:center; width:100%;
+  background:transparent; border:none; color:var(--text-dim); font-family:var(--sans);
+  font-size:12px; padding:7px 9px; border-radius:5px; cursor:pointer; text-align:left;
+}
+.cat-btn:hover{background:var(--bg);}
+.cat-btn.active{background:rgba(232,184,75,.1); color:var(--gold);}
+.cat-count{font-family:var(--mono); font-size:10.5px; color:var(--text-faint);}
+.cat-btn.active .cat-count{color:var(--gold-dim);}
+.cat-dl{flex-shrink:0; background:transparent; border:none; color:var(--text-faint); font-size:12px; cursor:pointer; padding:4px 6px; border-radius:4px;}
+.cat-dl:hover{color:var(--gold); background:var(--bg);}
+
+.sidebar-footer{margin-top:auto; font-size:10.5px; color:var(--text-faint); line-height:1.5; padding:8px 2px 0;}
+.sidebar-footer b{color:var(--text-dim);}
+
+/* ---------- Main ---------- */
+.main{padding:22px 26px; display:flex; flex-direction:column; gap:18px; min-width:0;}
+.topbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.status-line{font-family:var(--mono); font-size:11.5px; color:var(--text-dim); padding:8px 12px; background:var(--panel-2); border:1px solid var(--border); border-radius:5px; flex:1; min-width:220px;}
+.status-line.error{color:var(--red); border-color:#4a2a24;}
+
+#emptyState{display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:80px 20px; color:var(--text-faint); gap:10px;}
+#emptyState.active{display:flex;}
+#emptyState .big{font-family:var(--mono); font-size:15px; color:var(--text-dim);}
+#emptyState .small{font-size:12.5px; max-width:420px; line-height:1.6;}
+
+#workspace{display:none; flex-direction:column; gap:16px;}
+#workspace.active{display:flex;}
+
+.controls-bar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+.controls-bar input[type=text]{max-width:260px;}
+.controls-bar select{max-width:170px;}
+.result-count{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:auto;}
+
+.layer-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px;}
+.grid-empty{color:var(--text-faint); font-size:12.5px; padding:40px; text-align:center; grid-column:1/-1;}
+
+.layer-card{background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; transition:.15s;}
+.layer-card:hover{border-color:var(--gold-dim);}
+.layer-thumb{
+  aspect-ratio:1/1; background:
+    linear-gradient(45deg,#1a1c22 25%,transparent 25%),
+    linear-gradient(-45deg,#1a1c22 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#1a1c22 75%),
+    linear-gradient(-45deg,transparent 75%,#1a1c22 75%);
+  background-size:16px 16px; background-position:0 0,0 8px,8px -8px,-8px 0;
+  background-color:#0d0e11;
+  display:flex; align-items:center; justify-content:center; padding:14px;
+}
+.layer-thumb img{width:100%; height:100%; object-fit:contain; image-rendering:pixelated;}
+.layer-body{padding:10px 11px 11px;}
+.layer-name{font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.layer-meta{display:flex; justify-content:space-between; align-items:center; margin-top:6px;}
+.badge{font-family:var(--mono); font-size:9.5px; color:var(--gold); background:rgba(232,184,75,.1); padding:2px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:.03em;}
+.meta-size{font-family:var(--mono); font-size:10px; color:var(--text-faint);}
+.layer-actions{display:flex; gap:5px; margin-top:9px;}
+.btn-mini{flex:1; background:var(--bg); border:1px solid var(--border-soft); color:var(--text-dim); font-size:10.5px; padding:6px 4px; border-radius:4px; cursor:pointer;}
+.btn-mini:hover{border-color:var(--gold-dim); color:var(--gold);}
+
+/* ---------- Modal ---------- */
+#modal{position:fixed; inset:0; display:none; z-index:100; align-items:center; justify-content:center; padding:24px;}
+#modal.open{display:flex;}
+#modalBackdrop{position:absolute; inset:0; background:rgba(5,5,7,.75); backdrop-filter:blur(2px);}
+.modal-box{position:relative; background:var(--panel); border:1px solid var(--border); border-radius:8px; width:min(920px,100%); max-height:88vh; display:flex; flex-direction:column; overflow:hidden;}
+.modal-head{display:flex; align-items:flex-start; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border);}
+.modal-title{font-family:var(--mono); font-size:14px; font-weight:600;}
+.modal-sub{font-size:11px; color:var(--text-faint); margin-top:4px;}
+.modal-close{background:none; border:none; color:var(--text-faint); font-size:18px; cursor:pointer;}
+.modal-body{display:grid; grid-template-columns:220px 1fr; gap:0; overflow:hidden; flex:1;}
+.modal-preview{background:#0d0e11; display:flex; align-items:center; justify-content:center; padding:20px; border-right:1px solid var(--border);}
+.modal-preview img{width:100%; image-rendering:pixelated;}
+.modal-code{display:flex; flex-direction:column; overflow:hidden;}
+.modal-tabs{display:flex; gap:2px; padding:10px 14px 0;}
+.modal-tab{background:none; border:none; color:var(--text-faint); font-family:var(--mono); font-size:11px; padding:8px 12px; cursor:pointer; border-bottom:2px solid transparent;}
+.modal-tab.active{color:var(--gold); border-color:var(--gold);}
+.modal-pane{display:none; overflow:auto; padding:14px 18px; flex:1;}
+.modal-pane.active{display:block;}
+#modalSvgSrc{font-family:var(--mono); font-size:11px; color:var(--text-dim); white-space:pre-wrap; word-break:break-all; line-height:1.6;}
+.code-line{display:flex; font-family:var(--mono); font-size:11px; line-height:1.7;}
+.code-line.hl{background:rgba(232,184,75,.08); border-left:2px solid var(--gold);}
+.code-line .ln{width:36px; flex-shrink:0; color:var(--text-faint); text-align:right; padding-right:10px; user-select:none;}
+.code-line .cd{white-space:pre; color:var(--text-dim);}
+.code-line.hl .cd{color:var(--text);}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;}
+  .sidebar{position:relative; height:auto;}
+  .modal-body{grid-template-columns:1fr;}
+  .modal-preview{border-right:none; border-bottom:1px solid var(--border); max-height:200px;}
+}
+</style>
 </head>
-<body class="bg-darkBg text-slate-200 font-sans antialiased min-h-screen flex flex-col">
+<body>
+<div class="app">
 
-    <header class="bg-panelBg border-b border-borderCol px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div class="flex items-center space-x-3">
-            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-lg font-bold text-white tracking-wide">NFT Layer Extractor</h1>
-                <p class="text-xs text-slate-400">On-Chain Verified Solidity Asset Engine</p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-4">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Pure Extraction (Zero Generative AI)
-            </span>
-        </div>
-    </header>
-
-    <div class="flex-1 flex overflow-hidden">
-
-        <aside class="w-80 bg-panelBg border-r border-borderCol p-5 flex flex-col space-y-6 overflow-y-auto">
-            <div>
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Source Code / Contract</label>
-                <div class="space-y-2">
-                    <textarea id="solidityInput" rows="6" class="w-full bg-darkBg border border-borderCol rounded-lg p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-accent transition-colors" placeholder="Paste Solidity source code or upload a .zip (below)"></textarea>
-                    <div class="flex items-center gap-2">
-                        <label for="zipUpload" class="cursor-pointer w-full py-1.5 text-xs text-slate-400 hover:text-white bg-darkBg border border-borderCol rounded hover:border-slate-600 transition text-center">
-                            📁 Upload .zip (contract bundle)
-                        </label>
-                        <input type="file" id="zipUpload" accept=".zip" class="hidden">
-                    </div>
-                    <button id="loadSampleBtn" class="w-full py-1.5 text-xs text-slate-400 hover:text-white bg-darkBg border border-borderCol rounded hover:border-slate-600 transition">Load Code Sample</button>
-                </div>
-            </div>
-
-            <button id="extractBtn" class="w-full py-3 bg-accent hover:bg-accentHover text-white font-semibold rounded-lg shadow-lg shadow-blue-500/10 transition-all flex items-center justify-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <span>Extract On-Chain Layers</span>
-            </button>
-
-            <hr class="border-borderCol">
-
-            <div class="space-y-2">
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Export Operations</label>
-                <button id="downloadCategoryZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span>Download Category ZIP</span>
-                </button>
-                <button id="downloadAllZipBtn" class="w-full py-2 bg-darkBg hover:bg-borderCol border border-borderCol text-xs font-medium text-slate-200 rounded transition flex items-center justify-center space-x-2 disabled:opacity-50" disabled>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    <span>Download Full Library (ZIP)</span>
-                </button>
-            </div>
-
-            <div class="mt-auto p-3 bg-darkBg rounded-lg border border-borderCol text-xs space-y-1">
-                <div class="text-slate-400">Scanner Engine: <span class="text-slate-200 font-mono">AST-Regex Hybrid</span></div>
-                <div class="text-slate-400">Mode: <span class="text-emerald-400">Strict Non-Generative</span></div>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col overflow-hidden bg-darkBg">
-            
-            <div class="grid grid-cols-6 gap-4 p-5 bg-panelBg/50 border-b border-borderCol">
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Total Categories</div>
-                    <div id="statCategories" class="text-xl font-bold text-white mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Total Extracted Layers</div>
-                    <div id="statLayers" class="text-xl font-bold text-blue-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Raw SVG Elements</div>
-                    <div id="statSvgCount" class="text-xl font-bold text-indigo-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Missing Assets</div>
-                    <div id="statMissing" class="text-xl font-bold text-amber-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Duplicates Filtered</div>
-                    <div id="statDuplicates" class="text-xl font-bold text-rose-400 mt-1">0</div>
-                </div>
-                <div class="p-3 bg-panelBg rounded-lg border border-borderCol">
-                    <div class="text-xs text-slate-400">Files Processed</div>
-                    <div id="statFiles" class="text-xl font-bold text-emerald-400 mt-1">0</div>
-                </div>
-            </div>
-
-            <div class="p-4 bg-panelBg border-b border-borderCol flex items-center justify-between space-x-4">
-                <div class="flex items-center space-x-3 flex-1">
-                    <input type="text" id="searchInput" placeholder="Search by layer name or source pattern..." class="w-64 bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accent">
-                    <select id="categoryFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
-                        <option value="ALL">All Categories</option>
-                    </select>
-                    <select id="sortFilter" class="bg-darkBg border border-borderCol rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-accent">
-                        <option value="NAME_ASC">Sort by Name (A-Z)</option>
-                        <option value="NAME_DESC">Sort by Name (Z-A)</option>
-                        <option value="CATEGORY">Sort by Category</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-6">
-                <div id="emptyState" class="h-full flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-borderCol rounded-xl">
-                    <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    <h3 class="text-base font-semibold text-slate-300 mb-1">No Assets Extracted</h3>
-                    <p class="text-xs text-slate-500 max-w-sm">Provide a verified Solidity source code file or bundle and execute the extractor to view original artwork assets.</p>
-                </div>
-                <div id="layerGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
-                </div>
-            </div>
-        </main>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">⛓</div>
+      <div class="brand-text">
+        <div class="t1">LAYER://EXTRACT</div>
+        <div class="t2">On-chain asset extractor</div>
+      </div>
     </div>
 
-    <div id="codeModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-        <div class="bg-panelBg border border-borderCol rounded-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col shadow-2xl">
-            <div class="p-4 border-b border-borderCol flex items-center justify-between">
-                <div>
-                    <h3 id="modalTitle" class="text-sm font-bold text-white">Source Inspector</h3>
-                    <p id="modalSubtitle" class="text-xs text-slate-400"></p>
-                </div>
-                <button id="closeModalBtn" class="text-slate-400 hover:text-white text-lg">&times;</button>
-            </div>
-            <div class="p-4 flex-1 overflow-auto bg-darkBg">
-                <pre id="modalCode" class="text-xs font-mono text-emerald-400 whitespace-pre-wrap"></pre>
-            </div>
+    <div class="panel">
+      <div class="panel-title">Load verified contract</div>
+      <div class="load-tabs">
+        <button class="load-tab active" data-pane="upload">Upload</button>
+        <button class="load-tab" data-pane="fetch">Address</button>
+        <button class="load-tab" data-pane="paste">Paste</button>
+      </div>
+
+      <div class="load-pane active" id="pane-upload">
+        <div class="dropzone" id="dropzone">
+          Drop a <b>.zip</b> of verified sources, or<br>
+          <label for="zipInput">choose a zip file</label> ·
+          <label for="solInput">choose .sol files</label>
         </div>
+        <input type="file" id="zipInput" accept=".zip" style="display:none">
+        <input type="file" id="solInput" accept=".sol" multiple style="display:none">
+      </div>
+
+      <div class="load-pane" id="pane-fetch">
+        <label class="field-label">Chain</label>
+        <select id="chainSelect"></select>
+        <label class="field-label">Contract address</label>
+        <input type="text" id="addrInput" placeholder="0x...">
+        <label class="field-label">Etherscan API key</label>
+        <input type="text" id="apiKeyInput" placeholder="required — free at etherscan.io/apis">
+        <button class="btn btn-outline" id="fetchBtn" style="margin-top:8px;">Fetch verified source</button>
+      </div>
+
+      <div class="load-pane" id="pane-paste">
+        <label class="field-label">File name</label>
+        <input type="text" id="pasteName" placeholder="Renderer.sol">
+        <label class="field-label">Solidity source</label>
+        <textarea id="pasteArea" placeholder="pragma solidity ...&#10;contract Renderer { ... }"></textarea>
+        <button class="btn btn-outline" id="pasteAddBtn" style="margin-top:8px;">Add file</button>
+      </div>
+
+      <div class="files-list" id="filesList"></div>
+      <div class="file-count-line"><span id="fileCount">0</span> file(s) loaded</div>
+      <button class="btn" id="extractBtn" style="margin-top:10px;" disabled>Extract Layers</button>
     </div>
 
-    <script>
-        (function(){
-            let extractedLayers = [];
-            let contractFilesCount = 0;
-            let categoryCounter = {};
+    <div class="panel" id="statsPanel" style="display:none;">
+      <div class="panel-title">Statistics</div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
 
-            // DOM refs
-            const solidityInput = document.getElementById('solidityInput');
-            const loadSampleBtn = document.getElementById('loadSampleBtn');
-            const extractBtn = document.getElementById('extractBtn');
-            const emptyState = document.getElementById('emptyState');
-            const layerGrid = document.getElementById('layerGrid');
-            const categoryFilter = document.getElementById('categoryFilter');
-            const sortFilter = document.getElementById('sortFilter');
-            const searchInput = document.getElementById('searchInput');
-            const downloadCategoryZipBtn = document.getElementById('downloadCategoryZipBtn');
-            const downloadAllZipBtn = document.getElementById('downloadAllZipBtn');
-            const codeModal = document.getElementById('codeModal');
-            const closeModalBtn = document.getElementById('closeModalBtn');
-            const zipUpload = document.getElementById('zipUpload');
+    <div class="panel" id="catPanel" style="display:none;">
+      <div class="panel-title">Categories</div>
+      <div class="category-list" id="categoryList"></div>
+    </div>
 
-            const statCategories = document.getElementById('statCategories');
-            const statLayers = document.getElementById('statLayers');
-            const statSvgCount = document.getElementById('statSvgCount');
-            const statMissing = document.getElementById('statMissing');
-            const statDuplicates = document.getElementById('statDuplicates');
-            const statFiles = document.getElementById('statFiles');
+    <div class="sidebar-footer">
+      <b>Extraction only.</b> This tool pulls SVG fragments, path/group data and trait
+      tables that already exist in the verified Solidity source. It never generates,
+      redraws, or infers artwork, and never assembles finished token images.
+    </div>
+  </aside>
 
-            // Sample code
-            const sampleSolidity = `// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+  <main class="main">
+    <div class="topbar">
+      <div class="status-line" id="statusLine">—</div>
+    </div>
 
-library SvgTraits {
-    function getBackgrounds() internal pure returns (string[] memory) {
-        string[] memory bg = new string[](2);
-        bg[0] = '<rect width="24" height="24" fill="#87CEEB"/>';
-        bg[1] = '<rect width="24" height="24" fill="#36454F"/>';
-        return bg;
+    <div id="emptyState">
+      <div class="big">No contract loaded</div>
+      <div class="small">Upload a verified-source zip, fetch by contract address, or paste Solidity directly from the sidebar — then click <b>Extract Layers</b>.</div>
+    </div>
+
+    <div id="workspace">
+      <div class="controls-bar">
+        <input type="text" id="searchBox" placeholder="Search layer name, category, function…">
+        <select id="sortSelect">
+          <option value="category">Sort: Category</option>
+          <option value="name">Sort: Name</option>
+        </select>
+        <button class="btn btn-outline" id="downloadAllBtn" style="width:auto; padding:8px 14px;">Download All (ZIP)</button>
+        <span class="result-count" id="resultCount"></span>
+      </div>
+      <div class="layer-grid" id="layerGrid"></div>
+    </div>
+  </main>
+</div>
+
+<div id="modal">
+  <div id="modalBackdrop"></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-sub" id="modalSub">—</div>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-preview"><img id="modalPreviewImg" alt=""></div>
+      <div class="modal-code">
+        <div class="modal-tabs">
+          <button class="modal-tab active" data-tab="svg">SVG Source</button>
+          <button class="modal-tab" data-tab="sol">Solidity Source</button>
+        </div>
+        <div class="modal-pane active" id="modalpane-svg"><pre id="modalSvgSrc"></pre></div>
+        <div class="modal-pane" id="modalpane-sol"><div id="modalSolSrc"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>(function(){
+/* ================================================================
+   Original Layer Extractor — Solidity parsing / evaluation engine
+   Pure JS, no dependencies. Works in Node (for testing) and browser.
+   ================================================================ */
+
+// ---------- 1. Comment stripping (keeps line numbers intact) ----------
+// IMPORTANT: output must be exactly the same length as input, with comment characters
+// blanked to spaces (newlines preserved), so that every offset computed against the
+// cleaned string is still a valid offset into the original raw source.
+function stripComments(src) {
+  let out = '';
+  let i = 0;
+  const n = src.length;
+  let inStr = false, strCh = null;
+  while (i < n) {
+    const c = src[i];
+    if (inStr) {
+      out += c;
+      if (c === '\\') { out += (src[i + 1] !== undefined ? src[i + 1] : ''); i += 2; continue; }
+      if (c === strCh) inStr = false;
+      i++; continue;
     }
+    if (c === '"' || c === "'") { inStr = true; strCh = c; out += c; i++; continue; }
+    if (c === '/' && src[i + 1] === '/') {
+      while (i < n && src[i] !== '\n') { out += ' '; i++; }
+      continue;
+    }
+    if (c === '/' && src[i + 1] === '*') {
+      out += '  '; i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) { out += (src[i] === '\n' ? '\n' : ' '); i++; }
+      if (i < n) { out += '  '; i += 2; }
+      continue;
+    }
+    out += c; i++;
+  }
+  return out;
 }
 
-contract SvgRenderer {
-    string public constant EYE_BULL = '<rect x="8" y="8" width="3" height="2" fill="#f4f4f4"/><rect x="9" y="8" width="1" height="1" fill="#1a1a1a"/><rect x="9" y="9" width="1" height="1" fill="#2ee06a"/>';
-    string public constant MOUTH_GOLD = '<rect x="10" y="13" width="2" height="1" fill="#101010"/><rect x="12" y="13" width="1" height="1" fill="#ffd700"/><rect x="13" y="13" width="1" height="1" fill="#101010"/><rect x="11" y="14" width="2" height="1" fill="#101010"/>';
-    string public constant HAIR_SIDE = '<rect x="7" y="3" width="10" height="2" fill="#e8c468"/><rect x="6" y="4" width="1" height="10" fill="#e8c468"/>';
-    string public constant FACE_GLASSES = '<rect x="8" y="7" width="3" height="1" fill="#c5d0dc"/><rect x="8" y="9" width="3" height="1" fill="#c5d0dc"/><rect x="11" y="8" width="2" height="1" fill="#aeb8c4"/>';
-}`;
+// Extract the trailing `//` comment (if any) ending at/just-before a given char index,
+// used to label branches with the developer's own words.
+function commentBefore(rawSrc, idx) {
+  // look at the line containing idx and the previous line
+  const lineStart = rawSrc.lastIndexOf('\n', idx - 1) + 1;
+  const prevLineEnd = lineStart > 0 ? lineStart - 1 : -1;
+  const prevLineStart = prevLineEnd >= 0 ? rawSrc.lastIndexOf('\n', prevLineEnd - 1) + 1 : -1;
+  const sameLine = rawSrc.slice(lineStart, idx);
+  let m = sameLine.match(/\/\/\s*(.+)$/);
+  if (m) return m[1].trim();
+  if (prevLineStart >= 0) {
+    const prevLine = rawSrc.slice(prevLineStart, prevLineEnd);
+    m = prevLine.match(/\/\/\s*(.+)$/);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
 
-            loadSampleBtn.addEventListener('click', () => { solidityInput.value = sampleSolidity; });
+function lineOf(src, idx) {
+  let line = 1;
+  for (let i = 0; i < idx && i < src.length; i++) if (src[i] === '\n') line++;
+  return line;
+}
 
-            // ----- Improved ZIP upload handler -----
-            zipUpload.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = function(ev) {
-                    try {
-                        const zip = new JSZip();
-                        zip.loadAsync(ev.target.result).then(function(zipData) {
-                            let allText = '';
-                            const fileNames = Object.keys(zipData.files);
-                            let processed = 0;
-                            
-                            fileNames.forEach(filename => {
-                                // Skip directories
-                                if (zipData.files[filename].dir) return;
-                                
-                                // Only process .sol files or files with .sol extension
-                                if (!filename.endsWith('.sol') && !filename.includes('.sol')) return;
-                                
-                                zipData.files[filename].async('string').then(content => {
-                                    allText += `// --- ${filename} ---\n${content}\n\n`;
-                                    processed++;
-                                    
-                                    // When all files are processed, update textarea
-                                    if (processed === fileNames.filter(f => !zipData.files[f].dir && (f.endsWith('.sol') || f.includes('.sol'))).length) {
-                                        solidityInput.value = allText;
-                                        // Auto-extract after upload
-                                        processSourceCode();
-                                    }
-                                });
-                            });
-                            
-                            // If no .sol files found, try to read all files as text
-                            if (fileNames.filter(f => !zipData.files[f].dir && (f.endsWith('.sol') || f.includes('.sol'))).length === 0) {
-                                let allContent = '';
-                                let count = 0;
-                                const totalFiles = fileNames.filter(f => !zipData.files[f].dir).length;
-                                
-                                fileNames.forEach(filename => {
-                                    if (zipData.files[filename].dir) return;
-                                    zipData.files[filename].async('string').then(content => {
-                                        allContent += `// --- ${filename} ---\n${content}\n\n`;
-                                        count++;
-                                        if (count === totalFiles) {
-                                            solidityInput.value = allContent;
-                                            processSourceCode();
-                                        }
-                                    });
-                                });
-                            }
-                        });
-                    } catch (err) {
-                        alert('Failed to read ZIP. Please make sure it contains valid Solidity files.');
-                        console.error(err);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            });
+// ---------- 2. Brace matching ----------
+function matchBrace(src, openIdx) {
+  // src[openIdx] === '{'
+  let depth = 0;
+  for (let i = openIdx; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < src.length && src[i] !== q) { if (src[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return i; }
+  }
+  return -1;
+}
 
-            // ----- Main extraction engine -----
-            function processSourceCode() {
-                const sourceCode = solidityInput.value;
-                if (!sourceCode.trim()) {
-                    alert('Please provide source code or upload a ZIP file.');
-                    return;
-                }
+// ---------- 3. Top-level contract/library/interface blocks ----------
+function findContractBlocks(cleanSrc) {
+  const blocks = [];
+  const re = /\b(contract|library|interface)\s+(\w+)([^{;]*)\{/g;
+  let m;
+  while ((m = re.exec(cleanSrc))) {
+    const openIdx = m.index + m[0].length - 1;
+    const closeIdx = matchBrace(cleanSrc, openIdx);
+    if (closeIdx === -1) continue;
+    blocks.push({
+      kind: m[1], name: m[2],
+      bodyStart: openIdx + 1, bodyEnd: closeIdx,
+      declStart: m.index
+    });
+    re.lastIndex = closeIdx + 1;
+  }
+  return blocks;
+}
 
-                extractedLayers = [];
-                categoryCounter = {};
-                let rawSvgCount = 0;
-                let duplicateCount = 0;
-                let missingCount = 0;
+// ---------- 4. Function discovery within a block ----------
+function findFunctions(cleanSrc, rawSrc, blockStart, blockEnd) {
+  const funcs = [];
+  const re = /\bfunction\s+(\w+)\s*\(/g;
+  re.lastIndex = blockStart;
+  let m;
+  while ((m = re.exec(cleanSrc)) && m.index < blockEnd) {
+    const name = m[1];
+    const parenOpen = m.index + m[0].length - 1;
+    const parenClose = findMatchingParen(cleanSrc, parenOpen);
+    if (parenClose === -1) break;
+    const paramsRaw = cleanSrc.slice(parenOpen + 1, parenClose);
+    // scan forward for either '{' (has body) or ';' (abstract/interface) before next function
+    let j = parenClose + 1;
+    let returnsRaw = '';
+    let visibility = 'internal', mutability = '';
+    const headerEnd = findHeaderEnd(cleanSrc, j);
+    const header = cleanSrc.slice(j, headerEnd);
+    const retMatch = header.match(/returns\s*\(([^)]*)\)/);
+    if (retMatch) returnsRaw = retMatch[1];
+    if (/\bexternal\b/.test(header)) visibility = 'external';
+    else if (/\bpublic\b/.test(header)) visibility = 'public';
+    else if (/\bprivate\b/.test(header)) visibility = 'private';
+    if (/\bpure\b/.test(header)) mutability = 'pure';
+    else if (/\bview\b/.test(header)) mutability = 'view';
 
-                // Split into files
-                const files = sourceCode.split(/(?=contract\s+|library\s+|interface\s+)/g);
-                contractFilesCount = files.length || 1;
+    if (cleanSrc[headerEnd] !== '{') { re.lastIndex = headerEnd + 1; continue; } // no body (interface/abstract)
+    const bodyStart = headerEnd + 1;
+    const bodyEnd = matchBrace(cleanSrc, headerEnd);
+    if (bodyEnd === -1) break;
 
-                const seenContent = new Set();
+    const params = parseParamList(paramsRaw);
+    const returns = parseParamList(returnsRaw);
 
-                // Find all SVG-related content
-                const allMatches = [];
-                
-                // 1. Complete SVG tags
-                const svgTagRegex = /<svg[^>]*>([\s\S]*?)<\/svg>/gi;
-                let match;
-                while ((match = svgTagRegex.exec(sourceCode)) !== null) {
-                    allMatches.push({
-                        content: match[0],
-                        type: 'svg',
-                        snippet: match[0]
-                    });
-                }
+    funcs.push({
+      name, params, returns, visibility, mutability,
+      bodyStart, bodyEnd,
+      declStart: m.index,
+      bodySrc: cleanSrc.slice(bodyStart, bodyEnd),
+      rawBodySrc: rawSrc.slice(bodyStart, bodyEnd),
+      lineStart: lineOf(rawSrc, m.index),
+      lineEnd: lineOf(rawSrc, bodyEnd)
+    });
+    re.lastIndex = bodyEnd + 1;
+  }
+  return funcs;
+}
 
-                // 2. SVG fragments inside string literals
-                const stringLiteralRegex = /"(<[^">]+>)"|'(<[^'>]+>)'/g;
-                while ((match = stringLiteralRegex.exec(sourceCode)) !== null) {
-                    const content = match[1] || match[2];
-                    if (content && (content.includes('rect') || content.includes('path') || content.includes('g ') || content.includes('circle') || content.includes('ellipse'))) {
-                        allMatches.push({
-                            content: content,
-                            type: 'fragment',
-                            snippet: match[0]
-                        });
-                    }
-                }
+function findMatchingParen(src, openIdx) {
+  let depth = 0;
+  for (let i = openIdx; i < src.length; i++) {
+    if (src[i] === '(') depth++;
+    else if (src[i] === ')') { depth--; if (depth === 0) return i; }
+  }
+  return -1;
+}
+// finds the '{' that starts the function body, stopping at first '{' not inside returns(...)
+function findHeaderEnd(src, from) {
+  let i = from;
+  let parenDepth = 0;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (c === '(') parenDepth++;
+    else if (c === ')') parenDepth--;
+    else if (c === '{' && parenDepth === 0) return i;
+    else if (c === ';' && parenDepth === 0) return i;
+  }
+  return i;
+}
 
-                // 3. Find any SVG elements not in strings
-                const elementRegex = /<([a-z]+)[^>]*fill="[^"]*"[^>]*\/?>/gi;
-                while ((match = elementRegex.exec(sourceCode)) !== null) {
-                    const content = match[0];
-                    if (content && !content.includes('<svg') && !content.includes('</svg>')) {
-                        // Check if already captured
-                        const alreadyExists = allMatches.some(m => m.content === content);
-                        if (!alreadyExists) {
-                            allMatches.push({
-                                content: content,
-                                type: 'element',
-                                snippet: match[0]
-                            });
-                        }
-                    }
-                }
+function parseParamList(raw) {
+  if (!raw || !raw.trim()) return [];
+  const parts = splitTopLevel(raw, ',');
+  return parts.map(p => {
+    const tokens = p.trim().split(/\s+/).filter(Boolean);
+    // drop 'memory'/'calldata'/'storage'/'indexed'
+    const filtered = tokens.filter(t => !['memory', 'calldata', 'storage', 'indexed'].includes(t));
+    let name = null, type = filtered[0] || '';
+    if (filtered.length > 1) name = filtered[filtered.length - 1];
+    return { type, name };
+  });
+}
 
-                // Process each match
-                allMatches.forEach(item => {
-                    const content = item.content;
-                    rawSvgCount++;
-                    
-                    if (seenContent.has(content)) {
-                        duplicateCount++;
-                        return;
-                    }
-                    seenContent.add(content);
+function splitTopLevel(str, sep) {
+  const out = [];
+  let depth = 0, cur = '';
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    if (c === sep && depth === 0) { out.push(cur); cur = ''; }
+    else cur += c;
+  }
+  if (cur.trim() !== '') out.push(cur);
+  return out;
+}
 
-                    let wrappedSvg;
-                    let category;
-                    
-                    if (item.type === 'svg') {
-                        wrappedSvg = content;
-                        category = autoDetectCategory(content);
-                    } else {
-                        wrappedSvg = wrapInSvgContainer(content);
-                        category = autoDetectCategory(content);
-                    }
+// ================================================================
+// 5. Tokenizer for expressions/statements
+// ================================================================
+function tokenize(src) {
+  const toks = [];
+  let i = 0;
+  const n = src.length;
+  const punct3 = [];
+  const punct2 = ['==', '!=', '<=', '>=', '&&', '||', '->'];
+  while (i < n) {
+    const c = src[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1; let val = '';
+      while (j < n && src[j] !== q) {
+        if (src[j] === '\\') { val += unescapeChar(src[j + 1]); j += 2; continue; }
+        val += src[j]; j++;
+      }
+      toks.push({ t: 'STRING', v: val });
+      i = j + 1; continue;
+    }
+    if (/[0-9]/.test(c)) {
+      let j = i;
+      if (c === '0' && (src[i + 1] === 'x' || src[i + 1] === 'X')) {
+        j = i + 2;
+        while (j < n && /[0-9a-fA-F]/.test(src[j])) j++;
+        toks.push({ t: 'HEX', v: src.slice(i, j) });
+        i = j; continue;
+      }
+      while (j < n && /[0-9]/.test(src[j])) j++;
+      toks.push({ t: 'NUM', v: parseInt(src.slice(i, j), 10) });
+      i = j; continue;
+    }
+    if (/[A-Za-z_$]/.test(c)) {
+      let j = i;
+      while (j < n && /[A-Za-z0-9_$]/.test(src[j])) j++;
+      toks.push({ t: 'IDENT', v: src.slice(i, j) });
+      i = j; continue;
+    }
+    const two = src.slice(i, i + 2);
+    if (punct2.includes(two)) { toks.push({ t: 'PUNCT', v: two }); i += 2; continue; }
+    toks.push({ t: 'PUNCT', v: c }); i++; continue;
+  }
+  return toks;
+}
+function unescapeChar(c) {
+  return ({ n: '\n', t: '\t', r: '\r', '"': '"', "'": "'", '\\': '\\' })[c] ?? c;
+}
 
-                    // Generate meaningful name
-                    if (!categoryCounter[category]) {
-                        categoryCounter[category] = 0;
-                    }
-                    categoryCounter[category]++;
-                    const name = `${category}_${String(categoryCounter[category]).padStart(3, '0')}`;
+// ================================================================
+// 6. Expression parser (recursive descent, precedence climbing)
+// ================================================================
+class PStream {
+  constructor(toks) { this.toks = toks; this.pos = 0; }
+  peek(o = 0) { return this.toks[this.pos + o]; }
+  next() { return this.toks[this.pos++]; }
+  is(v) { const t = this.peek(); return t && t.v === v; }
+  eat(v) { if (this.is(v)) { this.pos++; return true; } return false; }
+  expect(v) { if (!this.eat(v)) { /* tolerant */ } }
+  end() { return this.pos >= this.toks.length; }
+}
 
-                    extractedLayers.push({
-                        id: `layer_${extractedLayers.length + 1}`,
-                        name: name,
-                        category: category,
-                        rawSvg: wrappedSvg,
-                        fileSize: new Blob([wrappedSvg]).size,
-                        sourceSnippet: item.snippet || content
-                    });
-                });
+function parseExpr(ps) { return parseTernary(ps); }
 
-                // If no layers found, try to extract from the raw text
-                if (extractedLayers.length === 0) {
-                    // Try to find any SVG-like content
-                    const svgLikeRegex = /<[a-z]+[^>]*>/gi;
-                    while ((match = svgLikeRegex.exec(sourceCode)) !== null) {
-                        const content = match[0];
-                        if (content && content.includes('=') && content.includes('"')) {
-                            rawSvgCount++;
-                            if (!seenContent.has(content)) {
-                                seenContent.add(content);
-                                const wrappedSvg = wrapInSvgContainer(content);
-                                const category = autoDetectCategory(content);
-                                
-                                if (!categoryCounter[category]) {
-                                    categoryCounter[category] = 0;
-                                }
-                                categoryCounter[category]++;
-                                const name = `${category}_${String(categoryCounter[category]).padStart(3, '0')}`;
-                                
-                                extractedLayers.push({
-                                    id: `layer_${extractedLayers.length + 1}`,
-                                    name: name,
-                                    category: category,
-                                    rawSvg: wrappedSvg,
-                                    fileSize: new Blob([wrappedSvg]).size,
-                                    sourceSnippet: content
-                                });
-                            }
-                        }
-                    }
-                }
+function parseTernary(ps) {
+  const cond = parseLogicOr(ps);
+  if (ps.is('?')) {
+    ps.next();
+    const a = parseTernary(ps);
+    ps.expect(':');
+    const b = parseTernary(ps);
+    return { k: 'Ternary', cond, a, b };
+  }
+  return cond;
+}
+function parseLogicOr(ps) {
+  let l = parseLogicAnd(ps);
+  while (ps.is('||')) { ps.next(); l = { k: 'Bin', op: '||', l, r: parseLogicAnd(ps) }; }
+  return l;
+}
+function parseLogicAnd(ps) {
+  let l = parseEquality(ps);
+  while (ps.is('&&')) { ps.next(); l = { k: 'Bin', op: '&&', l, r: parseEquality(ps) }; }
+  return l;
+}
+function parseEquality(ps) {
+  let l = parseRelational(ps);
+  while (ps.is('==') || ps.is('!=')) { const op = ps.next().v; l = { k: 'Bin', op, l, r: parseRelational(ps) }; }
+  return l;
+}
+function parseRelational(ps) {
+  let l = parseAdditive(ps);
+  while (ps.is('<') || ps.is('>') || ps.is('<=') || ps.is('>=')) { const op = ps.next().v; l = { k: 'Bin', op, l, r: parseAdditive(ps) }; }
+  return l;
+}
+function parseAdditive(ps) {
+  let l = parseMul(ps);
+  while (ps.is('+') || ps.is('-')) { const op = ps.next().v; l = { k: 'Bin', op, l, r: parseMul(ps) }; }
+  return l;
+}
+function parseMul(ps) {
+  let l = parseUnary(ps);
+  while (ps.is('%') || ps.is('*') || ps.is('/')) { const op = ps.next().v; l = { k: 'Bin', op, l, r: parseUnary(ps) }; }
+  return l;
+}
+function parseUnary(ps) {
+  if (ps.is('!') || ps.is('-')) { const op = ps.next().v; return { k: 'Unary', op, e: parseUnary(ps) }; }
+  return parsePostfix(ps);
+}
+function parsePostfix(ps) {
+  let e = parsePrimary(ps);
+  for (;;) {
+    if (ps.is('(')) {
+      ps.next();
+      const args = [];
+      if (!ps.is(')')) {
+        args.push(parseExpr(ps));
+        while (ps.eat(',')) args.push(parseExpr(ps));
+      }
+      ps.expect(')');
+      e = { k: 'Call', callee: e, args };
+    } else if (ps.is('.')) {
+      ps.next();
+      const name = ps.next();
+      e = { k: 'Member', obj: e, prop: name ? name.v : '' };
+    } else if (ps.is('[')) {
+      ps.next(); const idx = parseExpr(ps); ps.expect(']');
+      e = { k: 'Index', obj: e, idx };
+    } else break;
+  }
+  return e;
+}
+function parsePrimary(ps) {
+  const t = ps.peek();
+  if (!t) return { k: 'Lit', v: '' };
+  if (t.t === 'STRING') { ps.next(); return { k: 'Str', v: t.v }; }
+  if (t.t === 'NUM') { ps.next(); return { k: 'Num', v: t.v }; }
+  if (t.t === 'HEX') { ps.next(); return { k: 'Hex', v: t.v }; }
+  if (t.v === '(') {
+    ps.next();
+    const e = parseExpr(ps);
+    ps.expect(')');
+    return e;
+  }
+  if (t.t === 'IDENT') {
+    ps.next();
+    return { k: 'Ident', v: t.v };
+  }
+  ps.next();
+  return { k: 'Lit', v: '' };
+}
 
-                updateStatistics(rawSvgCount, duplicateCount, missingCount);
-                populateCategories();
-                renderFilteredLayers();
+// ================================================================
+// 7. Statement parser: if/else, return, var decl, assignment
+// ================================================================
+const TYPE_KEYWORDS = new Set(['string', 'bytes', 'bytes1', 'bytes2', 'bytes3', 'bytes4', 'bytes32',
+  'uint8', 'uint16', 'uint32', 'uint256', 'uint', 'int', 'bool', 'address']);
 
-                downloadAllZipBtn.disabled = extractedLayers.length === 0;
-                downloadCategoryZipBtn.disabled = extractedLayers.length === 0;
-            }
+function parseStatements(ps, terminators) {
+  const stmts = [];
+  while (!ps.end() && !(terminators && terminators.some(t => ps.is(t)))) {
+    const s = parseStatement(ps);
+    if (!s) break;
+    stmts.push(s);
+  }
+  return stmts;
+}
 
-            function autoDetectCategory(svgContent) {
-                const lower = svgContent.toLowerCase();
-                if (lower.includes('width="24" height="24"') || lower.includes('background') || lower.includes('bg-')) return 'Background';
-                if (lower.includes('y="3"') || lower.includes('y="4"') || lower.includes('hair') || lower.includes('top')) return 'Hair';
-                if (lower.includes('y="7"') || lower.includes('y="8"') || lower.includes('glasses') || lower.includes('eye') || lower.includes('eyebrow')) return 'Eyes';
-                if (lower.includes('y="13"') || lower.includes('y="14"') || lower.includes('mouth') || lower.includes('tooth') || lower.includes('lips')) return 'Mouth';
-                if (lower.includes('y="18"') || lower.includes('y="19"') || lower.includes('body') || lower.includes('suit') || lower.includes('chest')) return 'Body';
-                if (lower.includes('nose')) return 'Nose';
-                if (lower.includes('hat') || lower.includes('cap') || lower.includes('head')) return 'Headwear';
-                if (lower.includes('neck') || lower.includes('chain')) return 'Neck';
-                return 'Accessories';
-            }
+function parseBlockOrStmt(ps) {
+  if (ps.is('{')) {
+    ps.next();
+    const stmts = parseStatements(ps, ['}']);
+    ps.expect('}');
+    return { k: 'Block', stmts };
+  }
+  return parseStatement(ps);
+}
 
-            function wrapInSvgContainer(fragment) {
-                return `<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" viewBox="0 0 24 24" width="100%" height="100%">${fragment}</svg>`;
-            }
+function parseStatement(ps) {
+  if (ps.end()) return null;
+  if (ps.is('{')) return parseBlockOrStmt(ps);
+  if (ps.is('if')) {
+    ps.next(); ps.expect('(');
+    const cond = parseExpr(ps);
+    ps.expect(')');
+    const then = parseBlockOrStmt(ps);
+    let els = null;
+    if (ps.is('else')) { ps.next(); els = parseBlockOrStmt(ps); }
+    return { k: 'If', cond, then, els };
+  }
+  if (ps.is('return')) {
+    ps.next();
+    let e = null;
+    if (!ps.is(';')) e = parseExpr(ps);
+    skipToSemi(ps);
+    return { k: 'Return', e };
+  }
+  // variable decl: TYPE [memory|storage] NAME = expr ;   (also tuple decls; best-effort)
+  const startPos = ps.pos;
+  const t0 = ps.peek();
+  if (t0 && t0.t === 'IDENT' && TYPE_KEYWORDS.has(t0.v)) {
+    // lookahead: TYPE (memory)? IDENT ('='|';')
+    let p = ps.pos + 1;
+    if (ps.toks[p] && ps.toks[p].v === 'memory') p++;
+    const nameTok = ps.toks[p];
+    if (nameTok && nameTok.t === 'IDENT') {
+      const after = ps.toks[p + 1];
+      if (after && (after.v === '=' || after.v === ';')) {
+        ps.pos = p + 1;
+        let e = null;
+        if (ps.eat('=')) e = parseExpr(ps);
+        skipToSemi(ps);
+        return { k: 'VarDecl', name: nameTok.v, e };
+      }
+    }
+    ps.pos = startPos;
+  }
+  // assignment: IDENT = expr ;
+  if (t0 && t0.t === 'IDENT') {
+    const after = ps.toks[ps.pos + 1];
+    if (after && after.v === '=' && (!ps.toks[ps.pos + 2] || ps.toks[ps.pos + 2].v !== '=')) {
+      const name = ps.next().v; ps.next();
+      const e = parseExpr(ps);
+      skipToSemi(ps);
+      return { k: 'Assign', name, e };
+    }
+  }
+  // unknown statement (emit/require/for/etc.) — skip to matching ; at depth 0, or a full { } block
+  if (ps.is('for') || ps.is('while')) {
+    // best-effort: skip condition + body block, ignore semantics
+    ps.next();
+    if (ps.is('(')) { ps.next(); skipBalanced(ps, '(', ')'); }
+    parseBlockOrStmt(ps);
+    return { k: 'Skip' };
+  }
+  skipToSemi(ps);
+  return { k: 'Skip' };
+}
 
-            function updateStatistics(rawSvgCount, duplicates, missing) {
-                const categories = new Set(extractedLayers.map(l => l.category));
-                statCategories.textContent = categories.size;
-                statLayers.textContent = extractedLayers.length;
-                statSvgCount.textContent = rawSvgCount;
-                statDuplicates.textContent = duplicates;
-                statMissing.textContent = missing;
-                statFiles.textContent = contractFilesCount;
-            }
+function skipToSemi(ps) {
+  let depth = 0;
+  while (!ps.end()) {
+    const t = ps.next();
+    if (!t) break;
+    if (t.v === '(' || t.v === '[') depth++;
+    else if (t.v === ')' || t.v === ']') depth--;
+    else if (t.v === ';' && depth <= 0) break;
+  }
+}
+function skipBalanced(ps, open, close) {
+  let depth = 1;
+  while (!ps.end() && depth > 0) {
+    const t = ps.next();
+    if (!t) break;
+    if (t.v === open) depth++;
+    else if (t.v === close) depth--;
+  }
+}
 
-            function populateCategories() {
-                const categories = Array.from(new Set(extractedLayers.map(l => l.category)));
-                categoryFilter.innerHTML = '<option value="ALL">All Categories</option>';
-                categories.sort().forEach(cat => {
-                    const opt = document.createElement('option');
-                    opt.value = cat;
-                    opt.textContent = cat;
-                    categoryFilter.appendChild(opt);
-                });
-            }
+function parseFunctionBody(bodySrc) {
+  const toks = tokenize(bodySrc);
+  const ps = new PStream(toks);
+  return parseStatements(ps, []);
+}
 
-            function renderFilteredLayers() {
-                const selectedCat = categoryFilter.value;
-                const sortMode = sortFilter.value;
-                const searchVal = searchInput.value.toLowerCase();
+const SolEngine = {
+  stripComments, commentBefore, lineOf, matchBrace,
+  findContractBlocks, findFunctions,
+  tokenize, PStream, parseExpr, parseStatements, parseFunctionBody
+};
+if (typeof module !== 'undefined' && module.exports) module.exports = SolEngine;
+if (typeof window !== 'undefined') window.SolEngine = SolEngine;
 
-                let filtered = extractedLayers.filter(item => {
-                    const matchCat = (selectedCat === 'ALL' || item.category === selectedCat);
-                    const matchSearch = item.name.toLowerCase().includes(searchVal) || 
-                                      item.category.toLowerCase().includes(searchVal);
-                    return matchCat && matchSearch;
-                });
+})();</script>
+<script>(function(){
+/* ================================================================
+   Evaluator + layer-discovery on top of engine.js
+   ================================================================ */
+const E = (typeof require !== 'undefined') ? require('./engine.js') : window.SolEngine;
 
-                filtered.sort((a, b) => {
-                    if (sortMode === 'NAME_ASC') return a.name.localeCompare(b.name);
-                    if (sortMode === 'NAME_DESC') return b.name.localeCompare(a.name);
-                    if (sortMode === 'CATEGORY') return a.category.localeCompare(b.category);
-                    return 0;
-                });
+// ---- Value helpers ----
+const STR = v => ({ k: 'str', v });
+const BYTES = (v, len) => ({ k: 'bytes', v, len }); // v = integer
+const NUM = v => ({ k: 'num', v });
+const BOOL = v => ({ k: 'bool', v });
+const SYM = (label) => ({ k: 'sym', v: `{${label}}` }); // unresolved placeholder
 
-                if (filtered.length === 0) {
-                    layerGrid.classList.add('hidden');
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
+function toDisplayString(val) {
+  if (!val) return '';
+  if (val.k === 'str') return val.v;
+  if (val.k === 'sym') return val.v;
+  if (val.k === 'num') return String(val.v);
+  if (val.k === 'bool') return val.v ? 'true' : 'false';
+  if (val.k === 'bytes') return '0x' + val.v.toString(16).padStart((val.len || 3) * 2, '0');
+  return '';
+}
+function toHexColor(val) {
+  if (val.k === 'bytes') return val.v.toString(16).padStart((val.len || 3) * 2, '0');
+  if (val.k === 'str') return val.v;
+  return null;
+}
 
-                emptyState.classList.add('hidden');
-                layerGrid.classList.remove('hidden');
-                layerGrid.innerHTML = '';
+// Detects "convert bytesN to hex string" helper functions (e.g. `_hex`) structurally,
+// so we execute what they actually do instead of guessing.
+function isHexEncoderFunc(fn) {
+  return /0123456789abcdef/i.test(fn.rawBodySrc) && /alphabet/i.test(fn.rawBodySrc);
+}
 
-                filtered.forEach(layer => {
-                    const card = document.createElement('div');
-                    card.className = "layer-card bg-panelBg border border-borderCol rounded-xl overflow-hidden flex flex-col";
-                    card.innerHTML = `
-                        <div class="h-48 svg-checkerboard p-4 flex items-center justify-center border-b border-borderCol relative">
-                            <div class="w-32 h-32 flex items-center justify-center">${layer.rawSvg}</div>
-                            <span class="absolute top-2 right-2 text-[10px] bg-darkBg/80 border border-borderCol text-slate-400 px-2 py-0.5 rounded font-mono">${(layer.fileSize / 1024).toFixed(2)} KB</span>
-                        </div>
-                        <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-                            <div>
-                                <div class="text-xs text-blue-400 font-medium uppercase tracking-wider">${layer.category}</div>
-                                <div class="text-sm font-semibold text-white mt-0.5">${layer.name}</div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-borderCol">
-                                <button onclick="window.inspectCode('${layer.id}')" class="py-1.5 px-2 bg-darkBg hover:bg-borderCol border border-borderCol text-[11px] font-medium text-slate-300 rounded text-center transition">Inspect Code</button>
-                                <button onclick="window.downloadSvg('${layer.id}')" class="py-1.5 px-2 bg-accent/10 hover:bg-accent/20 border border-accent/30 text-[11px] font-medium text-blue-400 rounded text-center transition">Download SVG</button>
-                            </div>
-                        </div>
-                    `;
-                    layerGrid.appendChild(card);
-                });
-            }
+class Registry {
+  constructor() {
+    this.functions = new Map(); // name -> [{fn, file, contract}]
+    this.files = [];
+    this.consumed = new Set(); // function names that were inlined by an entry point (skip standalone)
+    this.callCounter = 0;
+  }
+  addFile(path, content) { this.files.push({ path, content }); }
+  register(fn, file, contract) {
+    const arr = this.functions.get(fn.name) || [];
+    arr.push({ fn, file, contract });
+    this.functions.set(fn.name, arr);
+  }
+  lookup(name) {
+    const arr = this.functions.get(name);
+    return arr && arr.length ? arr[0] : null;
+  }
+}
 
-            window.inspectCode = function(layerId) {
-                const layer = extractedLayers.find(l => l.id === layerId);
-                if (!layer) return;
-                document.getElementById('modalTitle').textContent = `Layer Code Inspector - ${layer.name}`;
-                document.getElementById('modalSubtitle').textContent = `Category: ${layer.category} | File Size: ${layer.fileSize} Bytes`;
-                document.getElementById('modalCode').textContent = layer.sourceSnippet;
-                codeModal.classList.remove('hidden');
-            }
+// Build the registry by parsing every .sol file's contracts/libraries/functions.
+function buildRegistry(files) {
+  const reg = new Registry();
+  for (const f of files) {
+    const raw = f.content;
+    const clean = E.stripComments(raw);
+    reg.addFile(f.path, raw);
+    const blocks = E.findContractBlocks(clean);
+    if (blocks.length === 0) continue;
+    for (const b of blocks) {
+      const funcs = E.findFunctions(clean, raw, b.bodyStart, b.bodyEnd);
+      for (const fn of funcs) {
+        fn.stmts = null; // lazy parse
+        reg.register(fn, f.path, b.name);
+      }
+    }
+  }
+  return reg;
+}
 
-            window.downloadSvg = function(layerId) {
-                const layer = extractedLayers.find(l => l.id === layerId);
-                if (!layer) return;
-                const blob = new Blob([layer.rawSvg], { type: 'image/svg+xml' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${layer.name}.svg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
+function getStmts(fn) {
+  if (!fn.stmts) fn.stmts = E.parseFunctionBody(fn.bodySrc);
+  return fn.stmts;
+}
 
-            function exportZip(targetCategory) {
-                const zip = new JSZip();
-                const layersToExport = targetCategory === 'ALL' 
-                    ? extractedLayers 
-                    : extractedLayers.filter(l => l.category === targetCategory);
+// Execute a function AST with a bound environment. Returns {value, hitSvg, trace}
+function execFunction(entry, argVals, reg, depth, ctx) {
+  if (depth > 40) return SYM('depth-limit');
+  const fn = entry.fn;
+  const env = new Map();
+  fn.params.forEach((p, i) => { if (p.name) env.set(p.name, argVals[i] !== undefined ? argVals[i] : SYM(p.name)); });
+  const stmts = getStmts(fn);
+  const res = execBlock(stmts, env, reg, depth, ctx, fn);
+  if (res && res.returned) return res.value;
+  return STR('');
+}
 
-                if (layersToExport.length === 0) {
-                    alert('No layers to export.');
-                    return;
-                }
+function execBlock(stmts, env, reg, depth, ctx, fn) {
+  for (const s of stmts) {
+    const r = execStmt(s, env, reg, depth, ctx, fn);
+    if (r && r.returned) return r;
+  }
+  return { returned: false };
+}
 
-                layersToExport.forEach(layer => {
-                    const folder = zip.folder(layer.category);
-                    folder.file(`${layer.name}.svg`, layer.rawSvg);
-                });
+function execStmt(s, env, reg, depth, ctx, fn) {
+  switch (s.k) {
+    case 'Block': return execBlock(s.stmts, env, reg, depth, ctx, fn);
+    case 'If': {
+      const c = evalExpr(s.cond, env, reg, depth, ctx, fn);
+      const truthy = valTruthy(c);
+      if (truthy === true) return s.then ? execStmtOrBlock(s.then, env, reg, depth, ctx, fn) : { returned: false };
+      if (truthy === false) return s.els ? execStmtOrBlock(s.els, env, reg, depth, ctx, fn) : { returned: false };
+      // unknown condition: best-effort take the 'then' branch (rare — only for unresolved symbols)
+      return s.then ? execStmtOrBlock(s.then, env, reg, depth, ctx, fn) : { returned: false };
+    }
+    case 'Return': {
+      const v = s.e ? evalExpr(s.e, env, reg, depth, ctx, fn) : STR('');
+      return { returned: true, value: v };
+    }
+    case 'VarDecl': {
+      env.set(s.name, s.e ? evalExpr(s.e, env, reg, depth, ctx, fn) : SYM(s.name));
+      return { returned: false };
+    }
+    case 'Assign': {
+      env.set(s.name, evalExpr(s.e, env, reg, depth, ctx, fn));
+      return { returned: false };
+    }
+    default: return { returned: false };
+  }
+}
+function execStmtOrBlock(s, env, reg, depth, ctx, fn) {
+  if (s.k === 'Block') return execBlock(s.stmts, env, reg, depth, ctx, fn);
+  return execStmt(s, env, reg, depth, ctx, fn);
+}
 
-                zip.generateAsync({ type: 'blob' }).then(content => {
-                    const url = URL.createObjectURL(content);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = targetCategory === 'ALL' ? `OnChain_NFT_Full_Library.zip` : `Layer_${targetCategory}.zip`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                });
-            }
+function valTruthy(v) {
+  if (v.k === 'bool') return v.v;
+  return null; // unknown
+}
 
-            // ----- Attach events -----
-            extractBtn.addEventListener('click', processSourceCode);
-            categoryFilter.addEventListener('change', renderFilteredLayers);
-            sortFilter.addEventListener('change', renderFilteredLayers);
-            searchInput.addEventListener('input', renderFilteredLayers);
-            closeModalBtn.addEventListener('click', () => codeModal.classList.add('hidden'));
-            downloadAllZipBtn.addEventListener('click', () => exportZip('ALL'));
-            downloadCategoryZipBtn.addEventListener('click', () => exportZip(categoryFilter.value));
+function evalExpr(node, env, reg, depth, ctx, fn) {
+  switch (node.k) {
+    case 'Str': return STR(node.v);
+    case 'Num': return NUM(node.v);
+    case 'Hex': { const len = Math.ceil(node.v.length / 2); return BYTES(parseInt(node.v, 16), len); }
+    case 'Ident': {
+      if (env.has(node.v)) return env.get(node.v);
+      if (node.v === 'true') return BOOL(true);
+      if (node.v === 'false') return BOOL(false);
+      return SYM(node.v);
+    }
+    case 'Unary': {
+      const e = evalExpr(node.e, env, reg, depth, ctx, fn);
+      if (node.op === '!') { const t = valTruthy(e); return t === null ? e : BOOL(!t); }
+      if (node.op === '-' && e.k === 'num') return NUM(-e.v);
+      return e;
+    }
+    case 'Bin': {
+      const l = evalExpr(node.l, env, reg, depth, ctx, fn);
+      const r = evalExpr(node.r, env, reg, depth, ctx, fn);
+      return evalBin(node.op, l, r);
+    }
+    case 'Ternary': {
+      const c = evalExpr(node.cond, env, reg, depth, ctx, fn);
+      const t = valTruthy(c);
+      if (t === true) return evalExpr(node.a, env, reg, depth, ctx, fn);
+      if (t === false) return evalExpr(node.b, env, reg, depth, ctx, fn);
+      return evalExpr(node.a, env, reg, depth, ctx, fn); // best-effort
+    }
+    case 'Member': {
+      // struct member access like t.background — resolve as a symbol keyed by prop name
+      return env.has(node.prop) ? env.get(node.prop) : SYM(node.prop);
+    }
+    case 'Index': return SYM('index');
+    case 'Call': return evalCall(node, env, reg, depth, ctx, fn);
+    default: return SYM('expr');
+  }
+}
 
-            window.exportZip = exportZip;
-            window.processSourceCode = processSourceCode;
+function evalBin(op, l, r) {
+  if (op === '==' || op === '!=') {
+    let eq = null;
+    if (l.k === 'sym' || r.k === 'sym') eq = null;
+    else if (l.k === 'num' && r.k === 'num') eq = l.v === r.v;
+    else if (l.k === 'bytes' && r.k === 'bytes') eq = l.v === r.v;
+    else if (l.k === 'str' && r.k === 'str') eq = l.v === r.v;
+    else if (l.k === 'bool' && r.k === 'bool') eq = l.v === r.v;
+    else eq = null;
+    if (eq === null) return BOOL(false); // unknown treated as false so branch chains fall through safely
+    return BOOL(op === '==' ? eq : !eq);
+  }
+  if (['<', '<=', '>', '>='].includes(op)) {
+    if (l.k !== 'num' || r.k !== 'num') return BOOL(false);
+    if (op === '<') return BOOL(l.v < r.v);
+    if (op === '<=') return BOOL(l.v <= r.v);
+    if (op === '>') return BOOL(l.v > r.v);
+    return BOOL(l.v >= r.v);
+  }
+  if (op === '&&') { const lt = valTruthy(l); if (lt === false) return BOOL(false); const rt = valTruthy(r); return BOOL(!!(lt && rt)); }
+  if (op === '||') { const lt = valTruthy(l); if (lt === true) return BOOL(true); const rt = valTruthy(r); return BOOL(!!(lt || rt)); }
+  if (op === '%') return NUM((l.v ?? 0) % (r.v ?? 1));
+  if (op === '+') return NUM((l.v ?? 0) + (r.v ?? 0));
+  if (op === '-') return NUM((l.v ?? 0) - (r.v ?? 0));
+  return SYM('binop');
+}
 
-        })();
-    </script>
+function evalCall(node, env, reg, depth, ctx, fn) {
+  const callee = node.callee;
+  const name = callee.k === 'Ident' ? callee.v : (callee.k === 'Member' ? callee.prop : null);
+  const args = node.args.map(a => evalExpr(a, env, reg, depth, ctx, fn));
+
+  if (!name) return SYM('call');
+
+  if (name === 'abi' ) return SYM('abi'); // shouldn't hit directly (handled via Member 'encodePacked')
+  if (name === 'encodePacked') {
+    return STR(args.map(toDisplayString).join(''));
+  }
+  if (name === 'string' || name === 'bytes') {
+    // type cast — pass through single arg
+    return args.length ? args[0] : STR('');
+  }
+  if (name === 'keccak256' || name === 'sha256') return SYM('hash');
+  if (name === 'toString') {
+    return STR(toDisplayString(args[0]));
+  }
+
+  // local function lookup
+  const entry = reg.lookup(name);
+  if (entry) {
+    ctx.consumed && ctx.consumed.add(name);
+    if (isHexEncoderFunc(entry.fn)) {
+      const a = args[0];
+      if (a && a.k === 'bytes') return STR(a.v.toString(16).padStart((a.len || 3) * 2, '0'));
+      if (a && a.k === 'sym') return SYM('color');
+      return STR(toDisplayString(a));
+    }
+    ctx.callCount = (ctx.callCount || 0) + 1;
+    if (ctx.callCount > 20000) return SYM('call-limit');
+    return execFunction(entry, args, reg, depth + 1, ctx);
+  }
+  return SYM(name);
+}
+
+const SolEvaluator = {
+  buildRegistry, execFunction, evalExpr, getStmts,
+  STR, BYTES, NUM, BOOL, SYM, toDisplayString, toHexColor, isHexEncoderFunc
+};
+if (typeof module !== 'undefined' && module.exports) module.exports = SolEvaluator;
+if (typeof window !== 'undefined') window.SolEvaluator = SolEvaluator;
+
+})();</script>
+<script>(function(){
+/* ================================================================
+   Layer discovery on top of engine.js + evaluator.js
+   ================================================================ */
+const E = (typeof require !== 'undefined') ? require('./engine.js') : window.SolEngine;
+const Ev = (typeof require !== 'undefined') ? require('./evaluator.js') : window.SolEvaluator;
+
+const CATEGORY_RULES = [
+  // [Category label, regex of keywords tested against the function name]
+  ['Background', /background|bg\b/i],
+  ['Eyebrows', /eyebrow|brow/i],
+  ['Eyes', /\beye/i],
+  ['Nose', /nose/i],
+  ['Mouth', /mouth|lips|teeth/i],
+  ['Beard', /beard|mustache|moustache/i],
+  ['Glasses', /glass|sunglass|monocle|frameless|rims/i],
+  ['Hat', /\bhat\b|crown|helmet|headwear|cap\b/i],
+  ['Hair', /hair/i],
+  ['Skin', /skin/i],
+  ['Badge', /badge|pin\b|medal/i],
+  ['Face Accessory', /accessor|headset|horn|patch|halo/i],
+  ['Clothing', /suit|body|tie\b|neckwear|collar|pocket|square|cloth|jacket/i],
+  ['Composite', /^rendersvg$|^rendercomposite$|^fullrender$/i],
+];
+
+function categorize(fnName) {
+  const stripped = fnName.replace(/^(catalog|debug|preview|render|_render|_svg|_pick|get)/i, '');
+  for (const [label, re] of CATEGORY_RULES) {
+    if (re.test(stripped) || re.test(fnName)) return label;
+  }
+  return 'Extra Traits';
+}
+
+// Functions that look like "Name tables": function xName(uint8 idx) ... returns (string memory)
+// with an if-chain of literal string returns. Used to label enumerated layers.
+function findNameTable(reg, keyword) {
+  for (const [name, arr] of reg.functions) {
+    if (/name$/i.test(name) && new RegExp(keyword, 'i').test(name)) {
+      const entry = arr[0];
+      if (entry.fn.params.length === 1 && /string/.test((entry.fn.returns[0] || {}).type || '')) return entry;
+    }
+  }
+  return null;
+}
+
+function scanEqualsNums(text) {
+  return [...text.matchAll(/==\s*(\d+)/g)].map(m => parseInt(m[1], 10));
+}
+
+// Looks at a function's own body, plus bodies of functions it calls (breadth-first,
+// bounded depth), to find the widest `== N` comparison touching the enumerated index —
+// covers wrapper/catalog functions that just delegate to a picker table.
+function maxBranchIndexDeep(fn, reg) {
+  const seen = new Set([fn.name]);
+  let queue = [fn];
+  let nums = scanEqualsNums(fn.rawBodySrc);
+  let depth = 0;
+  while (queue.length && depth < 4) {
+    const next = [];
+    for (const f of queue) {
+      const callNames = new Set([...f.rawBodySrc.matchAll(/\b([_a-zA-Z][a-zA-Z0-9_]*)\s*\(/g)].map(m => m[1]));
+      for (const cn of callNames) {
+        if (seen.has(cn)) continue;
+        seen.add(cn);
+        const callee = reg.lookup(cn);
+        if (!callee) continue;
+        nums = nums.concat(scanEqualsNums(callee.fn.rawBodySrc));
+        next.push(callee.fn);
+      }
+    }
+    queue = next;
+    depth++;
+  }
+  if (!nums.length) return 7;
+  // +2 covers a trailing catch-all `else return X;` branch with no explicit `== N` (very
+  // common last-case pattern); any extra indices this overshoots just re-hit the same
+  // catch-all output and are removed by de-duplication below.
+  return Math.min(Math.max(...nums) + 2, 60);
+}
+
+function isSvgLike(text) {
+  return /<rect|<path|<circle|<polygon|<g\s|<g>|<svg|<ellipse|<line/.test(text);
+}
+
+// candidate "entry point" functions: single/double small-int param, SVG-like body, in renderer-ish files
+function findEntryPoints(reg) {
+  const candidates = [];
+  const seenNames = new Set();
+  for (const [name, arr] of reg.functions) {
+    for (const entry of arr) {
+      const fn = entry.fn;
+      if (seenNames.has(name)) continue;
+      const numericParams = fn.params.filter(p => /^u?int/.test(p.type || ''));
+      if (numericParams.length < 1 || numericParams.length > 2) continue;
+      if (!/string/.test((fn.returns[0] || {}).type || '')) continue;
+      if (fn.mutability !== 'pure' && fn.mutability !== 'view') continue;
+      // priority score: explicit catalog/debug/preview naming = high priority
+      const isCatalog = /^(catalog|debug|preview)/i.test(name);
+      candidates.push({ name, entry, fn, isCatalog, paramCount: numericParams.length });
+      seenNames.add(name);
+    }
+  }
+  // sort: catalog-style first (author-provided QA entry points), then single-param before double-param
+  candidates.sort((a, b) => (b.isCatalog - a.isCatalog) || (a.paramCount - b.paramCount));
+  return candidates;
+}
+
+function slugify(s) {
+  return (s || '').replace(/[^a-zA-Z0-9]+/g, ' ').trim().replace(/\s+/g, '_');
+}
+
+function detectViewBox(files) {
+  for (const f of files) {
+    const m = f.content.match(/viewBox=\\?"?0 0 (\d+) (\d+)/);
+    if (m) return [parseInt(m[1]), parseInt(m[2])];
+  }
+  return [24, 24];
+}
+
+function wrapIfNeeded(svgInner, viewBox) {
+  if (/^\s*<svg/i.test(svgInner)) return svgInner;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewBox[0]} ${viewBox[1]}" width="600" height="600">${svgInner}</svg>`;
+}
+
+// Main extraction routine.
+function extractLayers(files) {
+  const reg = Ev.buildRegistry(files);
+  const viewBox = detectViewBox(files);
+  let entryPoints = findEntryPoints(reg);
+  const layers = [];
+  const consumed = new Set();
+  let idCounter = 0;
+
+  // If a category already has an author-provided "catalog/debug/preview" entry point
+  // (built specifically for isolated per-trait QA), prefer it exclusively — internal
+  // helper functions for that category are almost always subsumed by it and only add
+  // near-duplicate noise (e.g. same shape rendered with/without a backdrop rect).
+  const catalogCoveredCategories = new Set(
+    entryPoints.filter(c => c.isCatalog).map(c => categorize(c.name))
+  );
+  entryPoints = entryPoints.filter(c => c.isCatalog || !catalogCoveredCategories.has(categorize(c.name)));
+  // Composite/full-token renders are intentionally excluded — this tool extracts
+  // individual stored layers only, never assembled finished NFTs.
+  entryPoints = entryPoints.filter(c => categorize(c.name) !== 'Composite');
+
+  for (const cand of entryPoints) {
+    const fn = cand.fn;
+    const category = categorize(cand.name);
+    const primaryParam = fn.params.find(p => /^u?int/.test(p.type || ''));
+    if (!primaryParam) continue;
+    const maxIdx = maxBranchIndexDeep(fn, reg); // safety-capped inside
+    const nameTable = findNameTable(reg, category.replace(/\s+/g, ''));
+
+    // secondary param (if any) gets fixed at 0 for a representative render
+    const otherParams = fn.params.filter(p => p !== primaryParam);
+
+    for (let idx = 0; idx <= maxIdx; idx++) {
+      const ctx = { consumed, callCount: 0 };
+      const args = fn.params.map(p => p === primaryParam ? Ev.NUM(idx) : Ev.NUM(0));
+      let value;
+      try {
+        value = Ev.execFunction(cand.entry, args, reg, 0, ctx);
+      } catch (e) {
+        continue;
+      }
+      const raw = Ev.toDisplayString(value);
+      if (!raw || !isSvgLike(raw)) continue; // e.g. "None" -> empty string, skip
+
+      // find branch comment label by locating `== idx` in raw source near a return
+      let label = null;
+      const branchRe = new RegExp('==\\s*' + idx + '\\b');
+      const bm = branchRe.exec(fn.rawBodySrc);
+      if (bm) label = E.commentBefore(fn.rawBodySrc, fn.bodyStart + bm.index) || null;
+      if (!label && nameTable) {
+        const nv = Ev.execFunction(nameTable, [Ev.NUM(idx)], reg, 0, { consumed: new Set(), callCount: 0 });
+        const nvs = Ev.toDisplayString(nv);
+        if (nvs && nvs !== 'None') label = nvs;
+      }
+      if (!label) label = `${cand.name}_${idx}`;
+      if (/^none$/i.test(label)) continue;
+
+      const svg = wrapIfNeeded(raw, viewBox);
+      const hasPlaceholder = /\{[a-zA-Z0-9_]+\}/.test(svg);
+      idCounter++;
+      layers.push({
+        id: 'L' + idCounter,
+        category,
+        index: idx,
+        name: `${category.replace(/\s+/g, '')}_${String(idx).padStart(3, '0')}_${slugify(label)}`,
+        label,
+        svg,
+        rawFragment: raw,
+        sizeBytes: new Blob ? undefined : undefined, // filled in UI layer (browser has Blob)
+        sourceFunction: cand.name,
+        sourceFile: cand.entry.file,
+        sourceContract: cand.entry.contract,
+        lineStart: fn.lineStart,
+        lineEnd: fn.lineEnd,
+        parametric: hasPlaceholder
+      });
+    }
+  }
+
+  // de-duplicate identical svg content within the same category
+  const seen = new Map();
+  const duplicates = [];
+  for (const l of layers) {
+    const key = l.category + '|' + l.svg;
+    if (seen.has(key)) { duplicates.push(l.id); continue; }
+    seen.set(key, l.id);
+  }
+  const deduped = layers.filter(l => !duplicates.includes(l.id));
+
+  const stats = {
+    totalCategories: new Set(deduped.map(l => l.category)).size,
+    totalLayers: deduped.length,
+    svgCount: deduped.length,
+    duplicateAssets: duplicates.length,
+    filesScanned: files.length,
+    missingAssets: 0
+  };
+
+  const entryPointsUsed = [...new Set(deduped.map(l => l.sourceFunction))];
+  return { layers: deduped, stats, entryPointsUsed };
+}
+
+const SolDiscover = { extractLayers, categorize, CATEGORY_RULES };
+if (typeof module !== 'undefined' && module.exports) module.exports = SolDiscover;
+if (typeof window !== 'undefined') window.SolDiscover = SolDiscover;
+
+})();</script>
+<script>/* ================================================================
+   Original Layer Extractor — application logic
+   ================================================================ */
+(function () {
+  'use strict';
+
+  const state = {
+    files: [],          // [{path, content}]
+    layers: [],
+    stats: null,
+    entryPointsUsed: [],
+    filter: { search: '', category: 'all', sort: 'category' },
+    selected: null,
+    chain: '1'
+  };
+
+  const CHAINS = [
+    ['1', 'Ethereum Mainnet'],
+    ['8453', 'Base'],
+    ['42161', 'Arbitrum One'],
+    ['137', 'Polygon'],
+    ['10', 'Optimism'],
+    ['11155111', 'Sepolia Testnet']
+  ];
+
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+  function byteSize(str) { return new Blob([str]).size; }
+  function fmtBytes(n) { return n < 1024 ? n + ' B' : (n / 1024).toFixed(2) + ' KB'; }
+
+  // ---------------- Boot / tabs ----------------
+  function init() {
+    const chainSel = $('#chainSelect');
+    CHAINS.forEach(([id, label]) => {
+      const o = document.createElement('option');
+      o.value = id; o.textContent = label;
+      chainSel.appendChild(o);
+    });
+
+    $$('.load-tab').forEach(tab => tab.addEventListener('click', () => {
+      $$('.load-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.load-pane').forEach(p => p.classList.remove('active'));
+      $('#pane-' + tab.dataset.pane).classList.add('active');
+    }));
+
+    $('#zipInput').addEventListener('change', handleZipInput);
+    $('#solInput').addEventListener('change', handleSolInput);
+    $('#pasteAddBtn').addEventListener('click', handlePasteAdd);
+    $('#fetchBtn').addEventListener('click', handleFetch);
+    $('#extractBtn').addEventListener('click', runExtraction);
+
+    $('#searchBox').addEventListener('input', e => { state.filter.search = e.target.value.toLowerCase(); render(); });
+    $('#sortSelect').addEventListener('change', e => { state.filter.sort = e.target.value; render(); });
+    $('#downloadAllBtn').addEventListener('click', downloadAllZip);
+    $('#modalClose').addEventListener('click', closeModal);
+    $('#modalBackdrop').addEventListener('click', closeModal);
+    $$('.modal-tab').forEach(tab => tab.addEventListener('click', () => {
+      $$('.modal-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.modal-pane').forEach(p => p.classList.remove('active'));
+      $('#modalpane-' + tab.dataset.tab).classList.add('active');
+    }));
+
+    const dz = $('#dropzone');
+    ['dragover', 'dragleave', 'drop'].forEach(evt => dz.addEventListener(evt, e => e.preventDefault()));
+    dz.addEventListener('dragover', () => dz.classList.add('drag'));
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+    dz.addEventListener('drop', e => {
+      dz.classList.remove('drag');
+      const dt = e.dataTransfer;
+      if (!dt || !dt.files.length) return;
+      const f = dt.files[0];
+      if (f.name.endsWith('.zip')) loadZipFile(f);
+      else Array.from(dt.files).forEach(loadSolFile);
+    });
+
+    renderFilesList();
+    setStatus('Load a verified contract to begin — upload source, or fetch by address.');
+  }
+
+  function jszipReady() {
+    if (typeof JSZip === 'undefined') {
+      setStatus('JSZip could not load from the CDN (offline or blocked) — ZIP downloads are unavailable, but individual SVG/PNG downloads still work.', true);
+      return false;
+    }
+    return true;
+  }
+
+  // ---------------- Loading sources ----------------
+  function handleZipInput(e) { if (e.target.files[0]) loadZipFile(e.target.files[0]); }
+  function handleSolInput(e) { Array.from(e.target.files).forEach(loadSolFile); }
+
+  function loadZipFile(file) {
+    if (!jszipReady()) return;
+    setStatus('Reading ' + file.name + ' …');
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const zip = await JSZip.loadAsync(reader.result);
+        const entries = Object.values(zip.files).filter(f => !f.dir && /\.sol$/i.test(f.name));
+        for (const entry of entries) {
+          const content = await entry.async('string');
+          state.files.push({ path: entry.name, content });
+        }
+        setStatus(`Loaded ${entries.length} Solidity file(s) from ${file.name}.`);
+        renderFilesList();
+      } catch (err) {
+        setStatus('Failed to read zip: ' + err.message, true);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function loadSolFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.files.push({ path: file.webkitRelativePath || file.name, content: reader.result });
+      renderFilesList();
+      setStatus(`Loaded ${file.name}.`);
+    };
+    reader.readAsText(file);
+  }
+
+  function handlePasteAdd() {
+    const name = $('#pasteName').value.trim() || `Pasted${state.files.length + 1}.sol`;
+    const content = $('#pasteArea').value;
+    if (!content.trim()) { setStatus('Paste some Solidity source first.', true); return; }
+    state.files.push({ path: name, content });
+    $('#pasteArea').value = '';
+    $('#pasteName').value = '';
+    renderFilesList();
+    setStatus(`Added ${name}.`);
+  }
+
+  async function handleFetch() {
+    const address = $('#addrInput').value.trim();
+    const apiKey = $('#apiKeyInput').value.trim();
+    const chainId = $('#chainSelect').value;
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address)) { setStatus('Enter a valid contract address (0x…40 hex chars).', true); return; }
+    if (!apiKey) { setStatus('An Etherscan API key is required to fetch verified source by address — get a free one at etherscan.io/apis, or upload source instead.', true); return; }
+    setStatus('Fetching verified source for ' + address + ' …');
+    try {
+      const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=contract&action=getsourcecode&address=${address}&apikey=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.status !== '1' || !data.result || !data.result[0]) {
+        setStatus('Etherscan did not return verified source for this address/chain. It may be unverified, proxy-only, or on a different chain.', true);
+        return;
+      }
+      const entry = data.result[0];
+      let src = entry.SourceCode || '';
+      if (!src) { setStatus('No source code returned — contract may not be verified.', true); return; }
+      let added = 0;
+      if (src.trim().startsWith('{')) {
+        // multi-file standard-json, sometimes double-wrapped in {{ }}
+        let jsonStr = src.trim();
+        if (jsonStr.startsWith('{{')) jsonStr = jsonStr.slice(1, -1);
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const sources = parsed.sources || parsed;
+          for (const [path, obj] of Object.entries(sources)) {
+            const content = obj.content || obj;
+            if (typeof content === 'string') { state.files.push({ path, content }); added++; }
+          }
+        } catch (e) {
+          state.files.push({ path: (entry.ContractName || 'Contract') + '.sol', content: src });
+          added = 1;
+        }
+      } else {
+        state.files.push({ path: (entry.ContractName || 'Contract') + '.sol', content: src });
+        added = 1;
+      }
+      setStatus(`Fetched ${added} file(s) for ${entry.ContractName || address}.`);
+      renderFilesList();
+    } catch (err) {
+      setStatus('Fetch failed: ' + err.message + '. Network access to Etherscan may be blocked in this environment — try uploading source instead.', true);
+    }
+  }
+
+  function renderFilesList() {
+    const box = $('#filesList');
+    box.innerHTML = '';
+    state.files.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      row.innerHTML = `<span class="file-path">${escapeHtml(f.path)}</span><span class="file-size">${fmtBytes(byteSize(f.content))}</span><button data-i="${i}" class="file-remove" title="Remove">✕</button>`;
+      box.appendChild(row);
+    });
+    $$('.file-remove').forEach(btn => btn.addEventListener('click', e => {
+      state.files.splice(+e.target.dataset.i, 1);
+      renderFilesList();
+    }));
+    $('#fileCount').textContent = state.files.length;
+    $('#extractBtn').disabled = state.files.length === 0;
+  }
+
+  // ---------------- Extraction ----------------
+  function runExtraction() {
+    if (!state.files.length) return;
+    setStatus('Parsing Solidity source and enumerating trait tables…');
+    $('#extractBtn').disabled = true;
+    setTimeout(() => {
+      try {
+        const t0 = performance.now();
+        const { layers, stats, entryPointsUsed } = SolDiscover.extractLayers(state.files);
+        layers.forEach(l => { l.sizeBytes = byteSize(l.svg); });
+        state.layers = layers;
+        state.stats = stats;
+        state.entryPointsUsed = entryPointsUsed;
+        const ms = Math.round(performance.now() - t0);
+        setStatus(`Extracted ${layers.length} layers across ${stats.totalCategories} categories in ${ms}ms.`);
+        $('#workspace').classList.add('active');
+        $('#emptyState').classList.remove('active');
+        $('#statsPanel').style.display = 'block';
+        $('#catPanel').style.display = 'block';
+        renderStats();
+        renderCategoryList();
+        render();
+      } catch (err) {
+        console.error(err);
+        setStatus('Extraction failed: ' + err.message, true);
+      } finally {
+        $('#extractBtn').disabled = false;
+      }
+    }, 30);
+  }
+
+  function renderStats() {
+    const s = state.stats;
+    const box = $('#statsGrid');
+    box.innerHTML = '';
+    const items = [
+      ['Total Categories', s.totalCategories],
+      ['Total Layers', s.totalLayers],
+      ['SVG Count', s.svgCount],
+      ['Missing Assets', s.missingAssets],
+      ['Duplicate Assets', s.duplicateAssets],
+      ['Contract Files Scanned', s.filesScanned]
+    ];
+    items.forEach(([label, val]) => {
+      const el = document.createElement('div');
+      el.className = 'stat-card';
+      el.innerHTML = `<div class="stat-val">${val}</div><div class="stat-label">${label}</div>`;
+      box.appendChild(el);
+    });
+  }
+
+  function renderCategoryList() {
+    const box = $('#categoryList');
+    box.innerHTML = '';
+    const counts = {};
+    state.layers.forEach(l => counts[l.category] = (counts[l.category] || 0) + 1);
+    const cats = Object.keys(counts).sort();
+    const allBtn = catButton('all', 'All Layers', state.layers.length);
+    box.appendChild(allBtn);
+    cats.forEach(c => box.appendChild(catButton(c, c, counts[c])));
+    updateCatActive();
+  }
+  function catButton(key, label, count) {
+    const wrap = document.createElement('div');
+    wrap.className = 'cat-btn-wrap';
+    const b = document.createElement('button');
+    b.className = 'cat-btn';
+    b.dataset.cat = key;
+    b.innerHTML = `<span>${escapeHtml(label)}</span><span class="cat-count">${count}</span>`;
+    b.addEventListener('click', () => { state.filter.category = key; updateCatActive(); render(); });
+    wrap.appendChild(b);
+    if (key !== 'all') {
+      const dl = document.createElement('button');
+      dl.className = 'cat-dl';
+      dl.title = 'Download this category as ZIP';
+      dl.textContent = '⇩';
+      dl.addEventListener('click', e => { e.stopPropagation(); window.downloadCategoryZip(key); });
+      wrap.appendChild(dl);
+    }
+    return wrap;
+  }
+  function updateCatActive() {
+    $$('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === state.filter.category));
+  }
+
+  // ---------------- Rendering the grid ----------------
+  function filteredSorted() {
+    let arr = state.layers;
+    if (state.filter.category !== 'all') arr = arr.filter(l => l.category === state.filter.category);
+    if (state.filter.search) {
+      const q = state.filter.search;
+      arr = arr.filter(l => l.name.toLowerCase().includes(q) || l.label.toLowerCase().includes(q) ||
+        l.category.toLowerCase().includes(q) || l.sourceFunction.toLowerCase().includes(q));
+    }
+    arr = arr.slice();
+    if (state.filter.sort === 'name') arr.sort((a, b) => a.name.localeCompare(b.name));
+    else arr.sort((a, b) => a.category.localeCompare(b.category) || a.index - b.index);
+    return arr;
+  }
+
+  function render() {
+    const grid = $('#layerGrid');
+    const arr = filteredSorted();
+    grid.innerHTML = '';
+    $('#resultCount').textContent = `${arr.length} layer${arr.length === 1 ? '' : 's'}`;
+    if (!arr.length) {
+      grid.innerHTML = `<div class="grid-empty">No layers match this filter.</div>`;
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    arr.forEach(l => frag.appendChild(layerCard(l)));
+    grid.appendChild(frag);
+  }
+
+  function layerCard(l) {
+    const card = document.createElement('div');
+    card.className = 'layer-card';
+    const dataUri = svgDataUri(l.svg);
+    card.innerHTML = `
+      <div class="layer-thumb"><img loading="lazy" src="${dataUri}" alt="${escapeHtml(l.name)}"/></div>
+      <div class="layer-body">
+        <div class="layer-name" title="${escapeHtml(l.name)}">${escapeHtml(l.label)}</div>
+        <div class="layer-meta">
+          <span class="badge">${escapeHtml(l.category)}</span>
+          <span class="meta-size">${fmtBytes(l.sizeBytes)}</span>
+        </div>
+        <div class="layer-actions">
+          <button class="btn-mini src-btn">Source</button>
+          <button class="btn-mini dl-svg">SVG</button>
+          <button class="btn-mini dl-png">PNG</button>
+        </div>
+      </div>`;
+    card.querySelector('.src-btn').addEventListener('click', () => openModal(l));
+    card.querySelector('.dl-svg').addEventListener('click', () => downloadBlob(l.name + '.svg', l.svg, 'image/svg+xml'));
+    card.querySelector('.dl-png').addEventListener('click', () => downloadPng(l));
+    return card;
+  }
+
+  function svgDataUri(svg) { return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg))); }
+
+  function downloadBlob(filename, content, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function downloadPng(l) {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.width || 600, h = img.height || 600;
+      const canvas = document.createElement('canvas');
+      canvas.width = 720; canvas.height = Math.round(720 * (h / w));
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = l.name + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      }, 'image/png');
+    };
+    img.onerror = () => setStatus('PNG conversion failed for ' + l.name, true);
+    img.src = svgDataUri(l.svg);
+  }
+
+  // ---------------- Code viewer modal ----------------
+  function openModal(l) {
+    state.selected = l;
+    $('#modalTitle').textContent = l.name;
+    $('#modalSub').textContent = `${l.sourceContract}.${l.sourceFunction}()  ·  ${l.sourceFile}  ·  lines ${l.lineStart}–${l.lineEnd}`;
+    $('#modalSvgSrc').textContent = prettySvg(l.svg);
+    $('#modalSolSrc').innerHTML = renderSolSnippet(l);
+    $('#modalPreviewImg').src = svgDataUri(l.svg);
+    $('#modal').classList.add('open');
+    $('.modal-tab[data-tab="svg"]').click();
+  }
+  function closeModal() { $('#modal').classList.remove('open'); }
+
+  function prettySvg(svg) {
+    return svg.replace(/></g, '>\n<');
+  }
+
+  function renderSolSnippet(l) {
+    const file = state.files.find(f => f.path === l.sourceFile);
+    if (!file) return '<div class="src-missing">Source file not available.</div>';
+    const lines = file.content.split('\n');
+    const from = Math.max(1, l.lineStart - 4);
+    const to = Math.min(lines.length, l.lineEnd + 2);
+    let html = '';
+    for (let i = from; i <= to; i++) {
+      const hl = i >= l.lineStart && i <= l.lineEnd;
+      html += `<div class="code-line${hl ? ' hl' : ''}"><span class="ln">${i}</span><span class="cd">${escapeHtml(lines[i - 1] ?? '')}</span></div>`;
+    }
+    return html;
+  }
+
+  // ---------------- Zip downloads ----------------
+  async function downloadAllZip() {
+    if (!state.layers.length || !jszipReady()) return;
+    setStatus('Building ZIP…');
+    const zip = new JSZip();
+    state.layers.forEach(l => zip.folder(l.category.replace(/\s+/g, '')).file(l.name + '.svg', l.svg));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'layer-library.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setStatus(`Downloaded complete layer library (${state.layers.length} files).`);
+  }
+
+  window.downloadCategoryZip = async function (category) {
+    if (!jszipReady()) return;
+    const items = state.layers.filter(l => l.category === category);
+    if (!items.length) return;
+    setStatus(`Building ZIP for ${category} (${items.length} files)…`);
+    const zip = new JSZip();
+    items.forEach(l => zip.file(l.name + '.svg', l.svg));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = category.replace(/\s+/g, '') + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    setStatus(`Downloaded ${category} (${items.length} files).`);
+  };
+
+  // ---------------- Misc ----------------
+  function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function setStatus(msg, isError) {
+    const el = $('#statusLine');
+    el.textContent = msg;
+    el.classList.toggle('error', !!isError);
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
